@@ -51,9 +51,10 @@ export default function AprobacionContainer({
   const evaluacionOk = Number(postulacion?.puntaje_total ?? 0) >= 21
   const certificacionOk = true
   const presupuestoOk = Boolean(postulacion?.monto_total)
+  const yaAprobado = proyecto?.estado === 'aprobado'
 
   const puedeAprobar =
-    documentosOk && evaluacionOk && certificacionOk && presupuestoOk
+    !yaAprobado && documentosOk && evaluacionOk && certificacionOk && presupuestoOk
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -104,6 +105,7 @@ export default function AprobacionContainer({
           <AprobacionPanel
             proyectoId={proyectoId}
             puedeAprobar={puedeAprobar}
+            yaAprobado={yaAprobado}
           />
           <AlertasActivasPanel />
           <UltimosDocumentosPanel />

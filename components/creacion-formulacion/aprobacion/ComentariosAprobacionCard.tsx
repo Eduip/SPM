@@ -1,6 +1,15 @@
+'use client'
+
+import { useState } from 'react'
 import { cardStyle } from '../shared'
 
 export default function ComentariosAprobacionCard() {
+  const [draft, setDraft] = useState('')
+  const [savedComments, setSavedComments] = useState<
+    Array<{ initials: string; name: string; date: string; text: string }>
+  >([])
+  const [message, setMessage] = useState('')
+
   const comments = [
     {
       initials: 'MG',
@@ -16,6 +25,34 @@ export default function ComentariosAprobacionCard() {
     },
   ]
 
+  const allComments = [...comments, ...savedComments]
+
+  const handleSave = () => {
+    const text = draft.trim()
+
+    if (!text) {
+      setMessage('Escribe un comentario antes de guardar.')
+      return
+    }
+
+    setSavedComments((prev) => [
+      ...prev,
+      {
+        initials: 'US',
+        name: 'Usuario',
+        date: new Date().toLocaleString('es-CL'),
+        text,
+      },
+    ])
+    setDraft('')
+    setMessage('Comentario agregado en esta revisión.')
+  }
+
+  const handleCancel = () => {
+    setDraft('')
+    setMessage('')
+  }
+
   return (
     <div style={cardStyle}>
       <h3 style={{ margin: 0, marginBottom: 18, fontSize: 20, fontWeight: 700 }}>
@@ -23,7 +60,7 @@ export default function ComentariosAprobacionCard() {
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {comments.map((comment) => (
+        {allComments.map((comment) => (
           <div
             key={comment.name + comment.date}
             style={{
@@ -75,6 +112,11 @@ export default function ComentariosAprobacionCard() {
         ))}
 
         <textarea
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value)
+            setMessage('')
+          }}
           placeholder="Añadir comentario..."
           style={{
             width: '100%',
@@ -89,21 +131,53 @@ export default function ComentariosAprobacionCard() {
           }}
         />
 
-        <button
-          style={{
-            width: 170,
-            height: 42,
-            borderRadius: 12,
-            border: 'none',
-            background: '#2563eb',
-            color: '#ffffff',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          + Añadir comentario
-        </button>
+        {message && (
+          <div
+            style={{
+              borderRadius: 12,
+              padding: '10px 12px',
+              background: message.includes('agregado') ? '#ecfdf5' : '#fef2f2',
+              border: message.includes('agregado') ? '1px solid #bbf7d0' : '1px solid #fecaca',
+              color: message.includes('agregado') ? '#166534' : '#b91c1c',
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {message}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" onClick={handleSave} style={primaryButtonStyle}>
+            Guardar
+          </button>
+          <button type="button" onClick={handleCancel} style={secondaryButtonStyle}>
+            Cancelar
+          </button>
+        </div>
       </div>
     </div>
   )
+}
+
+const primaryButtonStyle: React.CSSProperties = {
+  width: 120,
+  height: 42,
+  borderRadius: 12,
+  border: 'none',
+  background: '#2563eb',
+  color: '#ffffff',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const secondaryButtonStyle: React.CSSProperties = {
+  width: 120,
+  height: 42,
+  borderRadius: 12,
+  border: '1px solid #d1d5db',
+  background: '#ffffff',
+  color: '#374151',
+  fontWeight: 700,
+  cursor: 'pointer',
 }
