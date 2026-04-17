@@ -129,6 +129,10 @@ export default function UsuariosPage({
     router.refresh()
   }
 
+  const handleCancel = () => {
+    setForm(toFormState(selectedUsuario))
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div
@@ -428,7 +432,9 @@ export default function UsuariosPage({
               gap: 10,
             }}
           >
-            <button style={secondaryButtonStyle}>Cancelar</button>
+            <button type="button" onClick={handleCancel} style={secondaryButtonStyle}>
+              Cancelar
+            </button>
             <button
               onClick={handleSave}
               disabled={!selectedUsuario || saving}

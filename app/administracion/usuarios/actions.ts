@@ -8,7 +8,7 @@ export async function crearUsuarioPerfil(formData: FormData) {
   const adminSupabase = createAdminClient()
 
   const nombre_completo = String(formData.get('nombre_completo') || '').trim()
-  const email = String(formData.get('email') || '').trim()
+  const email = String(formData.get('email') || '').trim().toLowerCase()
   const rol_id = String(formData.get('rol_id') || '').trim()
   const unidad_id = String(formData.get('unidad_id') || '').trim()
   const activo = formData.get('activo') === 'on'
@@ -78,16 +78,34 @@ export async function actualizarUsuarioPerfil({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminSupabase = createAdminClient()
 
-  if (!id || !nombre_completo.trim() || !email.trim()) {
+  const normalizedName = nombre_completo.trim()
+  const normalizedEmail = email.trim().toLowerCase()
+
+  if (!id || !normalizedName || !normalizedEmail) {
     return { success: false, error: 'Faltan datos para actualizar el usuario.' }
+  }
+
+  const { error: authError } = await adminSupabase.auth.admin.updateUserById(id, {
+    email: normalizedEmail,
+    user_metadata: {
+      nombre_completo: normalizedName,
+    },
+  })
+
+  if (authError) {
+    return {
+      success: false,
+      error: authError.message || 'No se pudo sincronizar el usuario en Supabase Auth.',
+    }
   }
 
   const { error } = await supabase
     .from('profiles')
     .update({
-      nombre_completo: nombre_completo.trim(),
-      email: email.trim(),
+      nombre_completo: normalizedName,
+      email: normalizedEmail,
       rol_id: rol_id || null,
       unidad_id: unidad_id || null,
       activo,

@@ -16,9 +16,12 @@ export async function togglePermisoRol({
   if (activo) {
     const { error } = await supabase
       .from('roles_permisos')
-      .insert({
+      .upsert({
         rol_id: rolId,
         permiso_id: permisoId,
+      }, {
+        onConflict: 'rol_id,permiso_id',
+        ignoreDuplicates: true,
       })
 
     if (error) {
