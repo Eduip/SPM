@@ -23,6 +23,12 @@ type SaveProjectPayload = {
   poblacion_beneficiaria: BeneficiaryGroup[]
 }
 
+const INITIAL_PROJECT_STATE_CODE = 'EN_FORMULACION'
+
+function normalizeEstadoCode(value?: string | null) {
+  return value?.trim().toLowerCase() ?? ''
+}
+
 export async function saveProjectData(payload: SaveProjectPayload) {
   const supabase = await createClient()
 
@@ -92,18 +98,38 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     }
   }
 
-  const { data: estadoFormulacion } = await supabase
-    .from('estados_proyecto')
-    .select('id')
-    .eq('codigo', 'EN_FORMULACION')
-    .maybeSingle()
+  const { data: estadosSistema, error: estadosSistemaError } = await supabase
+    .from('estados_sistema')
+    .select('codigo, nombre, categoria')
+    .eq('activo', true)
+    .in('categoria', ['proyecto', 'formulacion'])
 
-  if (!estadoFormulacion) {
+  if (estadosSistemaError) {
     return {
       success: false,
-      error: 'No existe el estado EN_FORMULACION en la base de datos.',
+      error: estadosSistemaError.message || 'No se pudo leer la configuración de estados.',
     }
   }
+
+  const estadoSistema = (estadosSistema ?? []).find(
+    (estado) => normalizeEstadoCode(estado.codigo) === normalizeEstadoCode(INITIAL_PROJECT_STATE_CODE)
+  )
+
+  if (!estadoSistema) {
+    return {
+      success: false,
+      error:
+        'No existe el estado EN_FORMULACION activo en Administración > Estados del Sistema.',
+    }
+  }
+
+  const estadoInicial = normalizeEstadoCode(estadoSistema.codigo) || normalizeEstadoCode(estadoSistema.nombre)
+
+  const { data: estadoFormulacionLegacy } = await supabase
+    .from('estados_proyecto')
+    .select('id')
+    .eq('codigo', INITIAL_PROJECT_STATE_CODE)
+    .maybeSingle()
 
   const { data: proyecto, error: proyectoError } = await supabase
     .from('proyectos')
@@ -119,7 +145,8 @@ export async function saveProjectData(payload: SaveProjectPayload) {
       localizacion: payload.localizacion || null,
       anio_inicio: parsedYear,
       monto_estimado: normalizedAmount,
-      estado_proyecto_id: estadoFormulacion.id,
+      estado: estadoInicial,
+      estado_proyecto_id: estadoFormulacionLegacy?.id ?? null,
       etapa_formulacion_actual: 1,
       porcentaje_formulacion: 20,
       avance_fisico_actual: 0,
