@@ -37,6 +37,7 @@ export type DocumentoFuente = {
   fuente_id: string
   nombre: string
   obligatorio: boolean
+  orden?: number | null
   estado_revision?: string | null
 }
 

@@ -80,10 +80,6 @@ export async function guardarConfiguracionFuente({
     requiere_evaluacion_tecnica: boolean
     requiere_rendicion_obligatoria: boolean
     requiere_aprobacion_externa: boolean
-    monto_minimo: number
-    monto_maximo: number
-    tipo_financiamiento: string
-    plazo_maximo_meses: number
   }
 }) {
   const supabase = await createClient()
@@ -102,10 +98,6 @@ export async function guardarConfiguracionFuente({
       requiere_evaluacion_tecnica: payload.requiere_evaluacion_tecnica,
       requiere_rendicion_obligatoria: payload.requiere_rendicion_obligatoria,
       requiere_aprobacion_externa: payload.requiere_aprobacion_externa,
-      monto_minimo: Number(payload.monto_minimo || 0),
-      monto_maximo: Number(payload.monto_maximo || 0),
-      tipo_financiamiento: payload.tipo_financiamiento || 'Total',
-      plazo_maximo_meses: Number(payload.plazo_maximo_meses || 0),
     })
     .eq('id', id)
 
@@ -120,27 +112,127 @@ export async function crearCampoFuente({
     fuente_id,
     nombre,
     tipo,
+    obligatorio,
   }: {
     fuente_id: string
     nombre: string
     tipo: string
+    obligatorio: boolean
   }) {
     const supabase = await createClient()
+
+    if (!fuente_id || !nombre.trim()) {
+      return { success: false, error: 'Faltan datos para crear el campo.' }
+    }
+
+    const { data: ultimoCampo } = await supabase
+      .from('campos_formulario_fuente')
+      .select('orden')
+      .eq('fuente_id', fuente_id)
+      .order('orden', { ascending: false })
+      .limit(1)
+      .maybeSingle()
   
     const { error } = await supabase
       .from('campos_formulario_fuente')
       .insert({
         fuente_id,
-        nombre,
+        nombre: nombre.trim(),
         tipo,
-        obligatorio: false,
+        obligatorio,
         visible: true,
+        orden: Number(ultimoCampo?.orden ?? 0) + 1,
       })
   
     if (error) return { success: false, error: error.message }
   
     return { success: true }
   }
+
+export async function actualizarCampoFuente({
+  id,
+  nombre,
+  tipo,
+  obligatorio,
+}: {
+  id: string
+  nombre: string
+  tipo: string
+  obligatorio: boolean
+}) {
+  const supabase = await createClient()
+
+  if (!id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para actualizar el campo.' }
+  }
+
+  const { error } = await supabase
+    .from('campos_formulario_fuente')
+    .update({
+      nombre: nombre.trim(),
+      tipo,
+      obligatorio,
+    })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function eliminarCampoFuente(id: string) {
+  const supabase = await createClient()
+
+  if (!id) {
+    return { success: false, error: 'No se recibió el campo a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('campos_formulario_fuente')
+    .update({ visible: false })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function crearDocumentoFuente({
+  fuente_id,
+  nombre,
+  obligatorio,
+}: {
+  fuente_id: string
+  nombre: string
+  obligatorio: boolean
+}) {
+  const supabase = await createClient()
+
+  if (!fuente_id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para crear el documento.' }
+  }
+
+  const { data: ultimoDocumento } = await supabase
+    .from('documentos_fuente')
+    .select('orden')
+    .eq('fuente_id', fuente_id)
+    .order('orden', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { error } = await supabase
+    .from('documentos_fuente')
+    .insert({
+      fuente_id,
+      nombre: nombre.trim(),
+      obligatorio,
+      orden: Number(ultimoDocumento?.orden ?? 0) + 1,
+    })
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
 
   export async function crearReglaFuente({
     fuente_id,

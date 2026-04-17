@@ -3,9 +3,12 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  actualizarCampoFuente,
   crearCampoFuente,
+  crearDocumentoFuente,
   crearFuenteFinanciamiento,
   crearReglaFuente,
+  eliminarCampoFuente,
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
@@ -24,10 +27,6 @@ type Fuente = {
   requiere_evaluacion_tecnica: boolean | null
   requiere_rendicion_obligatoria: boolean | null
   requiere_aprobacion_externa: boolean | null
-  monto_minimo: number | null
-  monto_maximo: number | null
-  tipo_financiamiento: string | null
-  plazo_maximo_meses: number | null
 }
 
 type FormState = {
@@ -38,10 +37,6 @@ type FormState = {
   requiere_evaluacion_tecnica: boolean
   requiere_rendicion_obligatoria: boolean
   requiere_aprobacion_externa: boolean
-  monto_minimo: string
-  monto_maximo: string
-  tipo_financiamiento: string
-  plazo_maximo_meses: string
 }
 
 const emptyForm: FormState = {
@@ -52,10 +47,6 @@ const emptyForm: FormState = {
   requiere_evaluacion_tecnica: false,
   requiere_rendicion_obligatoria: false,
   requiere_aprobacion_externa: false,
-  monto_minimo: '',
-  monto_maximo: '',
-  tipo_financiamiento: 'Total',
-  plazo_maximo_meses: '',
 }
 
 function toFormState(fuente: Fuente | null): FormState {
@@ -69,19 +60,6 @@ function toFormState(fuente: Fuente | null): FormState {
     requiere_evaluacion_tecnica: Boolean(fuente.requiere_evaluacion_tecnica),
     requiere_rendicion_obligatoria: Boolean(fuente.requiere_rendicion_obligatoria),
     requiere_aprobacion_externa: Boolean(fuente.requiere_aprobacion_externa),
-    monto_minimo:
-      fuente.monto_minimo !== null && fuente.monto_minimo !== undefined
-        ? String(fuente.monto_minimo)
-        : '',
-    monto_maximo:
-      fuente.monto_maximo !== null && fuente.monto_maximo !== undefined
-        ? String(fuente.monto_maximo)
-        : '',
-    tipo_financiamiento: fuente.tipo_financiamiento ?? 'Total',
-    plazo_maximo_meses:
-      fuente.plazo_maximo_meses !== null && fuente.plazo_maximo_meses !== undefined
-        ? String(fuente.plazo_maximo_meses)
-        : '',
   }
 }
 
@@ -101,6 +79,7 @@ export default function FuentesFinanciamientoPage({
   const router = useRouter()
   const [showNewForm, setShowNewForm] = useState(false)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false)
+  const [showNewDocumentForm, setShowNewDocumentForm] = useState(false)
   const [showNewRuleForm, setShowNewRuleForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(fuentes[0]?.id ?? null)
   const [saving, setSaving] = useState(false)
@@ -112,7 +91,9 @@ export default function FuentesFinanciamientoPage({
 
   const docsFuente = documentos.filter((d) => d.fuente_id === selectedFuente?.id)
   
-  const camposFuente = campos.filter((c) => c.fuente_id === selectedFuente?.id)
+  const camposFuente = campos
+    .filter((c) => c.fuente_id === selectedFuente?.id && c.visible)
+    .sort((a, b) => a.orden - b.orden)
   
   const reglasFuente = reglas.filter((r) => r.fuente_id === selectedFuente?.id)
 
@@ -122,6 +103,7 @@ export default function FuentesFinanciamientoPage({
     setSelectedId(fuente.id)
     setForm(toFormState(fuente))
     setShowNewFieldForm(false)
+    setShowNewDocumentForm(false)
     setShowNewRuleForm(false)
   }
 
@@ -130,10 +112,7 @@ export default function FuentesFinanciamientoPage({
       nombre: fuente.nombre,
       codigo: fuente.codigo ?? '',
       activo: fuente.activo ? 'Activa' : 'Inactiva',
-      tipo_financiamiento: fuente.tipo_financiamiento ?? '',
-      monto_minimo: fuente.monto_minimo ?? '',
-      monto_maximo: fuente.monto_maximo ?? '',
-      plazo_maximo_meses: fuente.plazo_maximo_meses ?? '',
+      descripcion: fuente.descripcion ?? '',
     }))
 
     exportRowsToCsv('fuentes-financiamiento.csv', rows)
@@ -154,10 +133,6 @@ export default function FuentesFinanciamientoPage({
         requiere_evaluacion_tecnica: form.requiere_evaluacion_tecnica,
         requiere_rendicion_obligatoria: form.requiere_rendicion_obligatoria,
         requiere_aprobacion_externa: form.requiere_aprobacion_externa,
-        monto_minimo: Number(form.monto_minimo || 0),
-        monto_maximo: Number(form.monto_maximo || 0),
-        tipo_financiamiento: form.tipo_financiamiento,
-        plazo_maximo_meses: Number(form.plazo_maximo_meses || 0),
       },
     })
 
@@ -445,42 +420,6 @@ export default function FuentesFinanciamientoPage({
             </div>
           </div>
 
-          {/* Parámetros financieros */}
-          <div style={panelCardStyle}>
-            <div style={panelHeaderStyle}>📄 Parámetros Financieros</div>
-
-            <div style={twoColsStyle}>
-              <Field
-                label="Monto mínimo permitido"
-                value={form.monto_minimo}
-                onChange={(v) => setForm((s) => ({ ...s, monto_minimo: v }))}
-                placeholder="$10.000.000"
-              />
-              <Field
-                label="Monto máximo permitido"
-                value={form.monto_maximo}
-                onChange={(v) => setForm((s) => ({ ...s, monto_maximo: v }))}
-                placeholder="$500.000.000"
-              />
-              <SelectField
-                label="Tipo de financiamiento"
-                value={form.tipo_financiamiento}
-                onChange={(v) =>
-                  setForm((s) => ({ ...s, tipo_financiamiento: v }))
-                }
-                options={['Total', 'Parcial', 'Mixto']}
-              />
-              <Field
-                label="Plazo máximo (meses)"
-                value={form.plazo_maximo_meses}
-                onChange={(v) =>
-                  setForm((s) => ({ ...s, plazo_maximo_meses: v }))
-                }
-                placeholder="24"
-              />
-            </div>
-          </div>
-
           {/* Documentos requeridos */}
           <div style={panelCardStyle}>
             <div
@@ -494,13 +433,51 @@ export default function FuentesFinanciamientoPage({
               <span>📄 Documentos Requeridos</span>
               <button
                 type="button"
-                disabled
-                title="La gestión de documentos por fuente requiere una acción de catálogo pendiente."
-                style={disabledMiniButtonStyle}
+                onClick={() => setShowNewDocumentForm((v) => !v)}
+                disabled={!selectedFuente}
+                style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
               >
                 + Añadir documento
               </button>
             </div>
+
+            {showNewDocumentForm && selectedFuente && (
+              <form
+                action={async (formData) => {
+                  const nombre = String(formData.get('nombre') || '').trim()
+                  const obligatorio = formData.get('obligatorio') === 'on'
+
+                  const res = await crearDocumentoFuente({
+                    fuente_id: selectedFuente.id,
+                    nombre,
+                    obligatorio,
+                  })
+
+                  if (!res.success) {
+                    alert(res.error)
+                    return
+                  }
+
+                  setShowNewDocumentForm(false)
+                  router.refresh()
+                }}
+                style={inlineFormStyle}
+              >
+                <input
+                  name="nombre"
+                  placeholder="Nombre del documento"
+                  required
+                  style={inputStyle}
+                />
+                <label style={inlineCheckboxStyle}>
+                  <input type="checkbox" name="obligatorio" defaultChecked />
+                  Obligatorio
+                </label>
+                <button type="submit" style={saveButtonStyle}>
+                  Guardar documento
+                </button>
+              </form>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               
@@ -541,20 +518,18 @@ export default function FuentesFinanciamientoPage({
               </button>
             </div>
 
-            <div style={infoBoxStyle}>
-              Instrucciones: Arrastra los campos para reordenarlos. Usa los controles para configurar visibilidad, obligatoriedad y tipo de campo.
-            </div>
-
             {showNewFieldForm && selectedFuente && (
               <form
                 action={async (formData) => {
                   const nombre = String(formData.get('nombre') || '').trim()
                   const tipo = String(formData.get('tipo') || 'texto')
+                  const obligatorio = formData.get('obligatorio') === 'on'
 
                   const res = await crearCampoFuente({
                     fuente_id: selectedFuente.id,
                     nombre,
                     tipo,
+                    obligatorio,
                   })
 
                   if (!res.success) {
@@ -580,6 +555,10 @@ export default function FuentesFinanciamientoPage({
                   <option value="fecha">Fecha</option>
                   <option value="booleano">Sí / No</option>
                 </select>
+                <label style={inlineCheckboxStyle}>
+                  <input type="checkbox" name="obligatorio" />
+                  Obligatorio
+                </label>
                 <button type="submit" style={saveButtonStyle}>
                   Guardar campo
                 </button>
@@ -595,9 +574,8 @@ export default function FuentesFinanciamientoPage({
   camposFuente.map((campo) => (
     <FieldConfigRow
       key={campo.id}
-      name={campo.nombre}
-      type={campo.tipo}
-      order={campo.orden}
+      campo={campo}
+      onSaved={() => router.refresh()}
     />
   ))
 )}
@@ -609,18 +587,15 @@ export default function FuentesFinanciamientoPage({
             <div style={panelHeaderStyle}>👁️ Vista Previa del Formulario</div>
 
             <div style={previewWrapperStyle}>
-              {[
-                'Nombre del Proyecto',
-                'Monto',
-                'Unidad Responsable',
-                'Diagnóstico',
-                'Coordenadas',
-                'Cronograma',
-                'Evaluación técnica',
-                'Indicadores sociales',
-              ].map((field) => (
-                <PreviewField key={field} label={field} />
-              ))}
+              {camposFuente.length === 0 ? (
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  Esta fuente aún no tiene campos personalizados para previsualizar.
+                </div>
+              ) : (
+                camposFuente.map((campo) => (
+                  <PreviewField key={campo.id} campo={campo} />
+                ))
+              )}
             </div>
           </div>
 
@@ -778,35 +753,6 @@ function TextAreaField({
   )
 }
 
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  options: string[]
-}) {
-  return (
-    <div>
-      <div style={fieldLabelStyle}>{label}</div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={inputStyle}
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
-}
-
 function ToggleItem({
   title,
   subtitle,
@@ -871,16 +817,54 @@ function SimpleRow({
 }
 
 function FieldConfigRow({
-  name,
-  type,
-  order,
+  campo,
+  onSaved,
 }: {
-  name: string
-  type: string
-  order: number
+  campo: CampoPostulacion
+  onSaved: () => void
 }) {
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`¿Eliminar el campo ${campo.nombre}?`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    const res = await eliminarCampoFuente(campo.id)
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    onSaved()
+  }
+
   return (
-    <div style={configRowStyle}>
+    <form
+      action={async (formData) => {
+        setSaving(true)
+
+        const res = await actualizarCampoFuente({
+          id: campo.id,
+          nombre: String(formData.get('nombre') || '').trim(),
+          tipo: String(formData.get('tipo') || 'texto'),
+          obligatorio: formData.get('obligatorio') === 'on',
+        })
+
+        setSaving(false)
+
+        if (!res.success) {
+          alert(res.error)
+          return
+        }
+
+        onSaved()
+      }}
+      style={configRowStyle}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ color: '#9ca3af', fontWeight: 700 }}>⋮⋮</div>
         <div
@@ -892,28 +876,60 @@ function FieldConfigRow({
           }}
         />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>{name}</div>
-          <div style={{ fontSize: 11, color: '#9ca3af' }}>Orden: {order}</div>
+          <input
+            name="nombre"
+            defaultValue={campo.nombre}
+            required
+            style={compactInputStyle}
+          />
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+            Orden: {campo.orden}
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={fieldTypeBadgeStyle}>{type}</span>
-        <span style={{ color: '#ef4444' }}>◻</span>
-        <span style={{ color: '#22c55e' }}>◉</span>
-        <span style={{ color: '#ef4444' }}>🗑</span>
+        <select name="tipo" defaultValue={campo.tipo} style={compactSelectStyle}>
+          <option value="texto">Texto</option>
+          <option value="texto_largo">Texto largo</option>
+          <option value="numero">Número</option>
+          <option value="fecha">Fecha</option>
+          <option value="booleano">Sí / No</option>
+        </select>
+        <label style={compactCheckboxStyle}>
+          <input type="checkbox" name="obligatorio" defaultChecked={campo.obligatorio} />
+          Obligatorio
+        </label>
+        <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={saving || deleting}
+          style={miniDangerButtonStyle}
+        >
+          {deleting ? 'Eliminando...' : 'Eliminar'}
+        </button>
       </div>
-    </div>
+    </form>
   )
 }
 
-function PreviewField({ label }: { label: string }) {
+function PreviewField({ campo }: { campo: CampoPostulacion }) {
+  const placeholder =
+    campo.tipo === 'fecha'
+      ? 'Seleccione una fecha'
+      : campo.tipo === 'booleano'
+        ? 'Sí / No'
+        : `Ingrese ${campo.nombre.toLowerCase()}...`
+
   return (
     <div style={previewFieldStyle}>
       <div style={fieldLabelStyle}>
-        {label} <span style={{ color: '#ef4444' }}>*</span>
+        {campo.nombre} {campo.obligatorio ? <span style={{ color: '#ef4444' }}>*</span> : null}
       </div>
-      <div style={previewInputStyle}>Ingrese {label.toLowerCase()}...</div>
+      <div style={previewInputStyle}>{placeholder}</div>
     </div>
   )
 }
@@ -1015,17 +1031,6 @@ const toggleItemStyle: React.CSSProperties = {
   alignItems: 'center',
 }
 
-const infoBoxStyle: React.CSSProperties = {
-  borderRadius: 12,
-  background: '#eff6ff',
-  border: '1px solid #bfdbfe',
-  padding: 12,
-  fontSize: 12,
-  color: '#2563eb',
-  marginBottom: 12,
-  lineHeight: 1.6,
-}
-
 const previewWrapperStyle: React.CSSProperties = {
   borderRadius: 14,
   border: '1px solid #e5e7eb',
@@ -1089,7 +1094,7 @@ const ruleRowStyle: React.CSSProperties = {
 
 const inlineFormStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1fr 160px auto',
+  gridTemplateColumns: '1fr 160px auto auto',
   gap: 10,
   alignItems: 'center',
   marginBottom: 14,
@@ -1097,6 +1102,16 @@ const inlineFormStyle: React.CSSProperties = {
   border: '1px solid #e5e7eb',
   background: '#f9fafb',
   padding: 12,
+}
+
+const inlineCheckboxStyle: React.CSSProperties = {
+  minHeight: 40,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 13,
+  color: '#374151',
+  fontWeight: 600,
 }
 
 const fieldLabelStyle: React.CSSProperties = {
@@ -1116,6 +1131,37 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   color: '#111827',
   boxSizing: 'border-box',
+}
+
+const compactInputStyle: React.CSSProperties = {
+  width: 220,
+  height: 34,
+  borderRadius: 8,
+  border: '1px solid #e5e7eb',
+  background: '#f9fafb',
+  padding: '0 10px',
+  fontSize: 13,
+  color: '#111827',
+  boxSizing: 'border-box',
+}
+
+const compactSelectStyle: React.CSSProperties = {
+  height: 34,
+  borderRadius: 8,
+  border: '1px solid #e5e7eb',
+  background: '#ffffff',
+  padding: '0 10px',
+  fontSize: 12,
+  color: '#374151',
+}
+
+const compactCheckboxStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 12,
+  color: '#374151',
+  fontWeight: 600,
 }
 
 const textareaStyle: React.CSSProperties = {
@@ -1151,16 +1197,28 @@ const requiredBadgeStyle: React.CSSProperties = {
   fontWeight: 700,
 }
 
-const fieldTypeBadgeStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  height: 24,
-  padding: '0 8px',
-  borderRadius: 999,
-  background: '#f3f4f6',
+const miniSecondaryButtonStyle: React.CSSProperties = {
+  height: 30,
+  padding: '0 10px',
+  borderRadius: 8,
+  border: '1px solid #d1d5db',
+  background: '#ffffff',
   color: '#374151',
-  fontSize: 11,
   fontWeight: 700,
+  fontSize: 11,
+  cursor: 'pointer',
+}
+
+const miniDangerButtonStyle: React.CSSProperties = {
+  height: 30,
+  padding: '0 10px',
+  borderRadius: 8,
+  border: '1px solid #fecaca',
+  background: '#fff1f2',
+  color: '#be123c',
+  fontWeight: 700,
+  fontSize: 11,
+  cursor: 'pointer',
 }
 
 const secondaryButtonStyle: React.CSSProperties = {

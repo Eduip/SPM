@@ -37,6 +37,7 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
     supabase
       .from('campos_formulario_fuente')
       .select('*')
+      .eq('visible', true)
       .order('orden', { ascending: true }),
 
     supabase
