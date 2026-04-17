@@ -36,7 +36,7 @@ export async function uploadDocumentoProyecto(formData: FormData) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, nombre_completo')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -64,31 +64,70 @@ export async function uploadDocumentoProyecto(formData: FormData) {
     }
   }
 
-  const { error: insertError } = await supabase
-    .from('documentos_proyecto')
-    .insert({
-      proyecto_id: proyectoId,
-      catalogo_documento_id: catalogoId,
-      nombre,
-      nombre_archivo: file.name,
-      ruta_storage: path,
-      bucket: 'documentos-proyectos',
-      tipo_documento: tipoDocumento,
-      etapa: 'documentos',
-      extension: file.name.split('.').pop() || null,
-      tamano_bytes: file.size,
-      mime_type: file.type,
-      subido_por: profile.id,
-      obligatorio,
-      estado_revision: 'subido',
-      porcentaje_validacion: 100,
-    })
+  const fechaSubida = new Date().toISOString()
+  const documentPayload = {
+    proyecto_id: proyectoId,
+    catalogo_documento_id: catalogoId,
+    nombre,
+    nombre_archivo: file.name,
+    ruta_storage: path,
+    bucket: 'documentos-proyectos',
+    tipo_documento: tipoDocumento,
+    etapa: 'documentos',
+    extension: file.name.split('.').pop() || null,
+    tamano_bytes: file.size,
+    mime_type: file.type,
+    subido_por: profile.id,
+    fecha_subida: fechaSubida,
+    obligatorio,
+    estado_revision: 'subido',
+    porcentaje_validacion: 100,
+    observacion: null,
+  }
 
-  if (insertError) {
+  const { data: existingDocument } = await supabase
+    .from('documentos_proyecto')
+    .select('id')
+    .eq('proyecto_id', proyectoId)
+    .eq('catalogo_documento_id', catalogoId)
+    .eq('etapa', 'documentos')
+    .order('fecha_subida', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const mutation = existingDocument?.id
+    ? supabase
+        .from('documentos_proyecto')
+        .update(documentPayload)
+        .eq('id', existingDocument.id)
+        .select('id')
+        .single()
+    : supabase
+        .from('documentos_proyecto')
+        .insert(documentPayload)
+        .select('id')
+        .single()
+
+  const { data: savedDocument, error: saveError } = await mutation
+
+  if (saveError) {
     return {
       success: false,
-      error: insertError.message || 'No se pudo registrar el documento en la base de datos.',
+      error: saveError.message || 'No se pudo registrar el documento en la base de datos.',
     }
+  }
+
+  if (!savedDocument) {
+    return {
+      success: false,
+      error: 'No se pudo obtener el documento guardado.',
+    }
+  }
+
+  const documento = {
+    id: savedDocument.id,
+    ...documentPayload,
+    profile: [{ nombre_completo: profile.nombre_completo ?? 'Usuario' }],
   }
 
   await supabase.rpc('registrar_evento_historial', {
@@ -104,7 +143,7 @@ export async function uploadDocumentoProyecto(formData: FormData) {
     },
   })
 
-  revalidatePath(`/creacion-formulacion/documentos?proyectoId=${proyectoId}`)
+  revalidatePath('/creacion-formulacion/documentos')
 
-  return { success: true }
+  return { success: true, documento }
 }

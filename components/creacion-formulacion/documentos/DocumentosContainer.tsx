@@ -9,7 +9,6 @@ import EstadoDocumentacionPanel from './EstadoDocumentacionPanel'
 import { cardStyle } from '../shared'
 import DocumentosSubidosPanel from './DocumentosSubidosPanel'
 import DocumentosProgressPanel from './DocumentosProgressPanel'
-import { useRouter } from 'next/navigation'
 
 
 
@@ -24,21 +23,27 @@ export default function DocumentosContainer({
   catalogo,
   documentos,
 }: Props) {
-    const router = useRouter()
+  const [uploadedDocumentos, setUploadedDocumentos] = useState<DocumentoProyecto[]>([])
   const [selectedCatalogId, setSelectedCatalogId] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [fileInputKey, setFileInputKey] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
 
+  const currentDocumentos = useMemo(
+    () => mergeDocumentos(documentos, uploadedDocumentos),
+    [documentos, uploadedDocumentos]
+  )
+
   const documentoMap = useMemo(() => {
     const map = new Map<string, DocumentoProyecto>()
-    for (const doc of documentos) {
+    for (const doc of currentDocumentos) {
         if (doc.catalogo_documento_id && !map.has(doc.catalogo_documento_id)) {
             map.set(doc.catalogo_documento_id, doc)
       }
     }
     return map
-  }, [documentos])
+  }, [currentDocumentos])
 
   const rows = catalogo.map((item) => {
     const existing = documentoMap.get(item.id)
@@ -98,10 +103,13 @@ export default function DocumentosContainer({
     }
 
     setMessage('Documento subido correctamente.')
+    if (result.documento) {
+      setUploadedDocumentos((prev) => mergeDocumentos([result.documento], prev))
+    }
     setSelectedCatalogId('')
     setFile(null)
+    setFileInputKey((value) => value + 1)
     setUploading(false)
-    router.refresh()
   }
 
   return (
@@ -259,6 +267,7 @@ export default function DocumentosContainer({
               </select>
 
               <input
+                key={fileInputKey}
                 type="file"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 style={{
@@ -368,7 +377,7 @@ export default function DocumentosContainer({
               Los documentos pueden ser subidos en formato PDF, Word (.doc, .docx), Excel (.xls, .xlsx) o imágenes (.jpg, .png). El tamaño máximo por archivo es de 10 MB.
             </div>
           </div>
-          <DocumentosSubidosPanel documentos={documentos} />
+          <DocumentosSubidosPanel documentos={currentDocumentos} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -417,4 +426,29 @@ function EstadoBadge({ estado }: { estado: string }) {
       {estado}
     </span>
   )
+}
+
+function mergeDocumentos(
+  incoming: DocumentoProyecto[],
+  existing: DocumentoProyecto[]
+) {
+  const byCatalogOrId = new Map<string, DocumentoProyecto>()
+
+  for (const doc of [...existing, ...incoming]) {
+    const key = doc.catalogo_documento_id ?? doc.id
+    const current = byCatalogOrId.get(key)
+
+    if (!current || isNewerDocument(doc, current)) {
+      byCatalogOrId.set(key, doc)
+    }
+  }
+
+  return Array.from(byCatalogOrId.values()).sort(
+    (a, b) =>
+      new Date(b.fecha_subida).getTime() - new Date(a.fecha_subida).getTime()
+  )
+}
+
+function isNewerDocument(a: DocumentoProyecto, b: DocumentoProyecto) {
+  return new Date(a.fecha_subida).getTime() >= new Date(b.fecha_subida).getTime()
 }
