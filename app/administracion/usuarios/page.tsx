@@ -13,6 +13,7 @@ export default async function Page() {
         rol:roles(id, nombre, codigo),
         unidad:unidades(id, nombre, codigo)
       `)
+      .eq('activo', true)
       .order('nombre_completo', { ascending: true }),
 
     supabase

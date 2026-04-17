@@ -18,6 +18,7 @@ type AppShellProps = {
   title: string
   children: ReactNode
   currentModule?: string
+  showTitle?: boolean
 }
 
 const menuItems = [
@@ -58,6 +59,7 @@ export default async function AppShell({
   title,
   children,
   currentModule,
+  showTitle = false,
 }: AppShellProps) {
   const supabase = await createClient()
 
@@ -451,30 +453,21 @@ export default async function AppShell({
             minHeight: 'calc(100vh - 68px)',
           }}
         >
-          <div style={{ marginBottom: 22 }}>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: '#111827',
-                marginBottom: 10,
-              }}
-            >
-              {title}
+          {showTitle && (
+            <div style={{ marginBottom: 22 }}>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 34,
+                  lineHeight: 1.1,
+                  fontWeight: 800,
+                  color: '#111827',
+                }}
+              >
+                {title}
+              </h1>
             </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 34,
-                lineHeight: 1.1,
-                fontWeight: 800,
-                color: '#111827',
-              }}
-            >
-              {title}
-            </h1>
-          </div>
+          )}
 
           {children}
         </main>

@@ -2,7 +2,7 @@ import AppShell from '../../components/AppShell'
 
 export default function DashboardPage() {
   return (
-    <AppShell title="Dashboard" currentModule="dashboard">
+    <AppShell title="Dashboard" currentModule="dashboard" showTitle>
       <div
         style={{
           height: 220,

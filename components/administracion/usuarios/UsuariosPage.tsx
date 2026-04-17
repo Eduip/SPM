@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   actualizarUsuarioPerfil,
   crearUsuarioPerfil,
+  eliminarUsuarioPerfil,
 } from '../../../app/administracion/usuarios/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
 
@@ -79,6 +80,7 @@ export default function UsuariosPage({
   const [showNewForm, setShowNewForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(usuarios[0]?.id ?? null)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const selectedUsuario = useMemo(
     () => usuarios.find((u) => u.id === selectedId) ?? usuarios[0] ?? null,
@@ -129,8 +131,28 @@ export default function UsuariosPage({
     router.refresh()
   }
 
-  const handleCancel = () => {
-    setForm(toFormState(selectedUsuario))
+  const handleDelete = async () => {
+    if (!selectedUsuario) return
+
+    const confirmed = window.confirm(
+      `¿Eliminar el usuario ${selectedUsuario.nombre_completo || selectedUsuario.email || 'seleccionado'}?`
+    )
+
+    if (!confirmed) return
+
+    setDeleting(true)
+
+    const res = await eliminarUsuarioPerfil(selectedUsuario.id)
+
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    setSelectedId(null)
+    router.refresh()
   }
 
   return (
@@ -428,20 +450,27 @@ export default function UsuariosPage({
           <div
             style={{
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               gap: 10,
             }}
           >
-            <button type="button" onClick={handleCancel} style={secondaryButtonStyle}>
-              Cancelar
-            </button>
             <button
-              onClick={handleSave}
-              disabled={!selectedUsuario || saving}
-              style={darkButtonStyle}
+              type="button"
+              onClick={handleDelete}
+              disabled={!selectedUsuario || deleting}
+              style={dangerButtonStyle}
             >
-              {saving ? 'Guardando...' : 'Guardar configuración'}
+              {deleting ? 'Eliminando...' : 'Eliminar usuario'}
             </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleSave}
+                disabled={!selectedUsuario || saving}
+                style={darkButtonStyle}
+              >
+                {saving ? 'Guardando...' : 'Guardar configuración'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -681,6 +710,17 @@ const secondaryButtonStyle: React.CSSProperties = {
   border: '1px solid #d1d5db',
   background: '#ffffff',
   color: '#374151',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const dangerButtonStyle: React.CSSProperties = {
+  height: 36,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: '1px solid #fecaca',
+  background: '#fff1f2',
+  color: '#be123c',
   fontWeight: 700,
   cursor: 'pointer',
 }

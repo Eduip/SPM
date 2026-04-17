@@ -2,7 +2,7 @@ import AppShell from '../../components/AppShell'
 
 export default function AlertasPage() {
   return (
-    <AppShell title="Gestión de Alertas" currentModule="alertas">
+    <AppShell title="Gestión de Alertas" currentModule="alertas" showTitle>
       <div
         style={{
           height: 220,

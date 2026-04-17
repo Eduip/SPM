@@ -119,6 +119,38 @@ export async function actualizarUsuarioPerfil({
   return { success: true }
 }
 
+export async function eliminarUsuarioPerfil(id: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  }
+
+  if (!id) {
+    return { success: false, error: 'No se recibió el usuario a eliminar.' }
+  }
+
+  if (id === user.id) {
+    return { success: false, error: 'No puedes eliminar tu propio usuario mientras estás conectado.' }
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ activo: false })
+    .eq('id', id)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
 function generateTempPassword() {
   const random = Math.random().toString(36).slice(-8)
   return `Tmp#${random}A1`

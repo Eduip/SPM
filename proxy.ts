@@ -45,13 +45,32 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/alertas') ||
     pathname.startsWith('/administracion')
 
+  let isActiveUser = true
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('activo')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    isActiveUser = profile?.activo !== false
+  }
+
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (user && isAuthPage) {
+  if (user && !isActiveUser && isProtectedRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('inactive', '1')
+    return NextResponse.redirect(url)
+  }
+
+  if (user && isActiveUser && isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
