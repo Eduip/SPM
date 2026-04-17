@@ -18,6 +18,65 @@ export async function crearUsuarioPerfil(formData: FormData) {
   }
 
   const tempPassword = generateTempPassword()
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from('profiles')
+    .select('id, activo')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (existingProfileError) {
+    return { success: false, error: existingProfileError.message }
+  }
+
+  if (existingProfile?.activo) {
+    return {
+      success: false,
+      error: 'Ya existe un usuario activo con este correo electrónico.',
+    }
+  }
+
+  if (existingProfile) {
+    const { error: authUpdateError } = await adminSupabase.auth.admin.updateUserById(
+      existingProfile.id,
+      {
+        email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          nombre_completo,
+        },
+      }
+    )
+
+    if (authUpdateError) {
+      return {
+        success: false,
+        error:
+          authUpdateError.message ||
+          'No se pudo reactivar el usuario en Supabase Auth.',
+      }
+    }
+
+    const { error: reactivateProfileError } = await supabase
+      .from('profiles')
+      .update({
+        nombre_completo,
+        email,
+        rol_id: rol_id || null,
+        unidad_id: unidad_id || null,
+        activo,
+      })
+      .eq('id', existingProfile.id)
+
+    if (reactivateProfileError) {
+      return { success: false, error: reactivateProfileError.message }
+    }
+
+    return {
+      success: true,
+      tempPassword,
+    }
+  }
 
   // 1. Crear usuario en Auth
   const { data: authData, error: authError } =
