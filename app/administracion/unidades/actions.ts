@@ -14,6 +14,43 @@ export async function crearUnidad(formData: FormData) {
     return { success: false, error: 'El nombre de la unidad es obligatorio.' }
   }
 
+  const existingUnidadQuery = supabase
+    .from('unidades')
+    .select('id, activo')
+
+  const { data: existingUnidad, error: existingUnidadError } = codigo
+    ? await existingUnidadQuery.eq('codigo', codigo).maybeSingle()
+    : await existingUnidadQuery.eq('nombre', nombre).maybeSingle()
+
+  if (existingUnidadError) {
+    return { success: false, error: existingUnidadError.message }
+  }
+
+  if (existingUnidad?.activo) {
+    return {
+      success: false,
+      error: 'Ya existe una unidad activa con esos datos.',
+    }
+  }
+
+  if (existingUnidad) {
+    const { error } = await supabase
+      .from('unidades')
+      .update({
+        nombre,
+        codigo: codigo || null,
+        descripcion: descripcion || null,
+        activo,
+      })
+      .eq('id', existingUnidad.id)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  }
+
   const { error } = await supabase
     .from('unidades')
     .insert({
@@ -22,6 +59,25 @@ export async function crearUnidad(formData: FormData) {
       descripcion: descripcion || null,
       activo,
     })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function eliminarUnidad(id: string) {
+  const supabase = await createClient()
+
+  if (!id) {
+    return { success: false, error: 'No se recibió la unidad a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('unidades')
+    .update({ activo: false })
+    .eq('id', id)
 
   if (error) {
     return { success: false, error: error.message }

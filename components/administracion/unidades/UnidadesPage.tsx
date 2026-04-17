@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   actualizarUnidad,
   crearUnidad,
+  eliminarUnidad,
 } from '../../../app/administracion/unidades/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
 
@@ -52,6 +53,7 @@ export default function UnidadesPage({
   const [showNewForm, setShowNewForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(unidades[0]?.id ?? null)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const selectedUnidad = useMemo(
     () => unidades.find((u) => u.id === selectedId) ?? unidades[0] ?? null,
@@ -97,6 +99,30 @@ export default function UnidadesPage({
       return
     }
 
+    router.refresh()
+  }
+
+  const handleDelete = async () => {
+    if (!selectedUnidad) return
+
+    const confirmed = window.confirm(
+      `¿Eliminar la unidad ${selectedUnidad.nombre || 'seleccionada'}?`
+    )
+
+    if (!confirmed) return
+
+    setDeleting(true)
+
+    const res = await eliminarUnidad(selectedUnidad.id)
+
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    setSelectedId(null)
     router.refresh()
   }
 
@@ -345,18 +371,27 @@ export default function UnidadesPage({
           <div
             style={{
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               gap: 10,
             }}
           >
-            <button style={secondaryButtonStyle}>Cancelar</button>
             <button
-              onClick={handleSave}
-              disabled={!selectedUnidad || saving}
-              style={darkButtonStyle}
+              type="button"
+              onClick={handleDelete}
+              disabled={!selectedUnidad || deleting}
+              style={dangerButtonStyle}
             >
-              {saving ? 'Guardando...' : 'Guardar configuración'}
+              {deleting ? 'Eliminando...' : 'Eliminar unidad'}
             </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleSave}
+                disabled={!selectedUnidad || saving}
+                style={darkButtonStyle}
+              >
+                {saving ? 'Guardando...' : 'Guardar configuración'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -607,6 +642,17 @@ const secondaryButtonStyle: React.CSSProperties = {
   border: '1px solid #d1d5db',
   background: '#ffffff',
   color: '#374151',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const dangerButtonStyle: React.CSSProperties = {
+  height: 36,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: '1px solid #fecaca',
+  background: '#fff1f2',
+  color: '#be123c',
   fontWeight: 700,
   cursor: 'pointer',
 }
