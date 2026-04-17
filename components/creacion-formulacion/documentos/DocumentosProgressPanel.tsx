@@ -7,6 +7,7 @@ import { marcarDocumentosCompletados } from '../../../app/creacion-formulacion/d
 export default function DocumentosProgressPanel({
   proyectoId,
   total,
+  subidos,
   faltantes,
 }: {
   proyectoId: string
@@ -15,9 +16,10 @@ export default function DocumentosProgressPanel({
   faltantes: number
 }) {
   const router = useRouter()
-  const bypassValidacionDocumental = true
-const completo = bypassValidacionDocumental || (total > 0 && faltantes === 0)
-  const progreso = 80
+  const completo = total === 0 || faltantes === 0
+  const completados = total - faltantes
+  const progresoDocumental = total > 0 ? Math.round((completados / total) * 100) : 100
+  const progresoFormulacion = completo ? 80 : 60
 
   const handleContinuar = async () => {
     if (!completo) return
@@ -62,7 +64,9 @@ const completo = bypassValidacionDocumental || (total > 0 && faltantes === 0)
             marginBottom: 18,
           }}
         >
-          Continúe a la siguiente etapa para enviar el proyecto a revisión y aprobación final.
+          {completo
+            ? 'Continúe a la siguiente etapa para enviar el proyecto a revisión y aprobación final.'
+            : `Faltan ${faltantes} documento${faltantes === 1 ? '' : 's'} obligatorio${faltantes === 1 ? '' : 's'} por subir.`}
         </div>
 
         <button
@@ -85,6 +89,7 @@ const completo = bypassValidacionDocumental || (total > 0 && faltantes === 0)
         </button>
 
         <button
+          onClick={() => router.push('/cartera-proyectos')}
           style={{
             width: '100%',
             height: 46,
@@ -112,7 +117,7 @@ const completo = bypassValidacionDocumental || (total > 0 && faltantes === 0)
           }}
         >
           <span>Progreso de formulación</span>
-          <span style={{ color: '#2563eb' }}>{progreso}%</span>
+          <span style={{ color: '#2563eb' }}>{progresoFormulacion}%</span>
         </div>
 
         <div
@@ -127,7 +132,7 @@ const completo = bypassValidacionDocumental || (total > 0 && faltantes === 0)
         >
           <div
             style={{
-              width: `${progreso}%`,
+              width: `${progresoFormulacion}%`,
               height: '100%',
               background: '#2563eb',
             }}
@@ -140,7 +145,51 @@ const completo = bypassValidacionDocumental || (total > 0 && faltantes === 0)
             color: '#6b7280',
           }}
         >
-          4 de 5 secciones completadas
+          {completo ? '4 de 5 secciones completadas' : '3 de 5 secciones completadas'}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: 14,
+            marginBottom: 8,
+            fontWeight: 600,
+            color: '#4b5563',
+          }}
+        >
+          <span>Documentos obligatorios</span>
+          <span style={{ color: '#16a34a' }}>{progresoDocumental}%</span>
+        </div>
+
+        <div
+          style={{
+            width: '100%',
+            height: 8,
+            borderRadius: 999,
+            background: '#e5e7eb',
+            overflow: 'hidden',
+            marginBottom: 10,
+          }}
+        >
+          <div
+            style={{
+              width: `${progresoDocumental}%`,
+              height: '100%',
+              background: '#16a34a',
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            fontSize: 13,
+            color: '#6b7280',
+          }}
+        >
+          {subidos} subidos, {faltantes} faltantes
         </div>
       </div>
     </div>
