@@ -8,6 +8,7 @@ export default async function Page() {
   const { data: estados, error } = await supabase
     .from('estados_sistema')
     .select('*')
+    .eq('activo', true)
     .order('categoria', { ascending: true })
     .order('nombre', { ascending: true })
 

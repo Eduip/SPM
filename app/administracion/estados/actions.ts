@@ -16,6 +16,46 @@ export async function crearEstadoSistema(formData: FormData) {
     return { success: false, error: 'Nombre y categoría son obligatorios.' }
   }
 
+  const existingEstadoQuery = supabase
+    .from('estados_sistema')
+    .select('id, activo')
+    .eq('categoria', categoria)
+
+  const { data: existingEstado, error: existingEstadoError } = codigo
+    ? await existingEstadoQuery.eq('codigo', codigo).maybeSingle()
+    : await existingEstadoQuery.eq('nombre', nombre).maybeSingle()
+
+  if (existingEstadoError) {
+    return { success: false, error: existingEstadoError.message }
+  }
+
+  if (existingEstado?.activo) {
+    return {
+      success: false,
+      error: 'Ya existe un estado activo con esos datos.',
+    }
+  }
+
+  if (existingEstado) {
+    const { error } = await supabase
+      .from('estados_sistema')
+      .update({
+        nombre,
+        codigo: codigo || null,
+        categoria,
+        color: color || '#2563eb',
+        descripcion: descripcion || null,
+        activo,
+      })
+      .eq('id', existingEstado.id)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  }
+
   const { error } = await supabase
     .from('estados_sistema')
     .insert({
@@ -26,6 +66,25 @@ export async function crearEstadoSistema(formData: FormData) {
       descripcion: descripcion || null,
       activo,
     })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function eliminarEstadoSistema(id: string) {
+  const supabase = await createClient()
+
+  if (!id) {
+    return { success: false, error: 'No se recibió el estado a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('estados_sistema')
+    .update({ activo: false })
+    .eq('id', id)
 
   if (error) {
     return { success: false, error: error.message }
