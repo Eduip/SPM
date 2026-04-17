@@ -9,6 +9,8 @@ import {
   crearFuenteFinanciamiento,
   crearReglaFuente,
   eliminarCampoFuente,
+  eliminarDocumentoFuente,
+  eliminarFuenteFinanciamiento,
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
@@ -83,6 +85,7 @@ export default function FuentesFinanciamientoPage({
   const [showNewRuleForm, setShowNewRuleForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(fuentes[0]?.id ?? null)
   const [saving, setSaving] = useState(false)
+  const [deletingFuente, setDeletingFuente] = useState(false)
 
   const selectedFuente = useMemo(
     () => fuentes.find((f) => f.id === selectedId) ?? fuentes[0] ?? null,
@@ -143,6 +146,30 @@ export default function FuentesFinanciamientoPage({
       return
     }
 
+    router.refresh()
+  }
+
+  const handleDeleteFuente = async () => {
+    if (!selectedFuente) return
+
+    const confirmed = window.confirm(
+      `¿Eliminar la fuente ${selectedFuente.nombre || 'seleccionada'}?`
+    )
+
+    if (!confirmed) return
+
+    setDeletingFuente(true)
+
+    const res = await eliminarFuenteFinanciamiento(selectedFuente.id)
+
+    setDeletingFuente(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    setSelectedId(null)
     router.refresh()
   }
 
@@ -487,10 +514,10 @@ export default function FuentesFinanciamientoPage({
     </div>
   ) : (
     docsFuente.map((doc) => (
-      <SimpleRow
+      <DocumentRow
         key={doc.id}
-        left={doc.nombre}
-        right={doc.obligatorio ? 'Obligatorio' : 'Opcional'}
+        doc={doc}
+        onDeleted={() => router.refresh()}
       />
     ))
   )}
@@ -675,11 +702,11 @@ export default function FuentesFinanciamientoPage({
           >
             <button
               type="button"
-              disabled
-              title="Eliminar fuentes requiere definir reglas de seguridad y relaciones asociadas."
-              style={disabledDangerButtonStyle}
+              onClick={handleDeleteFuente}
+              disabled={!selectedFuente || deletingFuente}
+              style={!selectedFuente ? disabledDangerButtonStyle : dangerButtonStyle}
             >
-              Eliminar fuente
+              {deletingFuente ? 'Eliminando...' : 'Eliminar fuente'}
             </button>
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -801,17 +828,47 @@ function ToggleItem({
   )
 }
 
-function SimpleRow({
-  left,
-  right,
+function DocumentRow({
+  doc,
+  onDeleted,
 }: {
-  left: string
-  right: string
+  doc: DocumentoFuente
+  onDeleted: () => void
 }) {
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`¿Eliminar el documento ${doc.nombre}?`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    const res = await eliminarDocumentoFuente(doc.id)
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    onDeleted()
+  }
+
   return (
     <div style={simpleRowStyle}>
-      <span style={{ fontSize: 13, color: '#374151' }}>{left}</span>
-      <span style={requiredBadgeStyle}>{right}</span>
+      <span style={{ fontSize: 13, color: '#374151' }}>{doc.nombre}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={requiredBadgeStyle}>
+          {doc.obligatorio ? 'Obligatorio' : 'Opcional'}
+        </span>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          style={miniDangerButtonStyle}
+        >
+          {deleting ? 'Eliminando...' : 'Eliminar'}
+        </button>
+      </div>
     </div>
   )
 }

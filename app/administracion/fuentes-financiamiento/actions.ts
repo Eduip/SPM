@@ -22,6 +22,37 @@ export async function crearFuenteFinanciamiento(formData: FormData) {
     .join('-')
     .slice(0, 20)
 
+  const { data: existingFuente, error: existingFuenteError } = await supabase
+    .from('fuentes_financiamiento')
+    .select('id, activo')
+    .eq('codigo', codigoBase)
+    .maybeSingle()
+
+  if (existingFuenteError) {
+    return { success: false, error: existingFuenteError.message }
+  }
+
+  if (existingFuente?.activo) {
+    return { success: false, error: 'Ya existe una fuente activa con ese nombre.' }
+  }
+
+  if (existingFuente) {
+    const { error } = await supabase
+      .from('fuentes_financiamiento')
+      .update({
+        nombre,
+        activo,
+        codigo: codigoBase || null,
+      })
+      .eq('id', existingFuente.id)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  }
+
   const { error } = await supabase
     .from('fuentes_financiamiento')
     .insert({
@@ -29,6 +60,25 @@ export async function crearFuenteFinanciamiento(formData: FormData) {
       activo,
       codigo: codigoBase || null,
     })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function eliminarFuenteFinanciamiento(id: string) {
+  const supabase = await createClient()
+
+  if (!id) {
+    return { success: false, error: 'No se recibió la fuente a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('fuentes_financiamiento')
+    .update({ activo: false })
+    .eq('id', id)
 
   if (error) {
     return { success: false, error: error.message }
@@ -228,6 +278,23 @@ export async function crearDocumentoFuente({
       obligatorio,
       orden: Number(ultimoDocumento?.orden ?? 0) + 1,
     })
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function eliminarDocumentoFuente(id: string) {
+  const supabase = await createClient()
+
+  if (!id) {
+    return { success: false, error: 'No se recibió el documento a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('documentos_fuente')
+    .delete()
+    .eq('id', id)
 
   if (error) return { success: false, error: error.message }
 
