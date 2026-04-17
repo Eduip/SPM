@@ -30,6 +30,31 @@ export default function DetalleEventoPage({
   const documentos = extractDocumentos(metadata)
   const observaciones = extractObservaciones(metadata)
 
+  const handleExport = () => {
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            proyecto,
+            evento,
+            cambios,
+            documentos,
+            observaciones,
+          },
+          null,
+          2
+        ),
+      ],
+      { type: 'application/json;charset=utf-8' }
+    )
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `evento-${evento.id}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div
@@ -82,8 +107,12 @@ export default function DetalleEventoPage({
             ← Volver al historial
           </button>
 
-          <button style={secondaryButtonStyle}>Exportar</button>
-          <button style={secondaryButtonStyle}>Imprimir</button>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
+          <button type="button" onClick={() => window.print()} style={secondaryButtonStyle}>
+            Imprimir
+          </button>
         </div>
       </div>
 
@@ -196,8 +225,22 @@ export default function DetalleEventoPage({
                     </div>
 
                     <div style={{ display: 'flex', gap: 14 }}>
-                      <button style={linkButtonStyle}>Ver</button>
-                      <button style={linkButtonStyle}>Descargar</button>
+                      <button
+                        type="button"
+                        disabled
+                        title="Este evento solo contiene metadata del documento, sin archivo asociado."
+                        style={disabledLinkButtonStyle}
+                      >
+                        Ver
+                      </button>
+                      <button
+                        type="button"
+                        disabled
+                        title="Este evento solo contiene metadata del documento, sin archivo asociado."
+                        style={disabledLinkButtonStyle}
+                      >
+                        Descargar
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -273,9 +316,30 @@ export default function DetalleEventoPage({
             <h3 style={titleStyle}>Acciones</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button style={primaryButtonStyle}>Marcar como revisado</button>
-              <button style={secondaryButtonStyle}>Agregar comentario</button>
-              <button style={dangerButtonStyle}>Escalar evento</button>
+              <button
+                type="button"
+                disabled
+                title="El seguimiento de revisión de eventos todavía no está implementado."
+                style={disabledPrimaryButtonStyle}
+              >
+                Marcar como revisado
+              </button>
+              <button
+                type="button"
+                disabled
+                title="Los comentarios de eventos todavía no están implementados."
+                style={disabledSecondaryButtonStyle}
+              >
+                Agregar comentario
+              </button>
+              <button
+                type="button"
+                disabled
+                title="La escalación de eventos todavía no está implementada."
+                style={disabledDangerButtonStyle}
+              >
+                Escalar evento
+              </button>
             </div>
           </div>
         </div>
@@ -613,6 +677,12 @@ const primaryButtonStyle: React.CSSProperties = {
   padding: '0 14px',
 }
 
+const disabledPrimaryButtonStyle: React.CSSProperties = {
+  ...primaryButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
+}
+
 const secondaryButtonStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 12,
@@ -622,6 +692,12 @@ const secondaryButtonStyle: React.CSSProperties = {
   fontWeight: 700,
   cursor: 'pointer',
   padding: '0 14px',
+}
+
+const disabledSecondaryButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
 }
 
 const dangerButtonStyle: React.CSSProperties = {
@@ -635,10 +711,22 @@ const dangerButtonStyle: React.CSSProperties = {
   padding: '0 14px',
 }
 
+const disabledDangerButtonStyle: React.CSSProperties = {
+  ...dangerButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
+}
+
 const linkButtonStyle: React.CSSProperties = {
   border: 'none',
   background: 'transparent',
   color: '#2563eb',
   fontWeight: 700,
   cursor: 'pointer',
+}
+
+const disabledLinkButtonStyle: React.CSSProperties = {
+  ...linkButtonStyle,
+  color: '#9ca3af',
+  cursor: 'not-allowed',
 }

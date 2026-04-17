@@ -3,7 +3,9 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  crearCampoFuente,
   crearFuenteFinanciamiento,
+  crearReglaFuente,
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
 import type {
@@ -97,6 +99,8 @@ export default function FuentesFinanciamientoPage({
   }) {
   const router = useRouter()
   const [showNewForm, setShowNewForm] = useState(false)
+  const [showNewFieldForm, setShowNewFieldForm] = useState(false)
+  const [showNewRuleForm, setShowNewRuleForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(fuentes[0]?.id ?? null)
   const [saving, setSaving] = useState(false)
 
@@ -116,6 +120,46 @@ export default function FuentesFinanciamientoPage({
   const handleSelect = (fuente: Fuente) => {
     setSelectedId(fuente.id)
     setForm(toFormState(fuente))
+    setShowNewFieldForm(false)
+    setShowNewRuleForm(false)
+  }
+
+  const handleExport = () => {
+    const rows = fuentes.map((fuente) => ({
+      nombre: fuente.nombre,
+      codigo: fuente.codigo ?? '',
+      activo: fuente.activo ? 'Activa' : 'Inactiva',
+      tipo_financiamiento: fuente.tipo_financiamiento ?? '',
+      monto_minimo: fuente.monto_minimo ?? '',
+      monto_maximo: fuente.monto_maximo ?? '',
+      plazo_maximo_meses: fuente.plazo_maximo_meses ?? '',
+    }))
+
+    const header = Object.keys(rows[0] ?? {
+      nombre: '',
+      codigo: '',
+      activo: '',
+      tipo_financiamiento: '',
+      monto_minimo: '',
+      monto_maximo: '',
+      plazo_maximo_meses: '',
+    })
+    const csv = [
+      header.join(','),
+      ...rows.map((row) =>
+        header
+          .map((key) => `"${String(row[key as keyof typeof row]).replace(/"/g, '""')}"`)
+          .join(',')
+      ),
+    ].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'fuentes-financiamiento.csv'
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleSave = async () => {
@@ -196,8 +240,17 @@ export default function FuentesFinanciamientoPage({
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={secondaryButtonStyle}>Exportar</button>
-          <button style={secondaryButtonStyle}>Duplicar Configuración</button>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
+          <button
+            type="button"
+            disabled
+            title="Duplicar configuraciones todavía no está implementado."
+            style={disabledButtonStyle}
+          >
+            Duplicar Configuración
+          </button>
           <button
             onClick={() => setShowNewForm((v) => !v)}
             style={darkButtonStyle}
@@ -462,7 +515,14 @@ export default function FuentesFinanciamientoPage({
               }}
             >
               <span>📄 Documentos Requeridos</span>
-              <button style={miniDarkButtonStyle}>+ Añadir documento</button>
+              <button
+                type="button"
+                disabled
+                title="La gestión de documentos por fuente requiere una acción de catálogo pendiente."
+                style={disabledMiniButtonStyle}
+              >
+                + Añadir documento
+              </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -494,12 +554,60 @@ export default function FuentesFinanciamientoPage({
               }}
             >
               <span>🔧 Customización del Formulario de Postulación</span>
-              <button style={miniDarkButtonStyle}>+ Crear campo personalizado</button>
+              <button
+                type="button"
+                onClick={() => setShowNewFieldForm((v) => !v)}
+                disabled={!selectedFuente}
+                style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
+              >
+                + Crear campo personalizado
+              </button>
             </div>
 
             <div style={infoBoxStyle}>
               Instrucciones: Arrastra los campos para reordenarlos. Usa los controles para configurar visibilidad, obligatoriedad y tipo de campo.
             </div>
+
+            {showNewFieldForm && selectedFuente && (
+              <form
+                action={async (formData) => {
+                  const nombre = String(formData.get('nombre') || '').trim()
+                  const tipo = String(formData.get('tipo') || 'texto')
+
+                  const res = await crearCampoFuente({
+                    fuente_id: selectedFuente.id,
+                    nombre,
+                    tipo,
+                  })
+
+                  if (!res.success) {
+                    alert(res.error)
+                    return
+                  }
+
+                  setShowNewFieldForm(false)
+                  router.refresh()
+                }}
+                style={inlineFormStyle}
+              >
+                <input
+                  name="nombre"
+                  placeholder="Nombre del campo"
+                  required
+                  style={inputStyle}
+                />
+                <select name="tipo" defaultValue="texto" style={inputStyle}>
+                  <option value="texto">Texto</option>
+                  <option value="texto_largo">Texto largo</option>
+                  <option value="numero">Número</option>
+                  <option value="fecha">Fecha</option>
+                  <option value="booleano">Sí / No</option>
+                </select>
+                <button type="submit" style={saveButtonStyle}>
+                  Guardar campo
+                </button>
+              </form>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {camposFuente.length === 0 ? (
@@ -550,8 +658,47 @@ export default function FuentesFinanciamientoPage({
               }}
             >
               <span>🛡️ Reglas de Validación</span>
-              <button style={miniDarkButtonStyle}>+ Añadir regla</button>
+              <button
+                type="button"
+                onClick={() => setShowNewRuleForm((v) => !v)}
+                disabled={!selectedFuente}
+                style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
+              >
+                + Añadir regla
+              </button>
             </div>
+
+            {showNewRuleForm && selectedFuente && (
+              <form
+                action={async (formData) => {
+                  const descripcion = String(formData.get('descripcion') || '').trim()
+
+                  const res = await crearReglaFuente({
+                    fuente_id: selectedFuente.id,
+                    descripcion,
+                  })
+
+                  if (!res.success) {
+                    alert(res.error)
+                    return
+                  }
+
+                  setShowNewRuleForm(false)
+                  router.refresh()
+                }}
+                style={inlineFormStyle}
+              >
+                <input
+                  name="descripcion"
+                  placeholder="Descripción de la regla"
+                  required
+                  style={inputStyle}
+                />
+                <button type="submit" style={saveButtonStyle}>
+                  Guardar regla
+                </button>
+              </form>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {reglasFuente.length === 0 ? (
@@ -574,10 +721,23 @@ export default function FuentesFinanciamientoPage({
               gap: 12,
             }}
           >
-            <button style={dangerButtonStyle}>Eliminar fuente</button>
+            <button
+              type="button"
+              disabled
+              title="Eliminar fuentes requiere definir reglas de seguridad y relaciones asociadas."
+              style={disabledDangerButtonStyle}
+            >
+              Eliminar fuente
+            </button>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button style={secondaryButtonStyle}>Cancelar</button>
+              <button
+                type="button"
+                onClick={() => setForm(toFormState(selectedFuente))}
+                style={secondaryButtonStyle}
+              >
+                Cancelar
+              </button>
               <button
                 onClick={handleSave}
                 disabled={!selectedFuente || saving}
@@ -950,6 +1110,18 @@ const ruleRowStyle: React.CSSProperties = {
   alignItems: 'center',
 }
 
+const inlineFormStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 160px auto',
+  gap: 10,
+  alignItems: 'center',
+  marginBottom: 14,
+  borderRadius: 12,
+  border: '1px solid #e5e7eb',
+  background: '#f9fafb',
+  padding: 12,
+}
+
 const fieldLabelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
@@ -1025,6 +1197,12 @@ const secondaryButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
+const disabledButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
+}
+
 const darkButtonStyle: React.CSSProperties = {
   height: 36,
   padding: '0 14px',
@@ -1048,6 +1226,12 @@ const miniDarkButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
+const disabledMiniButtonStyle: React.CSSProperties = {
+  ...miniDarkButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
+}
+
 const saveButtonStyle: React.CSSProperties = {
   height: 40,
   padding: '0 14px',
@@ -1068,4 +1252,10 @@ const dangerButtonStyle: React.CSSProperties = {
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
+}
+
+const disabledDangerButtonStyle: React.CSSProperties = {
+  ...dangerButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
 }
