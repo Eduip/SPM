@@ -6,6 +6,7 @@ import {
   actualizarUsuarioPerfil,
   crearUsuarioPerfil,
 } from '../../../app/administracion/usuarios/actions'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 
 type Rol = {
   id: string
@@ -58,6 +59,11 @@ function toFormState(usuario: Usuario | null): FormState {
   }
 }
 
+function getSingleRef<T>(value: T | T[] | null | undefined) {
+  if (Array.isArray(value)) return value[0] ?? null
+  return value ?? null
+}
+
 export default function UsuariosPage({
   usuarios,
   roles,
@@ -80,6 +86,19 @@ export default function UsuariosPage({
   )
 
   const [form, setForm] = useState<FormState>(() => toFormState(selectedUsuario))
+
+  const handleExport = () => {
+    exportRowsToCsv(
+      'usuarios.csv',
+      usuarios.map((usuario) => ({
+        nombre: usuario.nombre_completo ?? '',
+        email: usuario.email ?? '',
+        rol: getSingleRef(usuario.rol)?.nombre ?? '',
+        unidad: getSingleRef(usuario.unidad)?.nombre ?? '',
+        activo: usuario.activo ? 'Activo' : 'Inactivo',
+      }))
+    )
+  }
 
   const handleSelect = (usuario: Usuario) => {
     setSelectedId(usuario.id)
@@ -156,7 +175,9 @@ export default function UsuariosPage({
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={secondaryButtonStyle}>Exportar</button>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
           <button
             onClick={() => setShowNewForm((v) => !v)}
             style={darkButtonStyle}

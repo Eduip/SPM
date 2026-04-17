@@ -6,6 +6,7 @@ import {
   actualizarTipoAlerta,
   crearTipoAlerta,
 } from '../../../app/administracion/alertas/actions'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 
 type TipoAlerta = {
   id: string
@@ -73,6 +74,21 @@ export default function TiposAlertaPage({
   )
 
   const [form, setForm] = useState<FormState>(() => toFormState(selectedAlerta))
+
+  const handleExport = () => {
+    exportRowsToCsv(
+      'tipos-alerta.csv',
+      alertas.map((alerta) => ({
+        nombre: alerta.nombre,
+        codigo: alerta.codigo ?? '',
+        modulo: alerta.modulo,
+        severidad: alerta.severidad,
+        color: alerta.color ?? '',
+        activo: alerta.activo ? 'Activo' : 'Inactivo',
+        descripcion: alerta.descripcion ?? '',
+      }))
+    )
+  }
 
   const handleSelect = (alerta: TipoAlerta) => {
     setSelectedId(alerta.id)
@@ -151,7 +167,9 @@ export default function TiposAlertaPage({
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={secondaryButtonStyle}>Exportar</button>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
           <button
             onClick={() => setShowNewForm((v) => !v)}
             style={darkButtonStyle}

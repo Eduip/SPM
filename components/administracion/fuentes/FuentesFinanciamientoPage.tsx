@@ -8,6 +8,7 @@ import {
   crearReglaFuente,
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 import type {
   CampoPostulacion,
   DocumentoFuente,
@@ -135,31 +136,7 @@ export default function FuentesFinanciamientoPage({
       plazo_maximo_meses: fuente.plazo_maximo_meses ?? '',
     }))
 
-    const header = Object.keys(rows[0] ?? {
-      nombre: '',
-      codigo: '',
-      activo: '',
-      tipo_financiamiento: '',
-      monto_minimo: '',
-      monto_maximo: '',
-      plazo_maximo_meses: '',
-    })
-    const csv = [
-      header.join(','),
-      ...rows.map((row) =>
-        header
-          .map((key) => `"${String(row[key as keyof typeof row]).replace(/"/g, '""')}"`)
-          .join(',')
-      ),
-    ].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'fuentes-financiamiento.csv'
-    link.click()
-    URL.revokeObjectURL(url)
+    exportRowsToCsv('fuentes-financiamiento.csv', rows)
   }
 
   const handleSave = async () => {

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { togglePermisoRol } from '../../../app/administracion/roles/actions'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 
 type Rol = {
   id: string
@@ -61,6 +62,26 @@ export default function RolesPage({
   const tienePermiso = (permisoId: string) => {
     return relaciones.some(
       (rel) => rel.rol_id === selectedRolId && rel.permiso_id === permisoId
+    )
+  }
+
+  const handleExport = () => {
+    exportRowsToCsv(
+      'roles-permisos.csv',
+      roles.flatMap((rol) =>
+        permisos.map((permiso) => ({
+          rol: rol.nombre,
+          rol_codigo: rol.codigo ?? '',
+          permiso: permiso.nombre,
+          permiso_codigo: permiso.codigo ?? '',
+          modulo: permiso.modulo ?? '',
+          asignado: relaciones.some(
+            (rel) => rel.rol_id === rol.id && rel.permiso_id === permiso.id
+          )
+            ? 'Sí'
+            : 'No',
+        }))
+      )
     )
   }
 
@@ -131,7 +152,9 @@ export default function RolesPage({
           </div>
         </div>
 
-        <button style={secondaryButtonStyle}>Exportar</button>
+        <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+          Exportar
+        </button>
       </div>
 
       {error && <div style={errorCardStyle}>Error al cargar roles/permisos: {error}</div>}

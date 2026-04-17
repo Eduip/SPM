@@ -6,6 +6,7 @@ import {
   actualizarEstadoSistema,
   crearEstadoSistema,
 } from '../../../app/administracion/estados/actions'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 
 type Estado = {
   id: string
@@ -68,6 +69,20 @@ export default function EstadosSistemaPage({
   )
 
   const [form, setForm] = useState<FormState>(() => toFormState(selectedEstado))
+
+  const handleExport = () => {
+    exportRowsToCsv(
+      'estados-sistema.csv',
+      estados.map((estado) => ({
+        nombre: estado.nombre,
+        codigo: estado.codigo ?? '',
+        categoria: estado.categoria,
+        color: estado.color ?? '',
+        activo: estado.activo ? 'Activo' : 'Inactivo',
+        descripcion: estado.descripcion ?? '',
+      }))
+    )
+  }
 
   const handleSelect = (estado: Estado) => {
     setSelectedId(estado.id)
@@ -145,7 +160,9 @@ export default function EstadosSistemaPage({
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={secondaryButtonStyle}>Exportar</button>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
           <button
             onClick={() => setShowNewForm((v) => !v)}
             style={darkButtonStyle}

@@ -6,6 +6,7 @@ import {
   actualizarUnidad,
   crearUnidad,
 } from '../../../app/administracion/unidades/actions'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 
 type Unidad = {
   id: string
@@ -58,6 +59,18 @@ export default function UnidadesPage({
   )
 
   const [form, setForm] = useState<FormState>(() => toFormState(selectedUnidad))
+
+  const handleExport = () => {
+    exportRowsToCsv(
+      'unidades-municipales.csv',
+      unidades.map((unidad) => ({
+        nombre: unidad.nombre,
+        codigo: unidad.codigo ?? '',
+        activo: unidad.activo ? 'Activa' : 'Inactiva',
+        descripcion: unidad.descripcion ?? '',
+      }))
+    )
+  }
 
   const handleSelect = (unidad: Unidad) => {
     setSelectedId(unidad.id)
@@ -133,7 +146,9 @@ export default function UnidadesPage({
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={secondaryButtonStyle}>Exportar</button>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
           <button
             onClick={() => setShowNewForm((v) => !v)}
             style={darkButtonStyle}

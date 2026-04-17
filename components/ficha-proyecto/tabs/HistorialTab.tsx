@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { HistorialEvento, ProyectoFicha } from '../../../lib/project-types'
+import { exportRowsToCsv } from '../../../lib/export-csv'
 
 export default function HistorialTab({
   proyecto,
@@ -40,6 +41,18 @@ export default function HistorialTab({
   const diasActivos = new Set(
     historial.map((h) => new Date(h.created_at).toDateString())
   ).size
+
+  const handleExport = () => {
+    exportRowsToCsv(
+      `historial-${proyecto.codigo_interno ?? proyecto.id}.csv`,
+      historialFiltrado.map((item) => ({
+        fecha: formatDateTime(item.created_at),
+        accion: humanizeAction(item.accion),
+        descripcion: item.descripcion ?? '',
+        usuario: item.usuario_id ?? 'Sistema',
+      }))
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -152,8 +165,17 @@ export default function HistorialTab({
                 }}
               />
 
-              <button style={secondaryButtonStyle}>Filtros</button>
-              <button style={secondaryButtonStyle}>Exportar</button>
+              <button
+                type="button"
+                disabled
+                title="Los filtros avanzados todavía no están implementados; usa la búsqueda por texto."
+                style={disabledButtonStyle}
+              >
+                Filtros
+              </button>
+              <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+                Exportar
+              </button>
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
@@ -472,6 +494,11 @@ function formatDate(dateString: string) {
   return date.toLocaleDateString('es-CL')
 }
 
+function formatDateTime(dateString: string) {
+  const date = new Date(dateString)
+  return date.toLocaleString('es-CL')
+}
+
 function formatRelative(dateString: string) {
   const date = new Date(dateString)
   const now = new Date()
@@ -513,6 +540,12 @@ const secondaryButtonStyle: React.CSSProperties = {
   color: '#374151',
   fontWeight: 700,
   cursor: 'pointer',
+}
+
+const disabledButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
 }
 
 const detailButtonStyle: React.CSSProperties = {

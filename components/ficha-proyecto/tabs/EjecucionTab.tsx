@@ -51,7 +51,12 @@ export default function EjecucionTab({
             + Añadir Estado de Pago
           </button>
 
-          <button style={secondaryButtonStyle}>
+          <button
+            type="button"
+            disabled
+            title="La subida de documentos de ejecución todavía no está implementada."
+            style={disabledButtonStyle}
+          >
             Subir Documento
           </button>
         </div>
@@ -323,6 +328,12 @@ const secondaryButtonStyle: React.CSSProperties = {
   color: '#374151',
   fontWeight: 700,
   cursor: 'pointer',
+}
+
+const disabledButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
 }
 
 const formStyle: React.CSSProperties = {
