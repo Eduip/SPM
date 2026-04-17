@@ -40,6 +40,19 @@ export type DocumentoFuente = {
   estado_revision?: string | null
 }
 
+export type CatalogoDocumentoFormulacion = {
+  id: string
+  nombre: string
+  obligatorio: boolean
+}
+
+export type DocumentoAprobacion = {
+  id: string
+  catalogo_documento_id?: string | null
+  obligatorio?: boolean | null
+  estado_revision?: string | null
+}
+
 export type ReglaFuente = {
   id: string
   fuente_id: string

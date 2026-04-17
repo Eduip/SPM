@@ -13,7 +13,8 @@ import AlertasActivasPanel from '../diagnostico/AlertasActivasPanel'
 import UltimosDocumentosPanel from '../diagnostico/UltimosDocumentosPanel'
 import type {
   DiagnosticoProyecto,
-  DocumentoFuente,
+  CatalogoDocumentoFormulacion,
+  DocumentoAprobacion,
   PostulacionProyecto,
   ProyectoAprobacion,
 } from '../../../lib/formulacion-types'
@@ -24,18 +25,27 @@ export default function AprobacionContainer({
   diagnostico,
   postulacion,
   documentos,
+  catalogoDocumentos,
 }: {
   proyectoId: string
   proyecto: ProyectoAprobacion | null
   diagnostico: DiagnosticoProyecto | null
   postulacion: PostulacionProyecto | null
-  documentos: DocumentoFuente[]
+  documentos: DocumentoAprobacion[]
+  catalogoDocumentos: CatalogoDocumentoFormulacion[]
 }) {
-  const documentosObligatorios = documentos.filter((d) => d.obligatorio)
+  const documentosObligatorios = catalogoDocumentos.filter((d) => d.obligatorio)
+  const documentosPorCatalogo = new Map(
+    documentos
+      .filter((d) => d.catalogo_documento_id)
+      .map((d) => [d.catalogo_documento_id, d])
+  )
   const documentosOk =
-    documentosObligatorios.length > 0 &&
-    documentosObligatorios.every((d) =>
-      ['subido', 'validado', 'pendiente_revision'].includes(d.estado_revision ?? '')
+    documentosObligatorios.length === 0 ||
+    documentosObligatorios.every((item) =>
+      ['subido', 'validado', 'pendiente_revision'].includes(
+        documentosPorCatalogo.get(item.id)?.estado_revision ?? ''
+      )
     )
 
   const evaluacionOk = Number(postulacion?.puntaje_total ?? 0) >= 21

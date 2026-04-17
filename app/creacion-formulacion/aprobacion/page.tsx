@@ -14,7 +14,7 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
 
   const supabase = await createClient()
 
-  const [proyectoRes, diagnosticoRes, postulacionRes, documentosRes] =
+  const [proyectoRes, diagnosticoRes, postulacionRes, documentosRes, catalogoRes] =
     await Promise.all([
       supabase
         .from('proyectos')
@@ -43,12 +43,19 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
         .from('documentos_proyecto')
         .select('*')
         .eq('proyecto_id', proyectoId),
+
+      supabase
+        .from('catalogo_documentos_formulacion')
+        .select('id, nombre, obligatorio')
+        .eq('activo', true)
+        .eq('etapa', 'documentos'),
     ])
 
   const proyecto = proyectoRes.data
   const diagnostico = diagnosticoRes.data
   const postulacion = postulacionRes.data
   const documentos = documentosRes.data ?? []
+  const catalogoDocumentos = catalogoRes.data ?? []
 
   return (
     <AppShell
@@ -61,6 +68,7 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
         diagnostico={diagnostico}
         postulacion={postulacion}
         documentos={documentos}
+        catalogoDocumentos={catalogoDocumentos}
       />
     </AppShell>
   )
