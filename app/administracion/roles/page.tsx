@@ -6,7 +6,7 @@ export default async function Page() {
   const supabase = await createClient()
 
   const [rolesRes, permisosRes, relRes] = await Promise.all([
-    supabase.from('roles').select('*').order('nombre', { ascending: true }),
+    supabase.from('roles').select('*').eq('activo', true).order('nombre', { ascending: true }),
     supabase.from('permisos').select('*').order('modulo', { ascending: true }).order('nombre', { ascending: true }),
     supabase.from('roles_permisos').select('*'),
   ])

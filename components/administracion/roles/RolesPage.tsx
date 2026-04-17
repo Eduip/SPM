@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { togglePermisoRol } from '../../../app/administracion/roles/actions'
+import {
+  crearPermiso,
+  crearRol,
+  eliminarPermiso,
+  eliminarRol,
+  togglePermisoRol,
+} from '../../../app/administracion/roles/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
 
 type Rol = {
@@ -41,6 +47,10 @@ export default function RolesPage({
   const router = useRouter()
   const [selectedRolId, setSelectedRolId] = useState<string | null>(roles[0]?.id ?? null)
   const [savingPermisoId, setSavingPermisoId] = useState<string | null>(null)
+  const [showNewRoleForm, setShowNewRoleForm] = useState(false)
+  const [showNewPermissionForm, setShowNewPermissionForm] = useState(false)
+  const [deletingRol, setDeletingRol] = useState(false)
+  const [deletingPermisoId, setDeletingPermisoId] = useState<string | null>(null)
 
   const selectedRol = useMemo(
     () => roles.find((r) => r.id === selectedRolId) ?? roles[0] ?? null,
@@ -107,6 +117,45 @@ export default function RolesPage({
     router.refresh()
   }
 
+  const handleDeleteRol = async () => {
+    if (!selectedRol) return
+
+    const confirmed = window.confirm(`¿Eliminar el rol ${selectedRol.nombre}?`)
+    if (!confirmed) return
+
+    setDeletingRol(true)
+
+    const res = await eliminarRol(selectedRol.id)
+
+    setDeletingRol(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    setSelectedRolId(null)
+    router.refresh()
+  }
+
+  const handleDeletePermiso = async (permiso: Permiso) => {
+    const confirmed = window.confirm(`¿Eliminar el permiso ${permiso.nombre}?`)
+    if (!confirmed) return
+
+    setDeletingPermisoId(permiso.id)
+
+    const res = await eliminarPermiso(permiso.id)
+
+    setDeletingPermisoId(null)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    router.refresh()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div
@@ -152,12 +201,81 @@ export default function RolesPage({
           </div>
         </div>
 
-        <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
-          Exportar
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
+            Exportar
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowNewPermissionForm((value) => !value)}
+            style={secondaryButtonStyle}
+          >
+            + Nuevo Permiso
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowNewRoleForm((value) => !value)}
+            style={darkButtonStyle}
+          >
+            + Nuevo Rol
+          </button>
+        </div>
       </div>
 
       {error && <div style={errorCardStyle}>Error al cargar roles/permisos: {error}</div>}
+
+      {showNewRoleForm && (
+        <form
+          action={async (formData) => {
+            const res = await crearRol(formData)
+
+            if (!res.success) {
+              alert(res.error)
+              return
+            }
+
+            setShowNewRoleForm(false)
+            router.refresh()
+          }}
+          style={topFormStyle}
+        >
+          <input name="nombre" placeholder="Nombre del rol" required style={inputStyle} />
+          <input name="codigo" placeholder="Código" style={inputStyle} />
+          <input name="descripcion" placeholder="Descripción" style={inputStyle} />
+          <label style={checkboxLabelStyle}>
+            <input type="checkbox" name="activo" defaultChecked />
+            Activo
+          </label>
+          <button type="submit" style={saveButtonStyle}>
+            Guardar rol
+          </button>
+        </form>
+      )}
+
+      {showNewPermissionForm && (
+        <form
+          action={async (formData) => {
+            const res = await crearPermiso(formData)
+
+            if (!res.success) {
+              alert(res.error)
+              return
+            }
+
+            setShowNewPermissionForm(false)
+            router.refresh()
+          }}
+          style={topFormStyle}
+        >
+          <input name="nombre" placeholder="Nombre del permiso" required style={inputStyle} />
+          <input name="codigo" placeholder="Código" style={inputStyle} />
+          <input name="modulo" placeholder="Módulo" style={inputStyle} />
+          <input name="descripcion" placeholder="Descripción" style={inputStyle} />
+          <button type="submit" style={saveButtonStyle}>
+            Guardar permiso
+          </button>
+        </form>
+      )}
 
       <div
         style={{
@@ -244,7 +362,24 @@ export default function RolesPage({
         {/* Panel derecho */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={panelCardStyle}>
-            <div style={panelHeaderStyle}>⚙️ Configuración del Rol</div>
+            <div
+              style={{
+                ...panelHeaderStyle,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>⚙️ Configuración del Rol</span>
+              <button
+                type="button"
+                onClick={handleDeleteRol}
+                disabled={!selectedRol || deletingRol}
+                style={!selectedRol ? disabledDangerButtonStyle : dangerButtonStyle}
+              >
+                {deletingRol ? 'Eliminando...' : 'Eliminar rol'}
+              </button>
+            </div>
 
             {!selectedRol ? (
               <div style={{ fontSize: 14, color: '#6b7280' }}>
@@ -311,35 +446,45 @@ export default function RolesPage({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        disabled={!selectedRolId || loading}
-                        onClick={() => handleToggle(permiso.id)}
-                        style={{
-                          width: 42,
-                          height: 24,
-                          borderRadius: 999,
-                          border: 'none',
-                          background: checked ? '#2563eb' : '#e5e7eb',
-                          position: 'relative',
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                          opacity: loading ? 0.7 : 1,
-                        }}
-                      >
-                        <span
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <button
+                          type="button"
+                          disabled={!selectedRolId || loading}
+                          onClick={() => handleToggle(permiso.id)}
                           style={{
-                            position: 'absolute',
-                            top: 3,
-                            left: checked ? 21 : 3,
-                            width: 18,
-                            height: 18,
+                            width: 42,
+                            height: 24,
                             borderRadius: 999,
-                            background: '#ffffff',
-                            transition: 'all .2s ease',
+                            border: 'none',
+                            background: checked ? '#2563eb' : '#e5e7eb',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                            opacity: loading ? 0.7 : 1,
                           }}
-                        />
-                      </button>
+                        >
+                          <span
+                            style={{
+                              position: 'absolute',
+                              top: 3,
+                              left: checked ? 21 : 3,
+                              width: 18,
+                              height: 18,
+                              borderRadius: 999,
+                              background: '#ffffff',
+                              transition: 'all .2s ease',
+                            }}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePermiso(permiso)}
+                          disabled={deletingPermisoId === permiso.id}
+                          style={miniDangerButtonStyle}
+                        >
+                          {deletingPermisoId === permiso.id ? 'Eliminando...' : 'Eliminar'}
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
@@ -422,11 +567,42 @@ const leftCardStyle: React.CSSProperties = {
   width: '100%',
 }
 
+const topFormStyle: React.CSSProperties = {
+  background: '#ffffff',
+  borderRadius: 16,
+  border: '1px solid #e5e7eb',
+  padding: 16,
+  display: 'flex',
+  gap: 12,
+  alignItems: 'center',
+  flexWrap: 'wrap',
+}
+
 const panelHeaderStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
   color: '#111827',
   marginBottom: 14,
+}
+
+const inputStyle: React.CSSProperties = {
+  width: 220,
+  height: 40,
+  borderRadius: 10,
+  border: '1px solid #e5e7eb',
+  background: '#f9fafb',
+  padding: '0 12px',
+  fontSize: 13,
+  color: '#111827',
+  boxSizing: 'border-box',
+}
+
+const checkboxLabelStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 14,
+  color: '#374151',
 }
 
 const permissionRowStyle: React.CSSProperties = {
@@ -449,4 +625,49 @@ const secondaryButtonStyle: React.CSSProperties = {
   color: '#374151',
   fontWeight: 700,
   cursor: 'pointer',
+}
+
+const darkButtonStyle: React.CSSProperties = {
+  height: 36,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: 'none',
+  background: '#111827',
+  color: '#ffffff',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const saveButtonStyle: React.CSSProperties = {
+  height: 40,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: 'none',
+  background: '#16a34a',
+  color: '#ffffff',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const dangerButtonStyle: React.CSSProperties = {
+  height: 30,
+  padding: '0 10px',
+  borderRadius: 8,
+  border: '1px solid #fecaca',
+  background: '#fff1f2',
+  color: '#be123c',
+  fontWeight: 700,
+  fontSize: 11,
+  cursor: 'pointer',
+}
+
+const disabledDangerButtonStyle: React.CSSProperties = {
+  ...dangerButtonStyle,
+  opacity: 0.55,
+  cursor: 'not-allowed',
+}
+
+const miniDangerButtonStyle: React.CSSProperties = {
+  ...dangerButtonStyle,
+  height: 28,
 }
