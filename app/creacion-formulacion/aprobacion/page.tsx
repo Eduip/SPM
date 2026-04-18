@@ -14,7 +14,16 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
 
   const supabase = await createClient()
 
-  const [proyectoRes, diagnosticoRes, postulacionRes, documentosRes, catalogoRes] =
+  const [
+    proyectoRes,
+    datosGeneralesRes,
+    diagnosticoRes,
+    postulacionRes,
+    fuenteProyectoRes,
+    camposRes,
+    respuestasRes,
+    documentosRes,
+  ] =
     await Promise.all([
       supabase
         .from('proyectos')
@@ -25,6 +34,12 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
           responsable:profiles!proyectos_responsable_id_fkey(nombre_completo)
         `)
         .eq('id', proyectoId)
+        .maybeSingle(),
+
+      supabase
+        .from('proyecto_datos_generales')
+        .select('descripcion, poblacion_beneficiaria')
+        .eq('proyecto_id', proyectoId)
         .maybeSingle(),
 
       supabase
@@ -40,22 +55,53 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
         .maybeSingle(),
 
       supabase
-        .from('documentos_proyecto')
+        .from('proyecto_fuentes_financiamiento')
+        .select(
+          `
+          fuente_id,
+          fuente:fuentes_financiamiento(nombre)
+        `
+        )
+        .eq('proyecto_id', proyectoId)
+        .limit(1)
+        .maybeSingle(),
+
+      supabase
+        .from('campos_formulario_fuente')
+        .select('*')
+        .eq('visible', true)
+        .order('orden', { ascending: true }),
+
+      supabase
+        .from('proyecto_postulacion_respuestas')
         .select('*')
         .eq('proyecto_id', proyectoId),
 
       supabase
-        .from('catalogo_documentos_formulacion')
-        .select('id, nombre, obligatorio')
-        .eq('activo', true)
-        .eq('etapa', 'documentos'),
+        .from('documentos_proyecto')
+        .select('*')
+        .eq('proyecto_id', proyectoId),
     ])
 
   const proyecto = proyectoRes.data
+  const datosGenerales = datosGeneralesRes.data
   const diagnostico = diagnosticoRes.data
   const postulacion = postulacionRes.data
+  const fuenteId = fuenteProyectoRes.data?.fuente_id ?? ''
+  const fuenteNombre = extractFuenteNombre(fuenteProyectoRes.data?.fuente)
+  const camposPostulacion = (camposRes.data ?? []).filter(
+    (campo) => campo.fuente_id === fuenteId
+  )
+  const respuestasPostulacion = respuestasRes.data ?? []
+  const { data: documentosFuente } = fuenteId
+    ? await supabase
+        .from('documentos_fuente')
+        .select('id, nombre, obligatorio')
+        .eq('fuente_id', fuenteId)
+        .order('orden', { ascending: true })
+    : { data: [] }
   const documentos = documentosRes.data ?? []
-  const catalogoDocumentos = catalogoRes.data ?? []
+  const catalogoDocumentos = documentosFuente ?? []
 
   return (
     <AppShell
@@ -65,11 +111,25 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
       <AprobacionContainer
         proyectoId={proyectoId}
         proyecto={proyecto}
+        datosGenerales={datosGenerales}
         diagnostico={diagnostico}
         postulacion={postulacion}
+        fuenteNombre={fuenteNombre}
+        camposPostulacion={camposPostulacion}
+        respuestasPostulacion={respuestasPostulacion}
         documentos={documentos}
         catalogoDocumentos={catalogoDocumentos}
       />
     </AppShell>
   )
+}
+
+function extractFuenteNombre(
+  fuente: { nombre?: string | null } | { nombre?: string | null }[] | null | undefined
+) {
+  if (Array.isArray(fuente)) {
+    return fuente[0]?.nombre ?? ''
+  }
+
+  return fuente?.nombre ?? ''
 }

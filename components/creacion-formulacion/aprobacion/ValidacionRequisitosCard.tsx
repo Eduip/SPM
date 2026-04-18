@@ -2,20 +2,20 @@ import { cardStyle } from '../shared'
 
 export default function ValidacionRequisitosCard({
   documentosOk,
-  evaluacionOk,
-  certificacionOk,
-  presupuestoOk,
+  diagnosticoOk,
+  postulacionOk,
+  datosProyectoOk,
 }: {
   documentosOk: boolean
-  evaluacionOk: boolean
-  certificacionOk: boolean
-  presupuestoOk: boolean
+  diagnosticoOk: boolean
+  postulacionOk: boolean
+  datosProyectoOk: boolean
 }) {
   const items = [
+    { label: 'Datos del proyecto', ok: datosProyectoOk, detail: 'Información general registrada' },
+    { label: 'Diagnóstico', ok: diagnosticoOk, detail: 'Problema central y justificación registrados' },
+    { label: 'Postulación', ok: postulacionOk, detail: 'Fuente de financiamiento seleccionada' },
     { label: 'Documentación obligatoria', ok: documentosOk, detail: 'Verificación antes de aprobar' },
-    { label: 'Evaluación técnica', ok: evaluacionOk, detail: 'Puntaje mínimo alcanzado' },
-    { label: 'Certificación administrativa', ok: certificacionOk, detail: 'Firmado por autoridad competente' },
-    { label: 'Presupuesto validado', ok: presupuestoOk, detail: 'Monto y datos revisados' },
   ]
 
   const allOk = items.every((item) => item.ok)

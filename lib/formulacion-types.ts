@@ -50,6 +50,9 @@ export type CatalogoDocumentoFormulacion = {
 export type DocumentoAprobacion = {
   id: string
   catalogo_documento_id?: string | null
+  nombre?: string | null
+  nombre_archivo?: string | null
+  observacion?: string | null
   obligatorio?: boolean | null
   estado_revision?: string | null
 }
@@ -62,6 +65,7 @@ export type ReglaFuente = {
 
 export type DiagnosticoProyecto = {
   problema_central?: string | null
+  justificacion?: string | null
 }
 
 export type PostulacionProyecto = {

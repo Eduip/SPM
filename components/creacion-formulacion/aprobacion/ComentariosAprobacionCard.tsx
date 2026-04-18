@@ -10,23 +10,6 @@ export default function ComentariosAprobacionCard() {
   >([])
   const [message, setMessage] = useState('')
 
-  const comments = [
-    {
-      initials: 'MG',
-      name: 'María González',
-      date: '15/03/2026 - 14:30',
-      text: 'Revisé la documentación técnica y está completa. Se sugiere priorizar este proyecto por su alto impacto social.',
-    },
-    {
-      initials: 'JP',
-      name: 'Juan Pérez',
-      date: '16/03/2026 - 10:15',
-      text: 'El presupuesto está validado y los montos coinciden con las partidas del PMU 2024.',
-    },
-  ]
-
-  const allComments = [...comments, ...savedComments]
-
   const handleSave = () => {
     const text = draft.trim()
 
@@ -60,7 +43,23 @@ export default function ComentariosAprobacionCard() {
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {allComments.map((comment) => (
+        {savedComments.length === 0 ? (
+          <div
+            style={{
+              borderRadius: 14,
+              border: '1px dashed #cbd5e1',
+              background: '#f9fafb',
+              padding: 16,
+              color: '#6b7280',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            No hay comentarios registrados para esta revisión.
+          </div>
+        ) : null}
+
+        {savedComments.map((comment) => (
           <div
             key={comment.name + comment.date}
             style={{

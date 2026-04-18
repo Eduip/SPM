@@ -7,9 +7,16 @@ import type {
 export default function ResumenProyectoCard({
   proyecto,
   postulacion,
+  datosGenerales,
+  fuenteNombre,
 }: {
   proyecto: ProyectoAprobacion | null
   postulacion: PostulacionProyecto | null
+  datosGenerales: {
+    descripcion?: string | null
+    poblacion_beneficiaria?: Array<{ group?: string; quantity?: string }> | null
+  } | null
+  fuenteNombre: string
 }) {
   return (
     <div style={cardStyle}>
@@ -24,12 +31,25 @@ export default function ResumenProyectoCard({
           gap: 14,
         }}
       >
-        <InfoBox label="Responsable" value={proyecto?.unidad?.nombre ?? '-'} />
-        <InfoBox label="Fuente(s)" value={proyecto?.fuente?.nombre ?? '-'} />
+        <InfoBox label="Nombre" value={proyecto?.nombre ?? '-'} />
         <InfoBox label="Código del Proyecto" value={proyecto?.codigo_interno ?? '-'} />
-        <InfoBox label="Duración" value={postulacion?.periodo ?? '-'} />
-        <InfoBox label="Periodo" value={String(proyecto?.anio_inicio ?? '-')} />
-        <InfoBox label="Municipio" value="Curacautín" />
+        <InfoBox label="Unidad Responsable" value={proyecto?.unidad?.nombre ?? '-'} />
+        <InfoBox label="Responsable" value={proyecto?.responsable?.nombre_completo ?? '-'} />
+        <InfoBox label="Fuente Inicial" value={proyecto?.fuente?.nombre ?? '-'} />
+        <InfoBox label="Fuente de Postulación" value={fuenteNombre || '-'} />
+        <InfoBox label="Año de Inicio" value={String(proyecto?.anio_inicio ?? '-')} />
+        <InfoBox label="Localización" value={proyecto?.localizacion ?? '-'} />
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <InfoBox label="Descripción" value={datosGenerales?.descripcion ?? '-'} />
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <InfoBox
+          label="Población Beneficiaria"
+          value={formatBeneficiarios(datosGenerales?.poblacion_beneficiaria)}
+        />
       </div>
 
       <div
@@ -76,4 +96,15 @@ function InfoBox({ label, value }: { label: string; value: string }) {
 
 function formatCurrency(value: number | string) {
   return new Intl.NumberFormat('es-CL').format(Number(value) || 0)
+}
+
+function formatBeneficiarios(
+  value: Array<{ group?: string; quantity?: string }> | null | undefined
+) {
+  if (!value?.length) return '-'
+
+  return value
+    .filter((item) => item.group || item.quantity)
+    .map((item) => `${item.group || 'Grupo'}: ${item.quantity || '-'}`)
+    .join(', ')
 }
