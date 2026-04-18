@@ -65,9 +65,10 @@ export async function uploadDocumentoProyecto(formData: FormData) {
   }
 
   const fechaSubida = new Date().toISOString()
+  const documentRequirementRef = `documento_fuente_id:${catalogoId}`
   const documentPayload = {
     proyecto_id: proyectoId,
-    catalogo_documento_id: catalogoId,
+    catalogo_documento_id: null,
     nombre,
     nombre_archivo: file.name,
     ruta_storage: path,
@@ -82,14 +83,14 @@ export async function uploadDocumentoProyecto(formData: FormData) {
     obligatorio,
     estado_revision: 'subido',
     porcentaje_validacion: 100,
-    observacion: null,
+    observacion: documentRequirementRef,
   }
 
   const { data: existingDocument } = await supabase
     .from('documentos_proyecto')
     .select('id')
     .eq('proyecto_id', proyectoId)
-    .eq('catalogo_documento_id', catalogoId)
+    .eq('observacion', documentRequirementRef)
     .eq('etapa', 'documentos')
     .order('fecha_subida', { ascending: false })
     .limit(1)

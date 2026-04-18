@@ -45,9 +45,7 @@ export default function DocumentosContainer({
   const visibleDocumentos = useMemo(
     () =>
       currentDocumentos.filter(
-        (doc) =>
-          doc.catalogo_documento_id &&
-          currentCatalogIds.has(doc.catalogo_documento_id)
+        (doc) => currentCatalogIds.has(getRequirementId(doc))
       ),
     [currentDocumentos, currentCatalogIds]
   )
@@ -55,8 +53,9 @@ export default function DocumentosContainer({
   const documentoMap = useMemo(() => {
     const map = new Map<string, DocumentoProyecto>()
     for (const doc of visibleDocumentos) {
-        if (doc.catalogo_documento_id && !map.has(doc.catalogo_documento_id)) {
-            map.set(doc.catalogo_documento_id, doc)
+      const requirementId = getRequirementId(doc)
+        if (requirementId && !map.has(requirementId)) {
+            map.set(requirementId, doc)
       }
     }
     return map
@@ -471,7 +470,7 @@ function mergeDocumentos(
   const byCatalogOrId = new Map<string, DocumentoProyecto>()
 
   for (const doc of [...existing, ...incoming]) {
-    const key = doc.catalogo_documento_id ?? doc.id
+    const key = getRequirementId(doc) || doc.id
     const current = byCatalogOrId.get(key)
 
     if (!current || isNewerDocument(doc, current)) {
@@ -487,4 +486,16 @@ function mergeDocumentos(
 
 function isNewerDocument(a: DocumentoProyecto, b: DocumentoProyecto) {
   return new Date(a.fecha_subida).getTime() >= new Date(b.fecha_subida).getTime()
+}
+
+function getRequirementId(doc: DocumentoProyecto) {
+  if (doc.catalogo_documento_id) return doc.catalogo_documento_id
+
+  const prefix = 'documento_fuente_id:'
+
+  if (doc.observacion?.startsWith(prefix)) {
+    return doc.observacion.slice(prefix.length)
+  }
+
+  return ''
 }
