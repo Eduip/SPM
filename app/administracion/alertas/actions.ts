@@ -9,22 +9,24 @@ export async function crearTipoAlerta(formData: FormData) {
   const codigo = String(formData.get('codigo') || '').trim()
   const modulo = String(formData.get('modulo') || '').trim()
   const severidad = String(formData.get('severidad') || '').trim()
-  const color = String(formData.get('color') || '#f59e0b').trim()
-  const descripcion = String(formData.get('descripcion') || '').trim()
+  const descripcion = String(formData.get('descripcion') || formData.get('condicion') || '').trim()
   const activo = formData.get('activo') === 'on'
 
-  if (!nombre || !modulo || !severidad) {
-    return { success: false, error: 'Nombre, módulo y severidad son obligatorios.' }
+  if (!nombre || !modulo || !severidad || !descripcion) {
+    return { success: false, error: 'Nombre, módulo, prioridad y condición son obligatorios.' }
   }
+
+  const normalizedCode = codigo || generateAlertCode(nombre)
+  const color = getPriorityColor(severidad)
 
   const { error } = await supabase
     .from('tipos_alerta')
     .insert({
       nombre,
-      codigo: codigo || null,
+      codigo: normalizedCode || null,
       modulo,
       severidad,
-      color: color || '#f59e0b',
+      color,
       descripcion: descripcion || null,
       activo,
     })
@@ -42,7 +44,6 @@ export async function actualizarTipoAlerta({
   codigo,
   modulo,
   severidad,
-  color,
   descripcion,
   activo,
 }: {
@@ -51,14 +52,13 @@ export async function actualizarTipoAlerta({
   codigo: string
   modulo: string
   severidad: string
-  color: string
   descripcion: string
   activo: boolean
 }) {
   const supabase = await createClient()
 
-  if (!id || !nombre.trim() || !modulo.trim() || !severidad.trim()) {
-    return { success: false, error: 'Faltan datos para actualizar el tipo de alerta.' }
+  if (!id || !nombre.trim() || !modulo.trim() || !severidad.trim() || !descripcion.trim()) {
+    return { success: false, error: 'Faltan datos para actualizar la regla de alerta.' }
   }
 
   const { error } = await supabase
@@ -68,7 +68,7 @@ export async function actualizarTipoAlerta({
       codigo: codigo.trim() || null,
       modulo: modulo.trim(),
       severidad: severidad.trim(),
-      color: color.trim() || '#f59e0b',
+      color: getPriorityColor(severidad),
       descripcion: descripcion.trim() || null,
       activo,
     })
@@ -79,4 +79,57 @@ export async function actualizarTipoAlerta({
   }
 
   return { success: true }
+}
+
+export async function eliminarTipoAlerta(id: string) {
+  const supabase = await createClient()
+
+  if (!id) {
+    return { success: false, error: 'No se recibió la regla de alerta a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('tipos_alerta')
+    .update({ activo: false })
+    .eq('id', id)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function activarTodasAlertas() {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('tipos_alerta')
+    .update({ activo: true })
+    .neq('activo', true)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+function generateAlertCode(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, '')
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.toLowerCase())
+    .join('_')
+    .slice(0, 60)
+}
+
+function getPriorityColor(priority: string) {
+  if (priority === 'critica') return '#ef4444'
+  if (priority === 'alta') return '#f97316'
+  if (priority === 'media') return '#f59e0b'
+  return '#2563eb'
 }
