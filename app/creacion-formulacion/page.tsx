@@ -26,6 +26,8 @@ export default async function CreacionFormulacionPage({
     fuentesRes,
     responsablesRes,
     proyectosEnFormulacionRes,
+    proyectoActualRes,
+    datosGeneralesActualRes,
   ] = await Promise.all([
     supabase
       .from('tipos_proyecto')
@@ -71,10 +73,28 @@ export default async function CreacionFormulacionPage({
       `
       )
       .eq('activo', true)
+      .eq('archivado', false)
       .neq('estado', 'aprobado')
       .lt('porcentaje_formulacion', 100)
       .order('updated_at', { ascending: false })
-      .limit(5),
+      .limit(100),
+
+    proyectoId
+      ? supabase
+          .from('proyectos')
+          .select('*')
+          .eq('id', proyectoId)
+          .eq('activo', true)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+
+    proyectoId
+      ? supabase
+          .from('proyecto_datos_generales')
+          .select('descripcion, poblacion_beneficiaria')
+          .eq('proyecto_id', proyectoId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ])
 
   const tiposProyecto = tiposProyectoRes.data ?? []
@@ -86,6 +106,8 @@ export default async function CreacionFormulacionPage({
     ...proyecto,
     unidad: Array.isArray(proyecto.unidad) ? proyecto.unidad[0] ?? null : proyecto.unidad,
   }))
+  const proyectoActual = proyectoActualRes.data
+  const datosGeneralesActual = datosGeneralesActualRes.data
 
   return (
     <AppShell
@@ -104,6 +126,8 @@ export default async function CreacionFormulacionPage({
           unidades={unidades}
           fuentes={fuentes}
           responsables={responsables}
+          proyectoInicial={proyectoActual}
+          datosGeneralesIniciales={datosGeneralesActual}
         />
       </div>
     </AppShell>

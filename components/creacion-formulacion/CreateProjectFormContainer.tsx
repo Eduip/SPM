@@ -39,6 +39,24 @@ export type ProjectFormData = {
   poblacion_beneficiaria: BeneficiaryGroup[]
 }
 
+type ProyectoInicial = {
+  nombre?: string | null
+  codigo_adicional?: string | null
+  tipo_proyecto_id?: string | null
+  categoria_id?: string | null
+  anio_inicio?: number | string | null
+  unidad_id?: string | null
+  monto_estimado?: number | string | null
+  localizacion?: string | null
+  fuente_financiamiento_id?: string | null
+  responsable_id?: string | null
+}
+
+type DatosGeneralesIniciales = {
+  descripcion?: string | null
+  poblacion_beneficiaria?: unknown
+} | null
+
 type CreateProjectFormContainerProps = {
     proyectoId?: string
     tiposProyecto: CatalogOption[]
@@ -46,6 +64,8 @@ type CreateProjectFormContainerProps = {
     unidades: CatalogOption[]
     fuentes: CatalogOption[]
     responsables: ResponsibleOption[]
+    proyectoInicial?: ProyectoInicial | null
+    datosGeneralesIniciales?: DatosGeneralesIniciales
 }
 
 export default function CreateProjectFormContainer({
@@ -55,28 +75,28 @@ export default function CreateProjectFormContainer({
     unidades,
     fuentes,
     responsables,
+    proyectoInicial = null,
+    datosGeneralesIniciales = null,
 }: CreateProjectFormContainerProps) {
   const initialResponsibleId = responsables[0]?.id ?? ''
   const initialTipoProyectoId = tiposProyecto[0]?.id ?? ''
 
-  const [formData, setFormData] = useState<ProjectFormData>({
-    nombre: '',
-    codigo_adicional: '',
-    tipo_proyecto_id: initialTipoProyectoId,
-    categoria_id: '',
-    anio_inicio: '',
-    unidad_id: '',
-    monto_estimado: '',
-    localizacion: 'Curacautín, Chile',
-    fuente_financiamiento_id: '',
-    responsable_id: initialResponsibleId,
-    descripcion: '',
-    poblacion_beneficiaria: [
-      { id: crypto.randomUUID(), group: 'Adultos mayores', quantity: '' },
-      { id: crypto.randomUUID(), group: 'Niños', quantity: '' },
-      { id: crypto.randomUUID(), group: 'Jóvenes', quantity: '' },
-    ],
-  })
+  const [formData, setFormData] = useState<ProjectFormData>(() => ({
+    nombre: proyectoInicial?.nombre ?? '',
+    codigo_adicional: proyectoInicial?.codigo_adicional ?? '',
+    tipo_proyecto_id: proyectoInicial?.tipo_proyecto_id ?? initialTipoProyectoId,
+    categoria_id: proyectoInicial?.categoria_id ?? '',
+    anio_inicio: stringifyInitialValue(proyectoInicial?.anio_inicio),
+    unidad_id: proyectoInicial?.unidad_id ?? '',
+    monto_estimado: stringifyInitialValue(proyectoInicial?.monto_estimado),
+    localizacion: proyectoInicial?.localizacion ?? 'Curacautín, Chile',
+    fuente_financiamiento_id: proyectoInicial?.fuente_financiamiento_id ?? '',
+    responsable_id: proyectoInicial?.responsable_id ?? initialResponsibleId,
+    descripcion: datosGeneralesIniciales?.descripcion ?? '',
+    poblacion_beneficiaria: normalizeInitialBeneficiaries(
+      datosGeneralesIniciales?.poblacion_beneficiaria
+    ),
+  }))
 
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -89,7 +109,10 @@ export default function CreateProjectFormContainer({
     setSaveError('')
     setSaveSuccess('')
 
-    const result = await saveProjectData(formData)
+    const result = await saveProjectData({
+      proyectoId: savedProjectId || proyectoId || undefined,
+      ...formData,
+    })
 
     if (!result.success) {
       setSaveError(result.error || 'Ocurrió un error al guardar.')
@@ -259,4 +282,33 @@ export default function CreateProjectFormContainer({
 
 function keepOnlyDigits(value: string) {
   return value.replace(/\D/g, '')
+}
+
+function stringifyInitialValue(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return ''
+  return String(value)
+}
+
+function normalizeInitialBeneficiaries(value: unknown): BeneficiaryGroup[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return [
+      { id: crypto.randomUUID(), group: 'Adultos mayores', quantity: '' },
+      { id: crypto.randomUUID(), group: 'Niños', quantity: '' },
+      { id: crypto.randomUUID(), group: 'Jóvenes', quantity: '' },
+    ]
+  }
+
+  return value.map((item) => {
+    const row = isRecord(item) ? item : {}
+
+    return {
+      id: crypto.randomUUID(),
+      group: stringifyInitialValue(row.group),
+      quantity: stringifyInitialValue(row.quantity),
+    }
+  })
+}
+
+function isRecord(value: unknown): value is Record<string, string | number | null> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

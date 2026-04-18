@@ -9,6 +9,7 @@ type BeneficiaryGroup = {
 }
 
 type SaveProjectPayload = {
+  proyectoId?: string
   nombre: string
   codigo_adicional: string
   tipo_proyecto_id: string
@@ -138,38 +139,54 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     .eq('codigo', INITIAL_PROJECT_STATE_CODE)
     .maybeSingle()
 
-  const { data: proyecto, error: proyectoError } = await supabase
-    .from('proyectos')
-    .insert({
-      codigo_adicional: payload.codigo_adicional || null,
-      nombre: payload.nombre,
-      descripcion: null,
-      tipo_proyecto_id: payload.tipo_proyecto_id,
-      categoria_id: payload.categoria_id,
-      unidad_id: payload.unidad_id,
-      fuente_financiamiento_id: payload.fuente_financiamiento_id,
-      responsable_id: payload.responsable_id,
-      localizacion: payload.localizacion || null,
-      anio_inicio: parsedYear,
-      monto_estimado: normalizedAmount,
-      estado: estadoInicial,
-      estado_proyecto_id: estadoFormulacionLegacy?.id ?? null,
-      etapa_formulacion_actual: 1,
-      porcentaje_formulacion: 20,
-      avance_fisico_actual: 0,
-      avance_financiero_actual: 0,
-      activo: true,
-      archivado: false,
-      created_by: profile.id,
-      updated_by: profile.id,
-    })
-    .select('id, codigo_interno, nombre')
-    .single()
+  const projectPayload = {
+    codigo_adicional: payload.codigo_adicional || null,
+    nombre: payload.nombre,
+    descripcion: null,
+    tipo_proyecto_id: payload.tipo_proyecto_id,
+    categoria_id: payload.categoria_id,
+    unidad_id: payload.unidad_id,
+    fuente_financiamiento_id: payload.fuente_financiamiento_id,
+    responsable_id: payload.responsable_id,
+    localizacion: payload.localizacion || null,
+    anio_inicio: parsedYear,
+    monto_estimado: normalizedAmount,
+    updated_by: profile.id,
+  }
+
+  const mutation = payload.proyectoId
+    ? supabase
+        .from('proyectos')
+        .update(projectPayload)
+        .eq('id', payload.proyectoId)
+        .neq('estado', 'aprobado')
+        .select('id, codigo_interno, nombre')
+        .single()
+    : supabase
+        .from('proyectos')
+        .insert({
+          ...projectPayload,
+          estado: estadoInicial,
+          estado_proyecto_id: estadoFormulacionLegacy?.id ?? null,
+          etapa_formulacion_actual: 1,
+          porcentaje_formulacion: 20,
+          avance_fisico_actual: 0,
+          avance_financiero_actual: 0,
+          activo: true,
+          archivado: false,
+          created_by: profile.id,
+        })
+        .select('id, codigo_interno, nombre')
+        .single()
+
+  const { data: proyecto, error: proyectoError } = await mutation
 
   if (proyectoError || !proyecto) {
     return {
       success: false,
-      error: proyectoError?.message || 'No se pudo crear el proyecto.',
+      error:
+        proyectoError?.message ||
+        `No se pudo ${payload.proyectoId ? 'actualizar' : 'crear'} el proyecto.`,
     }
   }
 
@@ -193,18 +210,21 @@ export async function saveProjectData(payload: SaveProjectPayload) {
 
   const { error: datosGeneralesError } = await supabase
     .from('proyecto_datos_generales')
-    .insert({
-      proyecto_id: proyecto.id,
-      descripcion: payload.descripcion,
-      poblacion_beneficiaria: beneficiariosLimpios,
-    })
+    .upsert(
+      {
+        proyecto_id: proyecto.id,
+        descripcion: payload.descripcion,
+        poblacion_beneficiaria: beneficiariosLimpios,
+      },
+      { onConflict: 'proyecto_id' }
+    )
 
   if (datosGeneralesError) {
     return {
       success: false,
       error:
         datosGeneralesError.message ||
-        'Se creó el proyecto, pero falló el guardado de los datos generales.',
+        `Se ${payload.proyectoId ? 'actualizó' : 'creó'} el proyecto, pero falló el guardado de los datos generales.`,
     }
   }
 
@@ -213,8 +233,8 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     {
       p_entidad: 'proyecto',
       p_entidad_id: proyecto.id,
-      p_accion: 'crear',
-      p_descripcion: `Proyecto creado en etapa Datos del Proyecto: ${proyecto.nombre}`,
+      p_accion: payload.proyectoId ? 'editar' : 'crear',
+      p_descripcion: `Proyecto ${payload.proyectoId ? 'actualizado' : 'creado'} en etapa Datos del Proyecto: ${proyecto.nombre}`,
       p_usuario_id: profile.id,
       p_metadata: {
         etapa: 'datos-proyecto',
@@ -237,4 +257,28 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     proyectoId: proyecto.id,
     codigoInterno: proyecto.codigo_interno,
   }
+}
+
+export async function eliminarProyectoEnFormulacion(proyectoId: string) {
+  const supabase = await createClient()
+
+  if (!proyectoId) {
+    return { success: false, error: 'No se recibió el proyecto a eliminar.' }
+  }
+
+  const { error } = await supabase
+    .from('proyectos')
+    .update({
+      activo: false,
+      archivado: true,
+    })
+    .eq('id', proyectoId)
+    .neq('estado', 'aprobado')
+    .lt('porcentaje_formulacion', 100)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
 }

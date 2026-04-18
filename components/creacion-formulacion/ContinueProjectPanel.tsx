@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { eliminarProyectoEnFormulacion } from '../../app/creacion-formulacion/actions'
 import { cardStyle } from './shared'
 
 export type ContinueProject = {
@@ -19,6 +21,30 @@ export default function ContinueProjectPanel({
   proyectos: ContinueProject[]
 }) {
   const router = useRouter()
+  const [deletingId, setDeletingId] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const handleDelete = async (proyecto: ContinueProject) => {
+    const shouldDelete = window.confirm(
+      `¿Eliminar el proyecto "${proyecto.nombre || 'Proyecto sin nombre'}" de la formulación?`
+    )
+
+    if (!shouldDelete) return
+
+    setDeletingId(proyecto.id)
+    setErrorMessage('')
+
+    const result = await eliminarProyectoEnFormulacion(proyecto.id)
+
+    if (!result.success) {
+      setErrorMessage(result.error || 'No se pudo eliminar el proyecto.')
+      setDeletingId('')
+      return
+    }
+
+    setDeletingId('')
+    router.refresh()
+  }
 
   return (
     <div style={cardStyle}>
@@ -56,7 +82,33 @@ export default function ContinueProjectPanel({
           No hay proyectos en formulación pendientes para continuar.
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 10 }}>
+        <>
+        {errorMessage && (
+          <div
+            style={{
+              borderRadius: 12,
+              border: '1px solid #fecaca',
+              background: '#fef2f2',
+              color: '#b91c1c',
+              padding: 12,
+              marginBottom: 12,
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            {errorMessage}
+          </div>
+        )}
+
+        <div
+          style={{
+            display: 'grid',
+            gap: 10,
+            maxHeight: 322,
+            overflowY: 'auto',
+            paddingRight: 4,
+          }}
+        >
           {proyectos.map((proyecto) => {
             const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
 
@@ -100,26 +152,48 @@ export default function ContinueProjectPanel({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => router.push(`${etapa.href}?proyectoId=${proyecto.id}`)}
-                  style={{
-                    height: 42,
-                    padding: '0 16px',
-                    borderRadius: 12,
-                    border: 'none',
-                    background: '#111827',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Continuar
-                </button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`${etapa.href}?proyectoId=${proyecto.id}`)}
+                    style={{
+                      height: 42,
+                      padding: '0 16px',
+                      borderRadius: 12,
+                      border: 'none',
+                      background: '#111827',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Continuar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(proyecto)}
+                    disabled={deletingId === proyecto.id}
+                    style={{
+                      height: 42,
+                      padding: '0 14px',
+                      borderRadius: 12,
+                      border: '1px solid #fecaca',
+                      background: '#fff7f7',
+                      color: '#b91c1c',
+                      fontWeight: 800,
+                      cursor: deletingId === proyecto.id ? 'not-allowed' : 'pointer',
+                      opacity: deletingId === proyecto.id ? 0.7 : 1,
+                    }}
+                  >
+                    {deletingId === proyecto.id ? 'Eliminando...' : 'Eliminar'}
+                  </button>
+                </div>
               </div>
             )
           })}
         </div>
+        </>
       )}
     </div>
   )
