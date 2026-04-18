@@ -600,7 +600,7 @@ export default function FuentesFinanciamientoPage({
 ) : (
   camposFuente.map((campo) => (
     <FieldConfigRow
-      key={campo.id}
+      key={`${campo.id}-${campo.tipo}-${campo.obligatorio}-${campo.nombre}`}
       campo={campo}
       onSaved={() => router.refresh()}
     />
@@ -882,6 +882,9 @@ function FieldConfigRow({
 }) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [nombre, setNombre] = useState(campo.nombre)
+  const [tipo, setTipo] = useState(campo.tipo)
+  const [obligatorio, setObligatorio] = useState(campo.obligatorio)
 
   const handleDelete = async () => {
     const confirmed = window.confirm(`¿Eliminar el campo ${campo.nombre}?`)
@@ -901,14 +904,14 @@ function FieldConfigRow({
 
   return (
     <form
-      action={async (formData) => {
+      action={async () => {
         setSaving(true)
 
         const res = await actualizarCampoFuente({
           id: campo.id,
-          nombre: String(formData.get('nombre') || '').trim(),
-          tipo: String(formData.get('tipo') || 'texto'),
-          obligatorio: formData.get('obligatorio') === 'on',
+          nombre: nombre.trim(),
+          tipo,
+          obligatorio,
         })
 
         setSaving(false)
@@ -935,7 +938,8 @@ function FieldConfigRow({
         <div>
           <input
             name="nombre"
-            defaultValue={campo.nombre}
+            value={nombre}
+            onChange={(event) => setNombre(event.target.value)}
             required
             style={compactInputStyle}
           />
@@ -946,7 +950,12 @@ function FieldConfigRow({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <select name="tipo" defaultValue={campo.tipo} style={compactSelectStyle}>
+        <select
+          name="tipo"
+          value={tipo}
+          onChange={(event) => setTipo(event.target.value)}
+          style={compactSelectStyle}
+        >
           <option value="texto">Texto</option>
           <option value="texto_largo">Texto largo</option>
           <option value="numero">Número</option>
@@ -954,7 +963,12 @@ function FieldConfigRow({
           <option value="booleano">Sí / No</option>
         </select>
         <label style={compactCheckboxStyle}>
-          <input type="checkbox" name="obligatorio" defaultChecked={campo.obligatorio} />
+          <input
+            type="checkbox"
+            name="obligatorio"
+            checked={obligatorio}
+            onChange={(event) => setObligatorio(event.target.checked)}
+          />
           Obligatorio
         </label>
         <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
