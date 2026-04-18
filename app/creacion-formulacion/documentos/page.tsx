@@ -13,7 +13,7 @@ type PageProps = {
 export type CatalogoDocumento = {
   id: string
   nombre: string
-  tipo: string
+  tipo: string | null
   obligatorio: boolean
   orden: number
 }
@@ -43,13 +43,31 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
 
   const supabase = await createClient()
 
+  const { data: fuenteProyecto } = proyectoId
+    ? await supabase
+        .from('proyecto_fuentes_financiamiento')
+        .select(
+          `
+          fuente_id,
+          fuente:fuentes_financiamiento(nombre)
+        `
+        )
+        .eq('proyecto_id', proyectoId)
+        .limit(1)
+        .maybeSingle()
+    : { data: null }
+
+  const fuenteId = fuenteProyecto?.fuente_id ?? ''
+  const fuenteNombre = extractFuenteNombre(fuenteProyecto?.fuente)
+
   const [catalogoRes, documentosRes] = await Promise.all([
-    supabase
-      .from('catalogo_documentos_formulacion')
-      .select('id, nombre, tipo, obligatorio, orden')
-      .eq('activo', true)
-      .eq('etapa', 'documentos')
-      .order('orden', { ascending: true }),
+    fuenteId
+      ? supabase
+          .from('documentos_fuente')
+          .select('id, nombre, obligatorio, orden')
+          .eq('fuente_id', fuenteId)
+          .order('orden', { ascending: true })
+      : Promise.resolve({ data: [], error: null }),
 
       proyectoId
       ? supabase
@@ -78,7 +96,10 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
       : Promise.resolve({ data: [], error: null }),
   ])
 
-  const catalogo = catalogoRes.data ?? []
+  const catalogo = (catalogoRes.data ?? []).map((documento) => ({
+    ...documento,
+    tipo: 'Documento fuente',
+  }))
   const documentos = documentosRes.data ?? []
 
   return (
@@ -93,8 +114,20 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
           proyectoId={proyectoId}
           catalogo={catalogo}
           documentos={documentos}
+          fuenteNombre={fuenteNombre}
+          hasSelectedFuente={Boolean(fuenteId)}
         />
       </div>
     </AppShell>
   )
+}
+
+function extractFuenteNombre(
+  fuente: { nombre?: string | null } | { nombre?: string | null }[] | null | undefined
+) {
+  if (Array.isArray(fuente)) {
+    return fuente[0]?.nombre ?? ''
+  }
+
+  return fuente?.nombre ?? ''
 }

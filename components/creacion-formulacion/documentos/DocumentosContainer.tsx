@@ -16,12 +16,16 @@ type Props = {
   proyectoId: string
   catalogo: CatalogoDocumento[]
   documentos: DocumentoProyecto[]
+  fuenteNombre: string
+  hasSelectedFuente: boolean
 }
 
 export default function DocumentosContainer({
   proyectoId,
   catalogo,
   documentos,
+  fuenteNombre,
+  hasSelectedFuente,
 }: Props) {
   const [uploadedDocumentos, setUploadedDocumentos] = useState<DocumentoProyecto[]>([])
   const [selectedCatalogId, setSelectedCatalogId] = useState('')
@@ -34,16 +38,29 @@ export default function DocumentosContainer({
     () => mergeDocumentos(documentos, uploadedDocumentos),
     [documentos, uploadedDocumentos]
   )
+  const currentCatalogIds = useMemo(
+    () => new Set(catalogo.map((item) => item.id)),
+    [catalogo]
+  )
+  const visibleDocumentos = useMemo(
+    () =>
+      currentDocumentos.filter(
+        (doc) =>
+          doc.catalogo_documento_id &&
+          currentCatalogIds.has(doc.catalogo_documento_id)
+      ),
+    [currentDocumentos, currentCatalogIds]
+  )
 
   const documentoMap = useMemo(() => {
     const map = new Map<string, DocumentoProyecto>()
-    for (const doc of currentDocumentos) {
+    for (const doc of visibleDocumentos) {
         if (doc.catalogo_documento_id && !map.has(doc.catalogo_documento_id)) {
             map.set(doc.catalogo_documento_id, doc)
       }
     }
     return map
-  }, [currentDocumentos])
+  }, [visibleDocumentos])
 
   const rows = catalogo.map((item) => {
     const existing = documentoMap.get(item.id)
@@ -90,7 +107,7 @@ export default function DocumentosContainer({
     fd.append('proyectoId', proyectoId)
     fd.append('catalogoId', selected.id)
     fd.append('nombre', selected.nombre)
-    fd.append('tipoDocumento', selected.tipo)
+    fd.append('tipoDocumento', selected.tipo ?? 'Documento fuente')
     fd.append('obligatorio', String(selected.obligatorio))
     fd.append('file', file)
 
@@ -143,7 +160,9 @@ export default function DocumentosContainer({
       >
         Suba los documentos obligatorios y necesarios para respaldar la formulación del proyecto.
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 4 }}>
-          Puede adjuntar archivos en formato PDF, Word, Excel o imágenes.
+          {hasSelectedFuente
+            ? `Fuente seleccionada: ${fuenteNombre || 'Sin nombre'}`
+            : 'Primero seleccione y guarde una fuente de financiamiento en la etapa de postulación.'}
         </div>
       </div>
 
@@ -171,6 +190,7 @@ export default function DocumentosContainer({
                 </h3>
                 <div style={{ marginTop: 4, fontSize: 14, color: '#6b7280' }}>
                   Gestione los documentos requeridos para el proyecto
+                  {fuenteNombre ? ` según ${fuenteNombre}` : ''}
                 </div>
               </div>
 
@@ -308,7 +328,22 @@ export default function DocumentosContainer({
                 <div>Estado</div>
               </div>
 
-              {rows.map((row) => (
+              {rows.length === 0 ? (
+                <div
+                  style={{
+                    padding: 18,
+                    borderTop: '1px solid #e5e7eb',
+                    color: '#6b7280',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {hasSelectedFuente
+                    ? 'Esta fuente de financiamiento no tiene documentos requeridos configurados.'
+                    : 'No hay una fuente de financiamiento seleccionada para este proyecto.'}
+                </div>
+              ) : (
+                rows.map((row) => (
                 <div
                   key={row.catalogoId}
                   style={{
@@ -357,7 +392,8 @@ export default function DocumentosContainer({
                     <EstadoBadge estado={row.estado} />
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
 
             <div
@@ -377,7 +413,7 @@ export default function DocumentosContainer({
               Los documentos pueden ser subidos en formato PDF, Word (.doc, .docx), Excel (.xls, .xlsx) o imágenes (.jpg, .png). El tamaño máximo por archivo es de 10 MB.
             </div>
           </div>
-          <DocumentosSubidosPanel documentos={currentDocumentos} />
+          <DocumentosSubidosPanel documentos={visibleDocumentos} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

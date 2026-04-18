@@ -18,7 +18,7 @@ export async function uploadDocumentoProyecto(formData: FormData) {
   }
 
   if (!catalogoId) {
-    return { success: false, error: 'Falta el documento del catálogo.' }
+    return { success: false, error: 'Falta el documento requerido.' }
   }
 
   if (!file) {
@@ -139,7 +139,7 @@ export async function uploadDocumentoProyecto(formData: FormData) {
     p_metadata: {
       etapa: 'documentos',
       nombre_archivo: file.name,
-      catalogo_id: catalogoId,
+      documento_fuente_id: catalogoId,
     },
   })
 
