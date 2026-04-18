@@ -15,7 +15,6 @@ type Props = {
   setUtmY: (value: string) => void
   periodo: string
   setPeriodo: (value: string) => void
-  onCalculateScore: () => void
 }
 
 export default function PerfilProyectoCard({
@@ -33,7 +32,6 @@ export default function PerfilProyectoCard({
   setUtmY,
   periodo,
   setPeriodo,
-  onCalculateScore,
 }: Props) {
   return (
     <div
@@ -122,34 +120,11 @@ export default function PerfilProyectoCard({
         </Field>
 
         <Field label="Periodo del Proyecto *">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 160px',
-              gap: 12,
-            }}
-          >
-            <input
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value)}
-              style={inputStyle}
-            />
-<button
-  type="button"
-  onClick={onCalculateScore}
-  style={{
-    height: 62,
-    borderRadius: 16,
-    border: 'none',
-    background: '#16a34a',
-    color: '#ffffff',
-    fontWeight: 700,
-    cursor: 'pointer',
-  }}
->
-  Calcular Puntaje
-</button>
-          </div>
+          <input
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            style={inputStyle}
+          />
         </Field>
       </div>
     </div>

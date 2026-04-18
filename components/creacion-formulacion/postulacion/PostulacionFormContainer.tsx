@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import PerfilProyectoCard from './PerfilProyectoCard'
-import EvaluacionProyectoCard from './EvaluacionProyectoCard'
 import ResumenProyectoPanel from './ResumenProyectoPanel'
 import PostulacionProgressPanel from './PostulacionProgressPanel'
 import AlertasActivasPanel from '../diagnostico/AlertasActivasPanel'
@@ -44,10 +43,6 @@ export default function PostulacionFormContainer({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState('')
-  const [scoreMessage, setScoreMessage] = useState('')
-  const handleCalculateScore = () => {
-    setScoreMessage(`Puntaje recalculado: ${puntajeTotal}/35 (${porcentajeEvaluacion}%).`)
-  }
 
   const [selectedFuente, setSelectedFuente] = useState(selectedFuenteId)
   const [tipoProyecto, setTipoProyecto] = useState('')
@@ -62,13 +57,15 @@ export default function PostulacionFormContainer({
   const [utmY, setUtmY] = useState('')
   const [periodo, setPeriodo] = useState('')
 
-  const [puntajePertinencia, setPuntajePertinencia] = useState(11)
-  const [puntajeRS, setPuntajeRS] = useState(11)
-
   const puntajeDiagnostico = 5
+  const puntajePertinencia = 0
+  const puntajeRS = 0
   const puntajeTotal = puntajeDiagnostico + puntajePertinencia + puntajeRS
   const porcentajeEvaluacion = Math.round((puntajeTotal / 35) * 100)
   const aprobado = puntajeTotal >= 21
+  const selectedFuenteNombre =
+    fuentesCatalogo.find((fuente) => String(fuente.id) === String(selectedFuente))
+      ?.nombre ?? ''
 
   const handleSave = async () => {
     setSaving(true)
@@ -128,22 +125,6 @@ export default function PostulacionFormContainer({
         </div>
       )}
 
-      {scoreMessage ? (
-        <div
-          style={{
-            borderRadius: 16,
-            padding: '16px 18px',
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            color: '#1d4ed8',
-            fontSize: 15,
-            fontWeight: 500,
-          }}
-        >
-          {scoreMessage}
-        </div>
-      ) : null}
-
       <div
         style={{
           borderRadius: 16,
@@ -191,26 +172,15 @@ export default function PostulacionFormContainer({
             setUtmY={setUtmY}
             periodo={periodo}
             setPeriodo={setPeriodo}
-            onCalculateScore={handleCalculateScore}
           />
 
           <DynamicFuenteFields
             key={selectedFuente || 'sin-fuente'}
             proyectoId={proyectoId}
             fuenteId={selectedFuente || null}
+            fuenteNombre={selectedFuenteNombre}
             campos={camposFuente}
             respuestasIniciales={respuestasIniciales ?? []}
-          />
-
-          <EvaluacionProyectoCard
-            puntajeTotal={puntajeTotal}
-            porcentaje={porcentajeEvaluacion}
-            aprobado={aprobado}
-            puntajeDiagnostico={puntajeDiagnostico}
-            puntajePertinencia={puntajePertinencia}
-            setPuntajePertinencia={setPuntajePertinencia}
-            puntajeRS={puntajeRS}
-            setPuntajeRS={setPuntajeRS}
           />
         </div>
 
@@ -218,8 +188,6 @@ export default function PostulacionFormContainer({
           <ResumenProyectoPanel
             montoTotal={montoTotal}
             periodo={periodo}
-            puntaje={puntajeTotal}
-            porcentaje={porcentajeEvaluacion}
             utmX={utmX}
             utmY={utmY}
           />

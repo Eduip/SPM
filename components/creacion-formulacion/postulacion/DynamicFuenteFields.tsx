@@ -11,11 +11,13 @@ import type {
 export default function DynamicFuenteFields({
   proyectoId,
   fuenteId,
+  fuenteNombre,
   campos,
   respuestasIniciales,
 }: {
   proyectoId: string
   fuenteId: string | null
+  fuenteNombre: string
   campos: CampoPostulacion[]
   respuestasIniciales?: RespuestaPostulacion[] | null
 }) {
@@ -28,7 +30,7 @@ export default function DynamicFuenteFields({
   const camposActivos = useMemo(() => {
     if (!fuenteId) return []
     return campos
-      .filter((c) => c.fuente_id === fuenteId && c.visible)
+      .filter((c) => String(c.fuente_id) === String(fuenteId) && c.visible)
       .sort((a, b) => a.orden - b.orden)
   }, [campos, fuenteId])
 
@@ -81,7 +83,9 @@ export default function DynamicFuenteFields({
           fontSize: 14,
         }}
       >
-        Esta fuente aún no tiene campos dinámicos configurados.
+        {fuenteNombre
+          ? `${fuenteNombre} aún no tiene campos configurados.`
+          : 'Esta fuente aún no tiene campos configurados.'}
       </div>
     )
   }
@@ -122,8 +126,19 @@ export default function DynamicFuenteFields({
           color: '#111827',
         }}
       >
-        Formulario Dinámico según Fuente
+        Formulario de Postulación
       </h3>
+      <div
+        style={{
+          marginTop: -12,
+          marginBottom: 18,
+          fontSize: 14,
+          color: '#6b7280',
+          fontWeight: 600,
+        }}
+      >
+        Fuente seleccionada: {fuenteNombre}
+      </div>
 
       <div
         style={{

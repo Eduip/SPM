@@ -3,8 +3,6 @@ import { cardStyle } from '../shared'
 type Props = {
   montoTotal: string
   periodo: string
-  puntaje: number
-  porcentaje: number
   utmX: string
   utmY: string
 }
@@ -12,8 +10,6 @@ type Props = {
 export default function ResumenProyectoPanel({
   montoTotal,
   periodo,
-  puntaje,
-  porcentaje,
   utmX,
   utmY,
 }: Props) {
@@ -27,11 +23,6 @@ export default function ResumenProyectoPanel({
       label: 'Periodo',
       value: periodo || '-',
       sub: 'Año fiscal',
-    },
-    {
-      label: 'Puntaje',
-      value: `${puntaje}/35`,
-      sub: `${porcentaje}% alcanzado`,
     },
     {
       label: 'Coordenadas',
