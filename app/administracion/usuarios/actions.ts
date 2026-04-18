@@ -11,13 +11,26 @@ export async function crearUsuarioPerfil(formData: FormData) {
   const email = String(formData.get('email') || '').trim().toLowerCase()
   const rol_id = String(formData.get('rol_id') || '').trim()
   const unidad_id = String(formData.get('unidad_id') || '').trim()
+  const password = String(formData.get('password') || '')
+  const confirmPassword = String(formData.get('confirm_password') || '')
   const activo = formData.get('activo') === 'on'
 
   if (!nombre_completo || !email) {
     return { success: false, error: 'Nombre completo y email son obligatorios.' }
   }
 
-  const tempPassword = generateTempPassword()
+  if (!password || !confirmPassword) {
+    return { success: false, error: 'La contraseña y su confirmación son obligatorias.' }
+  }
+
+  if (password !== confirmPassword) {
+    return { success: false, error: 'Las contraseñas no coinciden.' }
+  }
+
+  if (password.length < 8) {
+    return { success: false, error: 'La contraseña debe tener al menos 8 caracteres.' }
+  }
+
   const { data: existingProfile, error: existingProfileError } = await supabase
     .from('profiles')
     .select('id, activo')
@@ -40,7 +53,7 @@ export async function crearUsuarioPerfil(formData: FormData) {
       existingProfile.id,
       {
         email,
-        password: tempPassword,
+        password,
         email_confirm: true,
         user_metadata: {
           nombre_completo,
@@ -74,7 +87,6 @@ export async function crearUsuarioPerfil(formData: FormData) {
 
     return {
       success: true,
-      tempPassword,
     }
   }
 
@@ -82,7 +94,7 @@ export async function crearUsuarioPerfil(formData: FormData) {
   const { data: authData, error: authError } =
     await adminSupabase.auth.admin.createUser({
       email,
-      password: tempPassword,
+      password,
       email_confirm: true,
       user_metadata: {
         nombre_completo,
@@ -117,7 +129,6 @@ export async function crearUsuarioPerfil(formData: FormData) {
 
   return {
     success: true,
-    tempPassword,
   }
 }
 
@@ -208,9 +219,4 @@ export async function eliminarUsuarioPerfil(id: string) {
   }
 
   return { success: true }
-}
-
-function generateTempPassword() {
-  const random = Math.random().toString(36).slice(-8)
-  return `Tmp#${random}A1`
 }

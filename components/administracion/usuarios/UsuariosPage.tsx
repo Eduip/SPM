@@ -225,7 +225,7 @@ export default function UsuariosPage({
               return
             }
             
-            alert(`Usuario creado correctamente.\nContraseña temporal: ${res.tempPassword}`)
+            alert('Usuario creado correctamente.')
             
             setShowNewForm(false)
             router.refresh()
@@ -244,6 +244,26 @@ export default function UsuariosPage({
             type="email"
             placeholder="Correo electrónico"
             required
+            style={inputStyle}
+          />
+
+          <input
+            name="password"
+            type="password"
+            placeholder="Contraseña"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            style={inputStyle}
+          />
+
+          <input
+            name="confirm_password"
+            type="password"
+            placeholder="Confirmar contraseña"
+            required
+            minLength={8}
+            autoComplete="new-password"
             style={inputStyle}
           />
 
