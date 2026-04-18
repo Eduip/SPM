@@ -15,20 +15,12 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
   const supabase = await createClient()
 
   const [
-    proyectoRes,
     fuentesRes,
     camposRes,
-    documentosRes,
     reglasRes,
     respuestasRes,
     fuentesProyectoRes,
   ] = await Promise.all([
-    supabase
-      .from('proyectos')
-      .select('*')
-      .eq('id', proyectoId)
-      .maybeSingle(),
-
     supabase
       .from('fuentes_financiamiento')
       .select('*')
@@ -39,11 +31,6 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
       .from('campos_formulario_fuente')
       .select('*')
       .eq('visible', true)
-      .order('orden', { ascending: true }),
-
-    supabase
-      .from('documentos_fuente')
-      .select('*')
       .order('orden', { ascending: true }),
 
     supabase
@@ -67,14 +54,11 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
       : Promise.resolve({ data: null, error: null }),
   ])
 
-  const proyecto = proyectoRes.data
   const fuentes = fuentesRes.data ?? []
   const campos = camposRes.data ?? []
-  const documentos = documentosRes.data ?? []
   const reglas = reglasRes.data ?? []
   const respuestas = respuestasRes.data ?? []
-  const selectedFuenteId =
-    fuentesProyectoRes.data?.fuente_id ?? proyecto?.fuente_financiamiento_id ?? ''
+  const selectedFuenteId = fuentesProyectoRes.data?.fuente_id ?? ''
 
   return (
     <AppShell
@@ -84,10 +68,8 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <PostulacionFormContainer
           proyectoId={proyectoId}
-          proyecto={proyecto}
           fuentesCatalogo={fuentes}
           camposFuente={campos}
-          documentosFuente={documentos}
           reglasFuente={reglas}
           respuestasIniciales={respuestas}
           selectedFuenteId={selectedFuenteId}

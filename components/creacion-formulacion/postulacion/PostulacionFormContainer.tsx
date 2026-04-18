@@ -1,41 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import PerfilProyectoCard from './PerfilProyectoCard'
-import ResumenProyectoPanel from './ResumenProyectoPanel'
-import PostulacionProgressPanel from './PostulacionProgressPanel'
-import AlertasActivasPanel from '../diagnostico/AlertasActivasPanel'
-import UltimosDocumentosPanel from '../diagnostico/UltimosDocumentosPanel'
 import PostulacionHeader from './PostulacionHeader'
 import PostulacionStepper from './PostulacionStepper'
 import { savePostulacionData } from '../../../app/creacion-formulacion/postulacion/actions'
 import FuenteFinanciamientoSelector from './FuenteFinanciamientoSelector'
-import DocumentosFuenteCard from './DocumentosFuenteCard'
 
 import DynamicFuenteFields from './DynamicFuenteFields'
 import type {
   CampoPostulacion,
-  DocumentoFuente,
   FuenteCatalogo,
   ReglaFuente,
   RespuestaPostulacion,
 } from '../../../lib/formulacion-types'
-import type { ProyectoFicha } from '../../../lib/project-types'
 
 export default function PostulacionFormContainer({
   proyectoId,
-  proyecto,
   fuentesCatalogo,
   camposFuente,
-  documentosFuente,
   respuestasIniciales,
   selectedFuenteId,
 }: {
   proyectoId: string
-  proyecto: ProyectoFicha | null
   fuentesCatalogo: FuenteCatalogo[]
   camposFuente: CampoPostulacion[]
-  documentosFuente: DocumentoFuente[]
   reglasFuente: ReglaFuente[]
   respuestasIniciales: RespuestaPostulacion[]
   selectedFuenteId: string
@@ -45,17 +33,6 @@ export default function PostulacionFormContainer({
   const [saveSuccess, setSaveSuccess] = useState('')
 
   const [selectedFuente, setSelectedFuente] = useState(selectedFuenteId)
-  const [tipoProyecto, setTipoProyecto] = useState('')
-  const [nombreProyecto, setNombreProyecto] = useState(proyecto?.nombre ?? '')
-  const [montoTotal, setMontoTotal] = useState(
-    proyecto?.monto_estimado ? String(proyecto.monto_estimado) : ''
-  )
-  const [unidadResponsable, setUnidadResponsable] = useState(
-    proyecto?.unidad?.nombre ?? ''
-  )
-  const [utmX, setUtmX] = useState('')
-  const [utmY, setUtmY] = useState('')
-  const [periodo, setPeriodo] = useState('')
 
   const puntajeDiagnostico = 5
   const puntajePertinencia = 0
@@ -74,13 +51,6 @@ export default function PostulacionFormContainer({
 
     const result = await savePostulacionData({
       proyectoId,
-      tipoProyecto,
-      nombreProyecto,
-      montoTotal,
-      unidadResponsable,
-      utmX,
-      utmY,
-      periodo,
       fuenteId: selectedFuente,
       puntajeDiagnostico,
       puntajePertinencia,
@@ -144,63 +114,26 @@ export default function PostulacionFormContainer({
 
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1.9fr 1fr',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 20,
-          alignItems: 'start',
+          maxWidth: 980,
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <FuenteFinanciamientoSelector
-            fuentes={fuentesCatalogo}
-            selectedFuenteId={selectedFuente}
-            onChange={setSelectedFuente}
-          />
+        <FuenteFinanciamientoSelector
+          fuentes={fuentesCatalogo}
+          selectedFuenteId={selectedFuente}
+          onChange={setSelectedFuente}
+        />
 
-          <PerfilProyectoCard
-            tipoProyecto={tipoProyecto}
-            setTipoProyecto={setTipoProyecto}
-            nombreProyecto={nombreProyecto}
-            setNombreProyecto={setNombreProyecto}
-            montoTotal={montoTotal}
-            setMontoTotal={setMontoTotal}
-            unidadResponsable={unidadResponsable}
-            setUnidadResponsable={setUnidadResponsable}
-            utmX={utmX}
-            setUtmX={setUtmX}
-            utmY={utmY}
-            setUtmY={setUtmY}
-            periodo={periodo}
-            setPeriodo={setPeriodo}
-          />
-
-          <DynamicFuenteFields
-            key={selectedFuente || 'sin-fuente'}
-            proyectoId={proyectoId}
-            fuenteId={selectedFuente || null}
-            fuenteNombre={selectedFuenteNombre}
-            campos={camposFuente}
-            respuestasIniciales={respuestasIniciales ?? []}
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <ResumenProyectoPanel
-            montoTotal={montoTotal}
-            periodo={periodo}
-            utmX={utmX}
-            utmY={utmY}
-          />
-
-          <DocumentosFuenteCard
-            documentos={documentosFuente}
-            selectedFuenteId={selectedFuente}
-          />
-
-          <AlertasActivasPanel />
-          <PostulacionProgressPanel proyectoId={proyectoId} />
-          <UltimosDocumentosPanel />
-        </div>
+        <DynamicFuenteFields
+          key={selectedFuente || 'sin-fuente'}
+          proyectoId={proyectoId}
+          fuenteId={selectedFuente || null}
+          fuenteNombre={selectedFuenteNombre}
+          campos={camposFuente}
+          respuestasIniciales={respuestasIniciales ?? []}
+        />
       </div>
     </>
   )

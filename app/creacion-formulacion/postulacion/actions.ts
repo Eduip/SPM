@@ -4,13 +4,6 @@ import { createClient } from '../../../lib/supabase-server'
 
 type SavePostulacionPayload = {
   proyectoId: string
-  tipoProyecto: string
-  nombreProyecto: string
-  montoTotal: string
-  unidadResponsable: string
-  utmX: string
-  utmY: string
-  periodo: string
   fuenteId: string
   puntajeDiagnostico: number
   puntajePertinencia: number
@@ -42,58 +35,10 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
     }
   }
 
-  const requiredFields = [
-    { value: payload.tipoProyecto, label: 'Tipo de Proyecto' },
-    { value: payload.nombreProyecto, label: 'Nombre del Proyecto' },
-    { value: payload.montoTotal, label: 'Monto Total del Proyecto' },
-    { value: payload.unidadResponsable, label: 'Unidad Responsable' },
-    { value: payload.periodo, label: 'Periodo del Proyecto' },
-  ]
-
-  for (const field of requiredFields) {
-    if (!field.value || String(field.value).trim() === '') {
-      return {
-        success: false,
-        error: `El campo "${field.label}" es obligatorio.`,
-      }
-    }
-  }
-
   if (!payload.fuenteId) {
     return {
       success: false,
       error: 'Debes seleccionar una fuente de financiamiento.',
-    }
-  }
-
-  const montoNormalizado = Number(
-    String(payload.montoTotal)
-      .replace(/\./g, '')
-      .replace(/,/g, '.')
-      .replace(/[^\d.]/g, '')
-  )
-
-  if (Number.isNaN(montoNormalizado) || montoNormalizado < 0) {
-    return {
-      success: false,
-      error: 'El monto total no es válido.',
-    }
-  }
-
-  const utmX = payload.utmX ? Number(String(payload.utmX).replace(',', '.')) : null
-  const utmY = payload.utmY ? Number(String(payload.utmY).replace(',', '.')) : null
-
-  if (payload.utmX && Number.isNaN(utmX)) {
-    return {
-      success: false,
-      error: 'La coordenada UTM X no es válida.',
-    }
-  }
-
-  if (payload.utmY && Number.isNaN(utmY)) {
-    return {
-      success: false,
-      error: 'La coordenada UTM Y no es válida.',
     }
   }
 
@@ -122,13 +67,6 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
     const { error: updateError } = await supabase
       .from('proyecto_postulacion')
       .update({
-        tipo_proyecto_texto: payload.tipoProyecto,
-        nombre_proyecto: payload.nombreProyecto,
-        monto_total: montoNormalizado,
-        unidad_responsable_texto: payload.unidadResponsable,
-        utm_x: utmX,
-        utm_y: utmY,
-        periodo: payload.periodo,
         puntaje_total: payload.puntajeTotal,
         porcentaje_evaluacion: payload.porcentajeEvaluacion,
         aprobado: payload.aprobado,
@@ -156,13 +94,6 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
       .from('proyecto_postulacion')
       .insert({
         proyecto_id: payload.proyectoId,
-        tipo_proyecto_texto: payload.tipoProyecto,
-        nombre_proyecto: payload.nombreProyecto,
-        monto_total: montoNormalizado,
-        unidad_responsable_texto: payload.unidadResponsable,
-        utm_x: utmX,
-        utm_y: utmY,
-        periodo: payload.periodo,
         puntaje_total: payload.puntajeTotal,
         porcentaje_evaluacion: payload.porcentajeEvaluacion,
         aprobado: payload.aprobado,
