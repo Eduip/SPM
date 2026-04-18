@@ -115,28 +115,32 @@ export default function PostulacionFormContainer({
 
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'grid',
+          gridTemplateColumns: '1.9fr 1fr',
           gap: 20,
-          maxWidth: 980,
+          alignItems: 'start',
         }}
       >
-        <FuenteFinanciamientoSelector
-          fuentes={fuentesCatalogo}
-          selectedFuenteId={selectedFuente}
-          onChange={setSelectedFuente}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <FuenteFinanciamientoSelector
+            fuentes={fuentesCatalogo}
+            selectedFuenteId={selectedFuente}
+            onChange={setSelectedFuente}
+          />
 
-        <DynamicFuenteFields
-          key={selectedFuente || 'sin-fuente'}
-          proyectoId={proyectoId}
-          fuenteId={selectedFuente || null}
-          fuenteNombre={selectedFuenteNombre}
-          campos={camposFuente}
-          respuestasIniciales={respuestasIniciales ?? []}
-        />
+          <DynamicFuenteFields
+            key={selectedFuente || 'sin-fuente'}
+            proyectoId={proyectoId}
+            fuenteId={selectedFuente || null}
+            fuenteNombre={selectedFuenteNombre}
+            campos={camposFuente}
+            respuestasIniciales={respuestasIniciales ?? []}
+          />
+        </div>
 
-        <PostulacionProgressPanel proyectoId={proyectoId} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <PostulacionProgressPanel proyectoId={proyectoId} />
+        </div>
       </div>
     </>
   )
