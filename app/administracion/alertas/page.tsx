@@ -8,6 +8,7 @@ export default async function Page() {
   const { data: alertas, error } = await supabase
     .from('tipos_alerta')
     .select('*')
+    .eq('activo', true)
     .order('modulo', { ascending: true })
     .order('nombre', { ascending: true })
 
