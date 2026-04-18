@@ -87,7 +87,7 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
       currentModule="creacion-formulacion"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <DocumentosHeader />
+        <DocumentosHeader proyectoId={proyectoId} />
         <DocumentosStepper />
         <DocumentosContainer
           proyectoId={proyectoId}

@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
 
 type DiagnosticoItemPayload = {
@@ -223,4 +224,115 @@ export async function saveDiagnosticoData(payload: SaveDiagnosticoPayload) {
     success: true,
     diagnosticoId,
   }
+}
+
+export async function uploadDiagnosticoDocumento(formData: FormData) {
+  const supabase = await createClient()
+
+  const proyectoId = String(formData.get('proyectoId') || '')
+  const file = formData.get('file') as File | null
+
+  if (!proyectoId) {
+    return { success: false, error: 'Falta el proyectoId.' }
+  }
+
+  if (!file) {
+    return { success: false, error: 'Debes seleccionar un archivo.' }
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, nombre_completo')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile) {
+    return { success: false, error: 'El usuario no tiene perfil asociado.' }
+  }
+
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  const safeFileName = file.name.replace(/\s+/g, '-')
+  const path = `${proyectoId}/diagnostico/${Date.now()}-${safeFileName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('documentos-proyectos')
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: false,
+    })
+
+  if (uploadError) {
+    return {
+      success: false,
+      error: uploadError.message || 'No se pudo subir el archivo al storage.',
+    }
+  }
+
+  const fechaSubida = new Date().toISOString()
+  const documentPayload = {
+    proyecto_id: proyectoId,
+    catalogo_documento_id: null,
+    nombre: file.name,
+    nombre_archivo: file.name,
+    ruta_storage: path,
+    bucket: 'documentos-proyectos',
+    tipo_documento: 'Respaldo diagnóstico',
+    etapa: 'diagnostico',
+    extension: file.name.split('.').pop() || null,
+    tamano_bytes: file.size,
+    mime_type: file.type,
+    subido_por: profile.id,
+    fecha_subida: fechaSubida,
+    obligatorio: false,
+    estado_revision: 'subido',
+    porcentaje_validacion: 100,
+    observacion: null,
+  }
+
+  const { data: savedDocument, error: saveError } = await supabase
+    .from('documentos_proyecto')
+    .insert(documentPayload)
+    .select('id')
+    .single()
+
+  if (saveError || !savedDocument) {
+    return {
+      success: false,
+      error:
+        saveError?.message ||
+        'No se pudo registrar el documento en la base de datos.',
+    }
+  }
+
+  const documento = {
+    id: savedDocument.id,
+    ...documentPayload,
+    profile: [{ nombre_completo: profile.nombre_completo ?? 'Usuario' }],
+  }
+
+  await supabase.rpc('registrar_evento_historial', {
+    p_entidad: 'documento',
+    p_entidad_id: proyectoId,
+    p_accion: 'subir_documento',
+    p_descripcion: `Se cargó el respaldo de diagnóstico: ${file.name}`,
+    p_usuario_id: profile.id,
+    p_metadata: {
+      etapa: 'diagnostico',
+      nombre_archivo: file.name,
+    },
+  })
+
+  revalidatePath('/creacion-formulacion/diagnostico')
+
+  return { success: true, documento }
 }

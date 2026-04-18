@@ -58,7 +58,7 @@ export default function AprobacionContainer({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <AprobacionHeader />
+      <AprobacionHeader proyectoId={proyectoId} />
       <AprobacionStepper />
 
       <div

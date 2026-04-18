@@ -20,12 +20,48 @@ export type DiagnosticoItem = {
   iconColor: string
 }
 
+export type DiagnosticoDocumento = {
+  id: string
+  nombre: string
+  nombre_archivo: string
+  tamano_bytes: number | null
+  fecha_subida: string
+  profile:
+    | {
+        nombre_completo: string
+      }[]
+    | null
+}
+
+type InitialDiagnostico = {
+  problema_central: string | null
+  justificacion: string | null
+  causas:
+    | {
+        id: string
+        titulo: string | null
+        descripcion: string | null
+      }[]
+    | null
+  consecuencias:
+    | {
+        id: string
+        titulo: string | null
+        descripcion: string | null
+      }[]
+    | null
+}
+
 type DiagnosticoFormContainerProps = {
   proyectoId: string
+  diagnostico: InitialDiagnostico | null
+  documentos: DiagnosticoDocumento[]
 }
 
 export default function DiagnosticoFormContainer({
   proyectoId,
+  diagnostico,
+  documentos,
 }: DiagnosticoFormContainerProps) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -33,50 +69,20 @@ export default function DiagnosticoFormContainer({
   const [saveSuccess, setSaveSuccess] = useState('')
 
   const [problemaCentral, setProblemaCentral] = useState(
-    'Las calles y caminos del sector norte de la comuna de Curacautín presentan deterioro significativo en su pavimentación, con grietas, hundimientos y desgaste generalizado que afecta directamente la calidad de vida de aproximadamente 3.500 habitantes.'
+    diagnostico?.problema_central ?? ''
   )
 
   const [justificacion, setJustificacion] = useState(
-    'La pavimentación de calles y caminos en el sector norte de Curacautín constituye una inversión fundamental para mejorar la calidad de vida de los habitantes, garantizar su seguridad vial y promover el desarrollo económico local.'
+    diagnostico?.justificacion ?? ''
   )
 
-  const [causas, setCausas] = useState<DiagnosticoItem[]>([
-    {
-      id: crypto.randomUUID(),
-      title: 'Falta de inversión en infraestructura',
-      description:
-        'Presupuesto municipal limitado para mantención vial durante los últimos 5 años',
-      color: '#fee2e2',
-      iconColor: '#ef4444',
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Drenaje deficiente que deteriora el camino',
-      description:
-        'Sistema de evacuación de aguas lluvia inexistente o colapsado en la zona',
-      color: '#dbeafe',
-      iconColor: '#3b82f6',
-    },
-  ])
+  const [causas, setCausas] = useState<DiagnosticoItem[]>(() =>
+    buildInitialItems(diagnostico?.causas, 'causas')
+  )
 
-  const [consecuencias, setConsecuencias] = useState<DiagnosticoItem[]>([
-    {
-      id: crypto.randomUUID(),
-      title: 'Mayor riesgo de accidentes',
-      description:
-        'Incremento del 35% en accidentes de tránsito en el sector durante 2023',
-      color: '#fee2e2',
-      iconColor: '#ef4444',
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Problemas de salud por polvo',
-      description:
-        'Aumento de enfermedades respiratorias en población infantil y adulta mayor',
-      color: '#fce7f3',
-      iconColor: '#ec4899',
-    },
-  ])
+  const [consecuencias, setConsecuencias] = useState<DiagnosticoItem[]>(() =>
+    buildInitialItems(diagnostico?.consecuencias, 'consecuencias')
+  )
 
   const updateItem = (
     type: 'causas' | 'consecuencias',
@@ -144,7 +150,11 @@ export default function DiagnosticoFormContainer({
 
   return (
     <>
-      <DiagnosticoHeader onSave={handleSave} saving={saving} />
+      <DiagnosticoHeader
+        onSave={handleSave}
+        saving={saving}
+        backHref={`/creacion-formulacion?proyectoId=${proyectoId}`}
+      />
 
       {(saveError || saveSuccess) && (
         <div
@@ -206,8 +216,10 @@ export default function DiagnosticoFormContainer({
           </div>
 
           <JustificacionCard
+            proyectoId={proyectoId}
             value={justificacion}
             onChange={setJustificacion}
+            documentos={documentos}
           />
         </div>
 
@@ -220,4 +232,28 @@ export default function DiagnosticoFormContainer({
       </div>
     </>
   )
+}
+
+function buildInitialItems(
+  items:
+    | {
+        id: string
+        titulo: string | null
+        descripcion: string | null
+      }[]
+    | null
+    | undefined,
+  type: 'causas' | 'consecuencias'
+) {
+  const source = items?.length
+    ? items
+    : [{ id: crypto.randomUUID(), titulo: '', descripcion: '' }]
+
+  return source.map((item) => ({
+    id: item.id,
+    title: item.titulo ?? '',
+    description: item.descripcion ?? '',
+    color: type === 'causas' ? '#dbeafe' : '#fef3c7',
+    iconColor: type === 'causas' ? '#3b82f6' : '#eab308',
+  }))
 }

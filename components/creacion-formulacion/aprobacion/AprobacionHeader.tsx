@@ -1,4 +1,6 @@
-export default function AprobacionHeader() {
+import StageBackButton from '../StageBackButton'
+
+export default function AprobacionHeader({ proyectoId }: { proyectoId: string }) {
     return (
       <div
         style={{
@@ -19,6 +21,10 @@ export default function AprobacionHeader() {
         </h1>
   
         <div style={{ display: 'flex', gap: 12 }}>
+          <StageBackButton
+            href={`/creacion-formulacion/documentos?proyectoId=${proyectoId}`}
+          />
+
           <button
             style={{
               height: 44,

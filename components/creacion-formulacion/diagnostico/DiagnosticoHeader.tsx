@@ -1,9 +1,12 @@
+import StageBackButton from '../StageBackButton'
+
 type Props = {
     onSave: () => void
     saving: boolean
+    backHref: string
   }
   
-  export default function DiagnosticoHeader({ onSave, saving }: Props) {
+  export default function DiagnosticoHeader({ onSave, saving, backHref }: Props) {
     return (
       <div
         style={{
@@ -24,6 +27,8 @@ type Props = {
         </h1>
   
         <div style={{ display: 'flex', gap: 12 }}>
+          <StageBackButton href={backHref} />
+
           <button
             style={{
               height: 44,
