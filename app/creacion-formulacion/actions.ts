@@ -74,9 +74,16 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     }
   }
 
-  const normalizedAmount = Number(
-    String(payload.monto_estimado).replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.]/g, '')
-  )
+  const montoEstimado = String(payload.monto_estimado).trim()
+
+  if (!/^\d+$/.test(montoEstimado)) {
+    return {
+      success: false,
+      error: 'El monto estimado debe contener solo números.',
+    }
+  }
+
+  const normalizedAmount = Number(montoEstimado)
 
   if (Number.isNaN(normalizedAmount) || normalizedAmount < 0) {
     return {
@@ -172,6 +179,17 @@ export async function saveProjectData(payload: SaveProjectPayload) {
       group: item.group.trim(),
       quantity: item.quantity.trim(),
     }))
+
+  const beneficiarioInvalido = beneficiariosLimpios.find(
+    (item) => item.quantity !== '' && !/^\d+$/.test(item.quantity)
+  )
+
+  if (beneficiarioInvalido) {
+    return {
+      success: false,
+      error: 'El número aproximado de población beneficiaria debe contener solo números.',
+    }
+  }
 
   const { error: datosGeneralesError } = await supabase
     .from('proyecto_datos_generales')

@@ -94,6 +94,10 @@ export default function ProjectDescriptionAndBeneficiaries({
               />
               <input
                 value={row.quantity}
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1"
                 onChange={(e) =>
                   onBeneficiaryChange(row.id, 'quantity', e.target.value)
                 }

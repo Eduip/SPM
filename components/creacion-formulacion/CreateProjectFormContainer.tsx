@@ -72,9 +72,9 @@ export default function CreateProjectFormContainer({
     responsable_id: initialResponsibleId,
     descripcion: '',
     poblacion_beneficiaria: [
-      { id: crypto.randomUUID(), group: 'Adultos mayores', quantity: '250' },
-      { id: crypto.randomUUID(), group: 'Niños', quantity: '180' },
-      { id: crypto.randomUUID(), group: 'Jóvenes', quantity: '320' },
+      { id: crypto.randomUUID(), group: 'Adultos mayores', quantity: '' },
+      { id: crypto.randomUUID(), group: 'Niños', quantity: '' },
+      { id: crypto.randomUUID(), group: 'Jóvenes', quantity: '' },
     ],
   })
 
@@ -114,7 +114,7 @@ export default function CreateProjectFormContainer({
   ) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: field === 'monto_estimado' ? keepOnlyDigits(value) : value,
     }))
   }
 
@@ -133,7 +133,9 @@ export default function CreateProjectFormContainer({
     setFormData((prev) => ({
       ...prev,
       poblacion_beneficiaria: prev.poblacion_beneficiaria.map((row) =>
-        row.id === rowId ? { ...row, [field]: value } : row
+        row.id === rowId
+          ? { ...row, [field]: field === 'quantity' ? keepOnlyDigits(value) : value }
+          : row
       ),
     }))
   }
@@ -253,4 +255,8 @@ export default function CreateProjectFormContainer({
       </div>
     </>
   )
+}
+
+function keepOnlyDigits(value: string) {
+  return value.replace(/\D/g, '')
 }

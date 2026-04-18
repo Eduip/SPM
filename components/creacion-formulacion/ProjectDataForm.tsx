@@ -153,7 +153,11 @@ export default function ProjectDataForm({
 
           <Field label="Monto Estimado (CLP) *">
             <input
-              placeholder="$ 150.000.000"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              step="1"
+              placeholder="150000000"
               style={inputStyle}
               value={formData.monto_estimado}
               onChange={(e) => onFieldChange('monto_estimado', e.target.value)}
