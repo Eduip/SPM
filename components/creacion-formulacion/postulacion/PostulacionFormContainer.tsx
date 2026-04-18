@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import PostulacionHeader from './PostulacionHeader'
 import PostulacionStepper from './PostulacionStepper'
+import PostulacionProgressPanel from './PostulacionProgressPanel'
 import { savePostulacionData } from '../../../app/creacion-formulacion/postulacion/actions'
 import FuenteFinanciamientoSelector from './FuenteFinanciamientoSelector'
 
@@ -134,6 +135,8 @@ export default function PostulacionFormContainer({
           campos={camposFuente}
           respuestasIniciales={respuestasIniciales ?? []}
         />
+
+        <PostulacionProgressPanel proyectoId={proyectoId} />
       </div>
     </>
   )
