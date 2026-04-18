@@ -102,7 +102,7 @@ export default function CreateProjectFormContainer({
   const [saveSuccess, setSaveSuccess] = useState('')
   const [savedProjectId, setSavedProjectId] = useState(proyectoId)
 
-  const handleSave = async () => {
+  const persistProjectData = async () => {
     setSaving(true)
     setSaveError('')
     setSaveSuccess('')
@@ -115,14 +115,30 @@ export default function CreateProjectFormContainer({
     if (!result.success) {
       setSaveError(result.error || 'Ocurrió un error al guardar.')
       setSaving(false)
-      return
+      return null
     }
 
     setSavedProjectId(result.proyectoId || '')
     setSaveSuccess(`Proyecto guardado correctamente con código ${result.codigoInterno}.`)
     setSaving(false)
-    router.push(`/creacion-formulacion?proyectoId=${result.proyectoId}`)
+    return result.proyectoId || ''
+  }
+
+  const handleSave = async () => {
+    const projectId = await persistProjectData()
+
+    if (!projectId) return
+
+    router.push(`/creacion-formulacion?proyectoId=${projectId}`)
     router.refresh()
+  }
+
+  const handleContinue = async () => {
+    const projectId = await persistProjectData()
+
+    if (!projectId) return
+
+    router.push(`/creacion-formulacion/diagnostico?proyectoId=${projectId}`)
   }
 
   const selectedResponsible = useMemo(() => {
@@ -249,27 +265,22 @@ export default function CreateProjectFormContainer({
           </button>
 
           <button
-  onClick={() => {
-    if (!savedProjectId) return
-    router.push(`/creacion-formulacion/diagnostico?proyectoId=${savedProjectId}`)
-  }}
-  disabled={!savedProjectId}
+  onClick={handleContinue}
+  disabled={saving}
   style={{
     height: 58,
     borderRadius: 18,
     border: 'none',
-    background: savedProjectId ? '#2563eb' : '#93c5fd',
+    background: '#2563eb',
     color: '#ffffff',
     fontWeight: 700,
     fontSize: 18,
-    cursor: savedProjectId ? 'pointer' : 'not-allowed',
-    boxShadow: savedProjectId
-      ? '0 14px 30px rgba(37,99,235,0.25)'
-      : 'none',
-    opacity: savedProjectId ? 1 : 0.9,
+    cursor: saving ? 'not-allowed' : 'pointer',
+    boxShadow: '0 14px 30px rgba(37,99,235,0.25)',
+    opacity: saving ? 0.75 : 1,
   }}
 >
-  Continuar al Diagnóstico&nbsp;&nbsp;→
+  {saving ? 'Guardando...' : 'Continuar al Diagnóstico\u00a0\u00a0→'}
 </button>
         </div>
       </div>
