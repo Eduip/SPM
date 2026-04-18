@@ -26,31 +26,65 @@ type FormState = {
   codigo: string
   modulo: string
   severidad: string
-  condicion: string
+  campo: string
+  operador: string
+  valor: string
+  unidad: string
+  mensaje: string
   activo: boolean
 }
 
 const modulos = ['general', 'garantias', 'rendicion', 'ejecucion', 'financiamiento', 'pagos', 'proyectos']
 const prioridades = ['informativa', 'media', 'alta', 'critica']
+const camposEvaluables = [
+  { value: 'dias_sin_rendicion', label: 'Días sin rendición', unit: 'dias' },
+  { value: 'dias_hasta_vencimiento_garantia', label: 'Días hasta vencimiento de garantía', unit: 'dias' },
+  { value: 'dias_atraso_ejecucion', label: 'Días de atraso en ejecución', unit: 'dias' },
+  { value: 'porcentaje_presupuesto_ejecutado', label: 'Porcentaje de presupuesto ejecutado', unit: 'porcentaje' },
+  { value: 'dias_estado_pago_pendiente', label: 'Días con estado de pago pendiente', unit: 'dias' },
+  { value: 'dias_sin_actualizacion', label: 'Días sin actualización', unit: 'dias' },
+]
+const operadores = [
+  { value: '>', label: 'Mayor que' },
+  { value: '>=', label: 'Mayor o igual que' },
+  { value: '<', label: 'Menor que' },
+  { value: '<=', label: 'Menor o igual que' },
+  { value: '=', label: 'Igual a' },
+]
+const unidades = [
+  { value: 'dias', label: 'Días' },
+  { value: 'porcentaje', label: 'Porcentaje' },
+  { value: 'monto', label: 'Monto' },
+  { value: 'cantidad', label: 'Cantidad' },
+]
 
 const emptyForm: FormState = {
   nombre: '',
   codigo: '',
   modulo: 'general',
   severidad: 'media',
-  condicion: '',
+  campo: 'dias_sin_rendicion',
+  operador: '>',
+  valor: '',
+  unidad: 'dias',
+  mensaje: '',
   activo: true,
 }
 
 function toFormState(alerta: TipoAlerta | null): FormState {
   if (!alerta) return emptyForm
+  const rule = parseRuleConfig(alerta.descripcion)
 
   return {
     nombre: alerta.nombre ?? '',
     codigo: alerta.codigo ?? '',
     modulo: alerta.modulo ?? 'general',
     severidad: normalizePriority(alerta.severidad),
-    condicion: alerta.descripcion ?? '',
+    campo: rule.field,
+    operador: rule.operator,
+    valor: rule.value,
+    unidad: rule.unit,
+    mensaje: rule.message,
     activo: Boolean(alerta.activo),
   }
 }
@@ -109,7 +143,8 @@ export default function TiposAlertaPage({
         nombre: alerta.nombre,
         codigo: alerta.codigo ?? '',
         modulo: alerta.modulo,
-        condicion: alerta.descripcion ?? '',
+        condicion: getConditionLabel(alerta.descripcion),
+        mensaje: parseRuleConfig(alerta.descripcion).message,
         prioridad: humanize(normalizePriority(alerta.severidad)),
         estado: alerta.activo ? 'Activa' : 'Inactiva',
       }))
@@ -127,7 +162,7 @@ export default function TiposAlertaPage({
       codigo: form.codigo,
       modulo: form.modulo,
       severidad: form.severidad,
-      descripcion: form.condicion,
+      descripcion: serializeRuleConfig(form),
       activo: form.activo,
     })
 
@@ -258,11 +293,32 @@ export default function TiposAlertaPage({
               </option>
             ))}
           </select>
+          <select name="campo" defaultValue="dias_sin_rendicion" style={inputStyle}>
+            {camposEvaluables.map((campo) => (
+              <option key={campo.value} value={campo.value}>
+                {campo.label}
+              </option>
+            ))}
+          </select>
+          <select name="operador" defaultValue=">" style={inputStyle}>
+            {operadores.map((operador) => (
+              <option key={operador.value} value={operador.value}>
+                {operador.label}
+              </option>
+            ))}
+          </select>
+          <input name="valor" placeholder="Valor" required style={{ ...inputStyle, width: 120 }} />
+          <select name="unidad" defaultValue="dias" style={inputStyle}>
+            {unidades.map((unidad) => (
+              <option key={unidad.value} value={unidad.value}>
+                {unidad.label}
+              </option>
+            ))}
+          </select>
           <input
-            name="condicion"
-            placeholder="Condición, por ejemplo: Días sin rendición > 60"
-            required
-            style={{ ...inputStyle, minWidth: 300 }}
+            name="mensaje"
+            placeholder="Mensaje de alerta"
+            style={{ ...inputStyle, minWidth: 260 }}
           />
           <label style={checkboxLabelStyle}>
             <input type="checkbox" name="activo" defaultChecked />
@@ -318,7 +374,7 @@ export default function TiposAlertaPage({
                 >
                   <div style={leftCardTitleStyle}>{alerta.nombre}</div>
                   <div style={leftCardMetaStyle}>{humanize(alerta.modulo)}</div>
-                  <div style={leftCardDescriptionStyle}>{alerta.descripcion || 'Sin condición configurada'}</div>
+                  <div style={leftCardDescriptionStyle}>{getConditionLabel(alerta.descripcion)}</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <span style={priorityBadgeStyle(normalizePriority(alerta.severidad))}>
                       {humanize(normalizePriority(alerta.severidad))}
@@ -364,7 +420,7 @@ export default function TiposAlertaPage({
                   <div>
                     <span style={moduleBadgeStyle}>{humanize(alerta.modulo)}</span>
                   </div>
-                  <div style={conditionStyle}>{alerta.descripcion || '-'}</div>
+                  <div style={conditionStyle}>{getConditionLabel(alerta.descripcion)}</div>
                   <div>
                     <span style={priorityBadgeStyle(normalizePriority(alerta.severidad))}>
                       {humanize(normalizePriority(alerta.severidad))}
@@ -420,15 +476,52 @@ export default function TiposAlertaPage({
                     onChange={(value) => setForm((state) => ({ ...state, severidad: value }))}
                     options={prioridades}
                   />
+                  <SelectField
+                    label="Campo evaluado"
+                    value={form.campo}
+                    onChange={(value) => {
+                      const campo = camposEvaluables.find((item) => item.value === value)
+                      setForm((state) => ({
+                        ...state,
+                        campo: value,
+                        unidad: campo?.unit ?? state.unidad,
+                      }))
+                    }}
+                    options={camposEvaluables.map((campo) => campo.value)}
+                    labels={Object.fromEntries(camposEvaluables.map((campo) => [campo.value, campo.label]))}
+                  />
+                  <SelectField
+                    label="Operador"
+                    value={form.operador}
+                    onChange={(value) => setForm((state) => ({ ...state, operador: value }))}
+                    options={operadores.map((operador) => operador.value)}
+                    labels={Object.fromEntries(operadores.map((operador) => [operador.value, operador.label]))}
+                  />
+                  <Field
+                    label="Valor"
+                    value={form.valor}
+                    onChange={(value) => setForm((state) => ({ ...state, valor: value }))}
+                  />
+                  <SelectField
+                    label="Unidad"
+                    value={form.unidad}
+                    onChange={(value) => setForm((state) => ({ ...state, unidad: value }))}
+                    options={unidades.map((unidad) => unidad.value)}
+                    labels={Object.fromEntries(unidades.map((unidad) => [unidad.value, unidad.label]))}
+                  />
                 </div>
 
                 <div style={{ marginTop: 14 }}>
                   <TextAreaField
-                    label="Condición de activación"
-                    value={form.condicion}
-                    onChange={(value) => setForm((state) => ({ ...state, condicion: value }))}
-                    placeholder="Ejemplo: Días sin rendición > 60"
+                    label="Mensaje de alerta"
+                    value={form.mensaje}
+                    onChange={(value) => setForm((state) => ({ ...state, mensaje: value }))}
+                    placeholder="Ejemplo: Proyecto con rendición pendiente por más de 60 días"
                   />
+                </div>
+
+                <div style={conditionPreviewStyle}>
+                  Condición: {getConditionLabel(serializeRuleConfig(form))}
                 </div>
 
                 <div style={{ marginTop: 16 }}>
@@ -489,11 +582,13 @@ function SelectField({
   value,
   onChange,
   options,
+  labels,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   options: string[]
+  labels?: Record<string, string>
 }) {
   return (
     <div>
@@ -501,7 +596,7 @@ function SelectField({
       <select value={value} onChange={(event) => onChange(event.target.value)} style={inputStyle}>
         {options.map((option) => (
           <option key={option} value={option}>
-            {humanize(option)}
+            {labels?.[option] ?? humanize(option)}
           </option>
         ))}
       </select>
@@ -572,6 +667,81 @@ function normalizePriority(priority?: string | null) {
     return priority
   }
   return 'media'
+}
+
+type AlertRuleConfig = {
+  field: string
+  operator: string
+  value: string
+  unit: string
+  message: string
+}
+
+function parseRuleConfig(raw?: string | null): AlertRuleConfig {
+  if (!raw) {
+    return {
+      field: 'dias_sin_rendicion',
+      operator: '>',
+      value: '',
+      unit: 'dias',
+      message: '',
+    }
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<{
+      kind: string
+      field: string
+      operator: string
+      value: string | number
+      unit: string | null
+      message: string | null
+    }>
+
+    if (parsed.kind === 'alert_rule' && parsed.field && parsed.operator) {
+      return {
+        field: parsed.field,
+        operator: parsed.operator,
+        value: parsed.value !== undefined && parsed.value !== null ? String(parsed.value) : '',
+        unit: parsed.unit ?? '',
+        message: parsed.message ?? '',
+      }
+    }
+  } catch {
+    // Legacy text condition.
+  }
+
+  return {
+    field: 'dias_sin_rendicion',
+    operator: '>',
+    value: '',
+    unit: 'dias',
+    message: raw,
+  }
+}
+
+function serializeRuleConfig(form: FormState) {
+  return JSON.stringify({
+    kind: 'alert_rule',
+    version: 1,
+    field: form.campo,
+    operator: form.operador,
+    value: form.valor,
+    unit: form.unidad || null,
+    message: form.mensaje || null,
+  })
+}
+
+function getConditionLabel(raw?: string | null) {
+  const config = parseRuleConfig(raw)
+  const fieldLabel = camposEvaluables.find((campo) => campo.value === config.field)?.label ?? humanize(config.field)
+  const unitLabel = unidades.find((unit) => unit.value === config.unit)?.label.toLowerCase() ?? config.unit
+
+  if (!config.value) {
+    return config.message || 'Sin condición configurada'
+  }
+
+  return `${fieldLabel} ${config.operator} ${config.value}${unitLabel ? ` ${unitLabel}` : ''}`
 }
 
 function priorityBadgeStyle(priority: string): React.CSSProperties {
@@ -879,6 +1049,17 @@ const toggleItemStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+}
+
+const conditionPreviewStyle: React.CSSProperties = {
+  marginTop: 12,
+  borderRadius: 12,
+  border: '1px solid #bfdbfe',
+  background: '#eff6ff',
+  color: '#1d4ed8',
+  padding: 12,
+  fontSize: 13,
+  fontWeight: 700,
 }
 
 const footerActionsStyle: React.CSSProperties = {

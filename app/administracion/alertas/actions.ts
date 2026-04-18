@@ -9,7 +9,7 @@ export async function crearTipoAlerta(formData: FormData) {
   const codigo = String(formData.get('codigo') || '').trim()
   const modulo = String(formData.get('modulo') || '').trim()
   const severidad = String(formData.get('severidad') || '').trim()
-  const descripcion = String(formData.get('descripcion') || formData.get('condicion') || '').trim()
+  const descripcion = buildRuleDescription(formData)
   const activo = formData.get('activo') === 'on'
 
   if (!nombre || !modulo || !severidad || !descripcion) {
@@ -132,4 +132,27 @@ function getPriorityColor(priority: string) {
   if (priority === 'alta') return '#f97316'
   if (priority === 'media') return '#f59e0b'
   return '#2563eb'
+}
+
+function buildRuleDescription(formData: FormData) {
+  const campo = String(formData.get('campo') || '').trim()
+  const operador = String(formData.get('operador') || '').trim()
+  const valor = String(formData.get('valor') || '').trim()
+  const unidad = String(formData.get('unidad') || '').trim()
+  const mensaje = String(formData.get('mensaje') || '').trim()
+  const condicion = String(formData.get('descripcion') || formData.get('condicion') || '').trim()
+
+  if (!campo || !operador || !valor) {
+    return condicion
+  }
+
+  return JSON.stringify({
+    kind: 'alert_rule',
+    version: 1,
+    field: campo,
+    operator: operador,
+    value: valor,
+    unit: unidad || null,
+    message: mensaje || null,
+  })
 }
