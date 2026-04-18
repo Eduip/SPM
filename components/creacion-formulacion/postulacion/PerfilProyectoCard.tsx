@@ -15,8 +15,6 @@ type Props = {
   setUtmY: (value: string) => void
   periodo: string
   setPeriodo: (value: string) => void
-  fuentes: string[]
-  setFuentes: React.Dispatch<React.SetStateAction<string[]>>
   onCalculateScore: () => void
 }
 
@@ -35,18 +33,8 @@ export default function PerfilProyectoCard({
   setUtmY,
   periodo,
   setPeriodo,
-  fuentes,
-  setFuentes,
   onCalculateScore,
 }: Props) {
-  const toggleFuente = (fuente: string) => {
-    setFuentes((prev) =>
-      prev.includes(fuente)
-        ? prev.filter((f) => f !== fuente)
-        : [...prev, fuente]
-    )
-  }
-
   return (
     <div
       style={{
@@ -75,37 +63,6 @@ export default function PerfilProyectoCard({
             onChange={(e) => setTipoProyecto(e.target.value)}
             style={inputStyle}
           />
-        </Field>
-
-        <Field label="Fuente(s) de Financiamiento *">
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-            {['FNDR', 'PMU', 'SUBDERE', 'Municipal'].map((fuente) => {
-              const active = fuentes.includes(fuente)
-              return (
-                <button
-                  key={fuente}
-                  type="button"
-                  onClick={() => toggleFuente(fuente)}
-                  style={{
-                    height: 30,
-                    padding: '0 12px',
-                    borderRadius: 10,
-                    border: active ? '1px solid #93c5fd' : '1px solid #e5e7eb',
-                    background: active ? '#dbeafe' : '#ffffff',
-                    color: active ? '#2563eb' : '#374151',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {fuente}
-                </button>
-              )
-            })}
-          </div>
-          <input style={inputStyle} readOnly value={fuentes.join(', ')} />
         </Field>
 
         <Field label="Problema Priorizado (Referencia al Diagnóstico)">

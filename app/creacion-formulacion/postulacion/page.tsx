@@ -21,6 +21,7 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
     documentosRes,
     reglasRes,
     respuestasRes,
+    fuentesProyectoRes,
   ] = await Promise.all([
     supabase
       .from('proyectos')
@@ -55,6 +56,15 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
           .select('*')
           .eq('proyecto_id', proyectoId)
       : Promise.resolve({ data: [], error: null }),
+
+    proyectoId
+      ? supabase
+          .from('proyecto_fuentes_financiamiento')
+          .select('fuente_id')
+          .eq('proyecto_id', proyectoId)
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ])
 
   const proyecto = proyectoRes.data
@@ -63,6 +73,8 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
   const documentos = documentosRes.data ?? []
   const reglas = reglasRes.data ?? []
   const respuestas = respuestasRes.data ?? []
+  const selectedFuenteId =
+    fuentesProyectoRes.data?.fuente_id ?? proyecto?.fuente_financiamiento_id ?? ''
 
   return (
     <AppShell
@@ -78,6 +90,7 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
           documentosFuente={documentos}
           reglasFuente={reglas}
           respuestasIniciales={respuestas}
+          selectedFuenteId={selectedFuenteId}
         />
       </div>
     </AppShell>

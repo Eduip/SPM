@@ -11,7 +11,7 @@ type SavePostulacionPayload = {
   utmX: string
   utmY: string
   periodo: string
-  fuentes: string[]
+  fuenteId: string
   puntajeDiagnostico: number
   puntajePertinencia: number
   puntajeRS: number
@@ -59,10 +59,10 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
     }
   }
 
-  if (!payload.fuentes.length) {
+  if (!payload.fuenteId) {
     return {
       success: false,
-      error: 'Debes seleccionar al menos una fuente de financiamiento.',
+      error: 'Debes seleccionar una fuente de financiamiento.',
     }
   }
 
@@ -180,36 +180,49 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
     postulacionId = newPostulacion.id
   }
 
-  const { data: fuentesCatalogo, error: fuentesError } = await supabase
+  const { data: fuenteCatalogo, error: fuentesError } = await supabase
     .from('fuentes_financiamiento')
     .select('id, nombre')
-    .in('nombre', payload.fuentes)
+    .eq('id', payload.fuenteId)
+    .eq('activo', true)
+    .maybeSingle()
 
-  if (fuentesError) {
+  if (fuentesError || !fuenteCatalogo) {
     return {
       success: false,
-      error: fuentesError.message || 'No se pudieron resolver las fuentes.',
+      error:
+        fuentesError?.message ||
+        'No se pudo resolver la fuente de financiamiento seleccionada.',
     }
   }
 
-  const fuentesToInsert =
-    fuentesCatalogo?.map((fuente) => ({
+  const { error: deleteFuentesError } = await supabase
+    .from('proyecto_fuentes_financiamiento')
+    .delete()
+    .eq('proyecto_id', payload.proyectoId)
+
+  if (deleteFuentesError) {
+    return {
+      success: false,
+      error:
+        deleteFuentesError.message ||
+        'No se pudo actualizar la fuente de financiamiento del proyecto.',
+    }
+  }
+
+  const { error: insertFuentesError } = await supabase
+    .from('proyecto_fuentes_financiamiento')
+    .insert({
       proyecto_id: payload.proyectoId,
-      fuente_id: fuente.id,
-    })) ?? []
+      fuente_id: fuenteCatalogo.id,
+    })
 
-  if (fuentesToInsert.length) {
-    const { error: insertFuentesError } = await supabase
-      .from('proyecto_fuentes_financiamiento')
-      .insert(fuentesToInsert)
-
-    if (insertFuentesError) {
-      return {
-        success: false,
-        error:
-          insertFuentesError.message ||
-          'No se pudieron guardar las fuentes de financiamiento.',
-      }
+  if (insertFuentesError) {
+    return {
+      success: false,
+      error:
+        insertFuentesError.message ||
+        'No se pudo guardar la fuente de financiamiento.',
     }
   }
 
@@ -274,6 +287,8 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
       p_metadata: {
         etapa: 'postulacion',
         postulacion_id: postulacionId,
+        fuente_id: fuenteCatalogo.id,
+        fuente_nombre: fuenteCatalogo.nombre,
         puntaje_total: payload.puntajeTotal,
         porcentaje_evaluacion: payload.porcentajeEvaluacion,
       },

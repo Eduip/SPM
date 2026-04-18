@@ -10,6 +10,8 @@ import UltimosDocumentosPanel from '../diagnostico/UltimosDocumentosPanel'
 import PostulacionHeader from './PostulacionHeader'
 import PostulacionStepper from './PostulacionStepper'
 import { savePostulacionData } from '../../../app/creacion-formulacion/postulacion/actions'
+import FuenteFinanciamientoSelector from './FuenteFinanciamientoSelector'
+import DocumentosFuenteCard from './DocumentosFuenteCard'
 
 import DynamicFuenteFields from './DynamicFuenteFields'
 import type {
@@ -23,9 +25,12 @@ import type { ProyectoFicha } from '../../../lib/project-types'
 
 export default function PostulacionFormContainer({
   proyectoId,
+  proyecto,
   fuentesCatalogo,
   camposFuente,
+  documentosFuente,
   respuestasIniciales,
+  selectedFuenteId,
 }: {
   proyectoId: string
   proyecto: ProyectoFicha | null
@@ -34,6 +39,7 @@ export default function PostulacionFormContainer({
   documentosFuente: DocumentoFuente[]
   reglasFuente: ReglaFuente[]
   respuestasIniciales: RespuestaPostulacion[]
+  selectedFuenteId: string
 }) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -43,14 +49,18 @@ export default function PostulacionFormContainer({
     setScoreMessage(`Puntaje recalculado: ${puntajeTotal}/35 (${porcentajeEvaluacion}%).`)
   }
 
+  const [selectedFuente, setSelectedFuente] = useState(selectedFuenteId)
   const [tipoProyecto, setTipoProyecto] = useState('')
-  const [nombreProyecto, setNombreProyecto] = useState('')
-  const [montoTotal, setMontoTotal] = useState('')
-  const [unidadResponsable, setUnidadResponsable] = useState('')
+  const [nombreProyecto, setNombreProyecto] = useState(proyecto?.nombre ?? '')
+  const [montoTotal, setMontoTotal] = useState(
+    proyecto?.monto_estimado ? String(proyecto.monto_estimado) : ''
+  )
+  const [unidadResponsable, setUnidadResponsable] = useState(
+    proyecto?.unidad?.nombre ?? ''
+  )
   const [utmX, setUtmX] = useState('')
   const [utmY, setUtmY] = useState('')
   const [periodo, setPeriodo] = useState('')
-  const [fuentes, setFuentes] = useState<string[]>([])
 
   const [puntajePertinencia, setPuntajePertinencia] = useState(11)
   const [puntajeRS, setPuntajeRS] = useState(11)
@@ -74,7 +84,7 @@ export default function PostulacionFormContainer({
       utmX,
       utmY,
       periodo,
-      fuentes,
+      fuenteId: selectedFuente,
       puntajeDiagnostico,
       puntajePertinencia,
       puntajeRS,
@@ -147,7 +157,7 @@ export default function PostulacionFormContainer({
       >
         Complete la información de postulación requerida para formular su proyecto.
         <div style={{ fontSize: 14, fontWeight: 500, marginTop: 4 }}>
-          Es necesario llenar todos los campos obligatorios.
+          Seleccione la fuente de financiamiento antes de completar el formulario.
         </div>
       </div>
 
@@ -160,32 +170,37 @@ export default function PostulacionFormContainer({
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <PerfilProyectoCard
-  tipoProyecto={tipoProyecto}
-  setTipoProyecto={setTipoProyecto}
-  nombreProyecto={nombreProyecto}
-  setNombreProyecto={setNombreProyecto}
-  montoTotal={montoTotal}
-  setMontoTotal={setMontoTotal}
-  unidadResponsable={unidadResponsable}
-  setUnidadResponsable={setUnidadResponsable}
-  utmX={utmX}
-  setUtmX={setUtmX}
-  utmY={utmY}
-  setUtmY={setUtmY}
-  periodo={periodo}
-  setPeriodo={setPeriodo}
-  fuentes={fuentes}
-  setFuentes={setFuentes}
-  onCalculateScore={handleCalculateScore}
-/>
+          <FuenteFinanciamientoSelector
+            fuentes={fuentesCatalogo}
+            selectedFuenteId={selectedFuente}
+            onChange={setSelectedFuente}
+          />
 
-<DynamicFuenteFields
-  proyectoId={proyectoId}
-  fuenteId={resolveFuenteId(fuentesCatalogo, fuentes)}
-  campos={camposFuente}
-  respuestasIniciales={respuestasIniciales ?? []}
-/>
+          <PerfilProyectoCard
+            tipoProyecto={tipoProyecto}
+            setTipoProyecto={setTipoProyecto}
+            nombreProyecto={nombreProyecto}
+            setNombreProyecto={setNombreProyecto}
+            montoTotal={montoTotal}
+            setMontoTotal={setMontoTotal}
+            unidadResponsable={unidadResponsable}
+            setUnidadResponsable={setUnidadResponsable}
+            utmX={utmX}
+            setUtmX={setUtmX}
+            utmY={utmY}
+            setUtmY={setUtmY}
+            periodo={periodo}
+            setPeriodo={setPeriodo}
+            onCalculateScore={handleCalculateScore}
+          />
+
+          <DynamicFuenteFields
+            key={selectedFuente || 'sin-fuente'}
+            proyectoId={proyectoId}
+            fuenteId={selectedFuente || null}
+            campos={camposFuente}
+            respuestasIniciales={respuestasIniciales ?? []}
+          />
 
           <EvaluacionProyectoCard
             puntajeTotal={puntajeTotal}
@@ -209,6 +224,11 @@ export default function PostulacionFormContainer({
             utmY={utmY}
           />
 
+          <DocumentosFuenteCard
+            documentos={documentosFuente}
+            selectedFuenteId={selectedFuente}
+          />
+
           <AlertasActivasPanel />
           <PostulacionProgressPanel proyectoId={proyectoId} />
           <UltimosDocumentosPanel />
@@ -216,20 +236,4 @@ export default function PostulacionFormContainer({
       </div>
     </>
   )
-  function resolveFuenteId(
-    fuentesCatalogo: FuenteCatalogo[] | null | undefined,
-    fuentesSeleccionadas: string[] | null | undefined
-  ): string | null {
-    const safeCatalogo = Array.isArray(fuentesCatalogo) ? fuentesCatalogo : []
-    const safeSeleccionadas = Array.isArray(fuentesSeleccionadas)
-      ? fuentesSeleccionadas
-      : []
-  
-    if (!safeSeleccionadas.length) return null
-  
-    const first = safeSeleccionadas[0]
-    const found = safeCatalogo.find((f) => f.nombre === first)
-  
-    return found?.id ?? null
-  }
 }
