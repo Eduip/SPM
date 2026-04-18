@@ -20,6 +20,8 @@ import type {
   ReglaFuente,
 } from '../../../lib/formulacion-types'
 
+type FieldFormMode = 'descripcion' | 'plazo' | 'presupuesto'
+
 type Fuente = {
   id: string
   nombre: string
@@ -49,6 +51,28 @@ const emptyForm: FormState = {
   requiere_evaluacion_tecnica: false,
   requiere_rendicion_obligatoria: false,
   requiere_aprobacion_externa: false,
+}
+
+const FIELD_TYPE_OPTIONS = [
+  { value: 'texto', label: 'Texto', section: 'descripcion' },
+  { value: 'texto_largo', label: 'Texto largo', section: 'descripcion' },
+  { value: 'numero', label: 'Número', section: 'descripcion' },
+  { value: 'fecha', label: 'Fecha', section: 'descripcion' },
+  { value: 'booleano', label: 'Sí / No', section: 'descripcion' },
+  { value: 'plazo', label: 'Plazo', section: 'plazo' },
+  { value: 'presupuesto', label: 'Presupuesto', section: 'presupuesto' },
+]
+
+function getNewFieldPlaceholder(mode: FieldFormMode) {
+  if (mode === 'plazo') return 'Nombre del plazo'
+  if (mode === 'presupuesto') return 'Nombre de la partida presupuestaria'
+  return 'Nombre del campo'
+}
+
+function getFieldSection(tipo: string): FieldFormMode {
+  if (tipo === 'plazo') return 'plazo'
+  if (tipo === 'presupuesto') return 'presupuesto'
+  return 'descripcion'
 }
 
 function toFormState(fuente: Fuente | null): FormState {
@@ -81,6 +105,7 @@ export default function FuentesFinanciamientoPage({
   const router = useRouter()
   const [showNewForm, setShowNewForm] = useState(false)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false)
+  const [fieldFormMode, setFieldFormMode] = useState<FieldFormMode>('descripcion')
   const [showNewDocumentForm, setShowNewDocumentForm] = useState(false)
   const [showNewRuleForm, setShowNewRuleForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(fuentes[0]?.id ?? null)
@@ -535,21 +560,51 @@ export default function FuentesFinanciamientoPage({
               }}
             >
               <span>🔧 Customización del Formulario de Postulación</span>
-              <button
-                type="button"
-                onClick={() => setShowNewFieldForm((v) => !v)}
-                disabled={!selectedFuente}
-                style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
-              >
-                + Crear campo personalizado
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFieldFormMode('descripcion')
+                    setShowNewFieldForm((v) => !v || fieldFormMode !== 'descripcion')
+                  }}
+                  disabled={!selectedFuente}
+                  style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
+                >
+                  + Crear descripción
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFieldFormMode('plazo')
+                    setShowNewFieldForm((v) => !v || fieldFormMode !== 'plazo')
+                  }}
+                  disabled={!selectedFuente}
+                  style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
+                >
+                  + Crear plazo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFieldFormMode('presupuesto')
+                    setShowNewFieldForm((v) => !v || fieldFormMode !== 'presupuesto')
+                  }}
+                  disabled={!selectedFuente}
+                  style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
+                >
+                  + Crear presupuesto
+                </button>
+              </div>
             </div>
 
             {showNewFieldForm && selectedFuente && (
               <form
                 action={async (formData) => {
                   const nombre = String(formData.get('nombre') || '').trim()
-                  const tipo = String(formData.get('tipo') || 'texto')
+                  const tipo =
+                    fieldFormMode === 'descripcion'
+                      ? String(formData.get('tipo') || 'texto')
+                      : fieldFormMode
                   const obligatorio = formData.get('obligatorio') === 'on'
 
                   const res = await crearCampoFuente({
@@ -571,17 +626,25 @@ export default function FuentesFinanciamientoPage({
               >
                 <input
                   name="nombre"
-                  placeholder="Nombre del campo"
+                  placeholder={getNewFieldPlaceholder(fieldFormMode)}
                   required
                   style={inputStyle}
                 />
-                <select name="tipo" defaultValue="texto" style={inputStyle}>
-                  <option value="texto">Texto</option>
-                  <option value="texto_largo">Texto largo</option>
-                  <option value="numero">Número</option>
-                  <option value="fecha">Fecha</option>
-                  <option value="booleano">Sí / No</option>
-                </select>
+                {fieldFormMode === 'descripcion' ? (
+                  <select name="tipo" defaultValue="texto" style={inputStyle}>
+                    {FIELD_TYPE_OPTIONS.filter(
+                      (option) => option.section === 'descripcion'
+                    ).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={lockedTypeStyle}>
+                    {fieldFormMode === 'plazo' ? 'Número para plazo' : 'Número para presupuesto'}
+                  </div>
+                )}
                 <label style={inlineCheckboxStyle}>
                   <input type="checkbox" name="obligatorio" />
                   Obligatorio
@@ -619,9 +682,7 @@ export default function FuentesFinanciamientoPage({
                   Esta fuente aún no tiene campos personalizados para previsualizar.
                 </div>
               ) : (
-                camposFuente.map((campo) => (
-                  <PreviewField key={campo.id} campo={campo} />
-                ))
+                <PreviewSections campos={camposFuente} />
               )}
             </div>
           </div>
@@ -956,11 +1017,11 @@ function FieldConfigRow({
           onChange={(event) => setTipo(event.target.value)}
           style={compactSelectStyle}
         >
-          <option value="texto">Texto</option>
-          <option value="texto_largo">Texto largo</option>
-          <option value="numero">Número</option>
-          <option value="fecha">Fecha</option>
-          <option value="booleano">Sí / No</option>
+          {FIELD_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
         <label style={compactCheckboxStyle}>
           <input
@@ -993,6 +1054,10 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
       ? 'Seleccione una fecha'
       : campo.tipo === 'booleano'
         ? 'Sí / No'
+        : campo.tipo === 'plazo'
+          ? '0 días'
+          : campo.tipo === 'presupuesto'
+            ? '$0'
         : `Ingrese ${campo.nombre.toLowerCase()}...`
 
   return (
@@ -1001,6 +1066,51 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
         {campo.nombre} {campo.obligatorio ? <span style={{ color: '#ef4444' }}>*</span> : null}
       </div>
       <div style={previewInputStyle}>{placeholder}</div>
+    </div>
+  )
+}
+
+function PreviewSections({ campos }: { campos: CampoPostulacion[] }) {
+  const descripcion = campos.filter((campo) => getFieldSection(campo.tipo) === 'descripcion')
+  const plazos = campos.filter((campo) => getFieldSection(campo.tipo) === 'plazo')
+  const presupuestos = campos.filter((campo) => getFieldSection(campo.tipo) === 'presupuesto')
+
+  return (
+    <>
+      <PreviewSection title="Descripción" campos={descripcion} emptyText="Sin campos de descripción." />
+      <PreviewSection title="Plazos" campos={plazos} emptyText="Sin plazos configurados." totalLabel="Plazo total" totalValue="0 días" />
+      <PreviewSection title="Presupuesto" campos={presupuestos} emptyText="Sin presupuesto configurado." totalLabel="Presupuesto total" totalValue="$0" />
+    </>
+  )
+}
+
+function PreviewSection({
+  title,
+  campos,
+  emptyText,
+  totalLabel,
+  totalValue,
+}: {
+  title: string
+  campos: CampoPostulacion[]
+  emptyText: string
+  totalLabel?: string
+  totalValue?: string
+}) {
+  return (
+    <div style={previewSectionStyle}>
+      <div style={previewSectionTitleStyle}>{title}</div>
+      {campos.length === 0 ? (
+        <div style={{ fontSize: 13, color: '#9ca3af' }}>{emptyText}</div>
+      ) : (
+        campos.map((campo) => <PreviewField key={campo.id} campo={campo} />)
+      )}
+      {totalLabel ? (
+        <div style={previewTotalStyle}>
+          <span>{totalLabel}</span>
+          <strong>{totalValue}</strong>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -1140,6 +1250,35 @@ const previewFieldStyle: React.CSSProperties = {
   padding: 12,
 }
 
+const previewSectionStyle: React.CSSProperties = {
+  borderRadius: 14,
+  border: '1px solid #e5e7eb',
+  background: '#ffffff',
+  padding: 12,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+}
+
+const previewSectionTitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 800,
+  color: '#111827',
+}
+
+const previewTotalStyle: React.CSSProperties = {
+  borderRadius: 12,
+  border: '1px solid #bfdbfe',
+  background: '#eff6ff',
+  color: '#1d4ed8',
+  padding: '10px 12px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  fontSize: 13,
+  fontWeight: 800,
+}
+
 const previewInputStyle: React.CSSProperties = {
   marginTop: 8,
   height: 40,
@@ -1173,6 +1312,21 @@ const inlineFormStyle: React.CSSProperties = {
   border: '1px solid #e5e7eb',
   background: '#f9fafb',
   padding: 12,
+}
+
+const lockedTypeStyle: React.CSSProperties = {
+  width: '100%',
+  height: 40,
+  borderRadius: 10,
+  border: '1px solid #e5e7eb',
+  background: '#f9fafb',
+  padding: '0 12px',
+  fontSize: 13,
+  boxSizing: 'border-box',
+  display: 'flex',
+  alignItems: 'center',
+  color: '#6b7280',
+  fontWeight: 700,
 }
 
 const inlineCheckboxStyle: React.CSSProperties = {

@@ -175,6 +175,8 @@ export async function crearCampoFuente({
       return { success: false, error: 'Faltan datos para crear el campo.' }
     }
 
+    const normalizedTipo = normalizeCampoTipo(tipo)
+
     const { data: ultimoCampo } = await supabase
       .from('campos_formulario_fuente')
       .select('orden')
@@ -188,7 +190,7 @@ export async function crearCampoFuente({
       .insert({
         fuente_id,
         nombre: nombre.trim(),
-        tipo,
+        tipo: normalizedTipo,
         obligatorio,
         visible: true,
         orden: Number(ultimoCampo?.orden ?? 0) + 1,
@@ -196,7 +198,7 @@ export async function crearCampoFuente({
   
     if (error) return { success: false, error: error.message }
   
-    return { success: true }
+  return { success: true }
   }
 
 export async function actualizarCampoFuente({
@@ -216,11 +218,13 @@ export async function actualizarCampoFuente({
     return { success: false, error: 'Faltan datos para actualizar el campo.' }
   }
 
+  const normalizedTipo = normalizeCampoTipo(tipo)
+
   const { error } = await supabase
     .from('campos_formulario_fuente')
     .update({
       nombre: nombre.trim(),
-      tipo,
+      tipo: normalizedTipo,
       obligatorio,
     })
     .eq('id', id)
@@ -228,6 +232,20 @@ export async function actualizarCampoFuente({
   if (error) return { success: false, error: error.message }
 
   return { success: true }
+}
+
+function normalizeCampoTipo(tipo: string) {
+  const allowed = new Set([
+    'texto',
+    'texto_largo',
+    'numero',
+    'fecha',
+    'booleano',
+    'plazo',
+    'presupuesto',
+  ])
+
+  return allowed.has(tipo) ? tipo : 'texto'
 }
 
 export async function eliminarCampoFuente(id: string) {

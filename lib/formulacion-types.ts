@@ -12,7 +12,7 @@ export type CampoPostulacion = {
   id: string
   fuente_id: string
   nombre: string
-  tipo: string
+  tipo: 'texto' | 'texto_largo' | 'numero' | 'fecha' | 'booleano' | 'plazo' | 'presupuesto' | string
   obligatorio: boolean
   visible: boolean
   orden: number

@@ -42,7 +42,7 @@ export async function guardarRespuestaDinamica({
 
   if (tipo === 'texto' || tipo === 'texto_largo' || tipo === 'archivo') {
     payload.valor_texto = valor ? String(valor) : null
-  } else if (tipo === 'numero') {
+  } else if (tipo === 'numero' || tipo === 'plazo' || tipo === 'presupuesto') {
     payload.valor_numero = valor === '' || valueIsNullish(valor) ? null : Number(valor)
   } else if (tipo === 'booleano') {
     payload.valor_booleano = Boolean(valor)
