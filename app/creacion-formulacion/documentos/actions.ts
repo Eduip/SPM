@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
 
+const MAX_DOCUMENT_SIZE_BYTES = 25 * 1024 * 1024
+
 export async function uploadDocumentoProyecto(formData: FormData) {
   const supabase = await createClient()
 
@@ -23,6 +25,13 @@ export async function uploadDocumentoProyecto(formData: FormData) {
 
   if (!file) {
     return { success: false, error: 'Debes seleccionar un archivo.' }
+  }
+
+  if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+    return {
+      success: false,
+      error: 'El archivo supera el máximo permitido de 25 MB.',
+    }
   }
 
   const {
