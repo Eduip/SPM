@@ -23,7 +23,6 @@ export default async function CreacionFormulacionPage({
     tiposProyectoRes,
     categoriasRes,
     unidadesRes,
-    fuentesRes,
     responsablesRes,
     proyectosEnFormulacionRes,
     proyectoActualRes,
@@ -43,12 +42,6 @@ export default async function CreacionFormulacionPage({
 
     supabase
       .from('unidades')
-      .select('id, nombre')
-      .eq('activo', true)
-      .order('nombre', { ascending: true }),
-
-    supabase
-      .from('fuentes_financiamiento')
       .select('id, nombre')
       .eq('activo', true)
       .order('nombre', { ascending: true }),
@@ -100,7 +93,6 @@ export default async function CreacionFormulacionPage({
   const tiposProyecto = tiposProyectoRes.data ?? []
   const categorias = categoriasRes.data ?? []
   const unidades = unidadesRes.data ?? []
-  const fuentes = fuentesRes.data ?? []
   const responsables = responsablesRes.data ?? []
   const proyectosEnFormulacion = (proyectosEnFormulacionRes.data ?? []).map((proyecto) => ({
     ...proyecto,
@@ -124,7 +116,6 @@ export default async function CreacionFormulacionPage({
           tiposProyecto={tiposProyecto}
           categorias={categorias}
           unidades={unidades}
-          fuentes={fuentes}
           responsables={responsables}
           proyectoInicial={proyectoActual}
           datosGeneralesIniciales={datosGeneralesActual}

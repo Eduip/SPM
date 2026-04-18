@@ -62,7 +62,6 @@ type CreateProjectFormContainerProps = {
     tiposProyecto: CatalogOption[]
     categorias: CatalogOption[]
     unidades: CatalogOption[]
-    fuentes: CatalogOption[]
     responsables: ResponsibleOption[]
     proyectoInicial?: ProyectoInicial | null
     datosGeneralesIniciales?: DatosGeneralesIniciales
@@ -73,7 +72,6 @@ export default function CreateProjectFormContainer({
     tiposProyecto,
     categorias,
     unidades,
-    fuentes,
     responsables,
     proyectoInicial = null,
     datosGeneralesIniciales = null,
@@ -217,7 +215,6 @@ export default function CreateProjectFormContainer({
           tiposProyecto={tiposProyecto}
           categorias={categorias}
           unidades={unidades}
-          fuentes={fuentes}
           responsables={responsables}
           formData={formData}
           selectedResponsible={selectedResponsible}

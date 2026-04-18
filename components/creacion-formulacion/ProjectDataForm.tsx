@@ -11,7 +11,6 @@ type ProjectDataFormProps = {
   tiposProyecto: CatalogOption[]
   categorias: CatalogOption[]
   unidades: CatalogOption[]
-  fuentes: CatalogOption[]
   responsables: ResponsibleOption[]
   formData: ProjectFormData
   selectedResponsible: ResponsibleOption | null
@@ -33,7 +32,6 @@ export default function ProjectDataForm({
   tiposProyecto,
   categorias,
   unidades,
-  fuentes,
   responsables,
   formData,
   selectedResponsible,
@@ -151,21 +149,6 @@ export default function ProjectDataForm({
             </select>
           </Field>
 
-          <Field label="Monto Estimado (CLP) *">
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              step="1"
-              placeholder="150000000"
-              style={inputStyle}
-              value={formData.monto_estimado}
-              onChange={(e) => onFieldChange('monto_estimado', e.target.value)}
-            />
-          </Field>
-        </div>
-
-        <div style={twoColStyle}>
           <Field label="Localización">
             <input
               placeholder="Curacautín, Chile"
@@ -173,25 +156,6 @@ export default function ProjectDataForm({
               value={formData.localizacion}
               onChange={(e) => onFieldChange('localizacion', e.target.value)}
             />
-          </Field>
-
-          <Field label="Fuente del Proyecto *">
-            <select
-              value={formData.fuente_financiamiento_id}
-              onChange={(e) =>
-                onFieldChange('fuente_financiamiento_id', e.target.value)
-              }
-              style={selectStyle}
-            >
-              <option value="" disabled>
-                Selecciona una fuente
-              </option>
-              {fuentes.map((fuente) => (
-                <option key={fuente.id} value={fuente.id}>
-                  {fuente.nombre}
-                </option>
-              ))}
-            </select>
           </Field>
         </div>
 

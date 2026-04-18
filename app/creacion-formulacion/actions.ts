@@ -51,8 +51,6 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     { key: 'categoria_id', label: 'Categoría' },
     { key: 'anio_inicio', label: 'Año de inicio' },
     { key: 'unidad_id', label: 'Unidad responsable' },
-    { key: 'monto_estimado', label: 'Monto estimado' },
-    { key: 'fuente_financiamiento_id', label: 'Fuente del proyecto' },
     { key: 'responsable_id', label: 'Responsable del proyecto' },
     { key: 'descripcion', label: 'Descripción del proyecto' },
   ] as const
@@ -77,16 +75,19 @@ export async function saveProjectData(payload: SaveProjectPayload) {
 
   const montoEstimado = String(payload.monto_estimado).trim()
 
-  if (!/^\d+$/.test(montoEstimado)) {
+  if (montoEstimado && !/^\d+$/.test(montoEstimado)) {
     return {
       success: false,
       error: 'El monto estimado debe contener solo números.',
     }
   }
 
-  const normalizedAmount = Number(montoEstimado)
+  const normalizedAmount = montoEstimado ? Number(montoEstimado) : null
 
-  if (Number.isNaN(normalizedAmount) || normalizedAmount < 0) {
+  if (
+    normalizedAmount !== null &&
+    (Number.isNaN(normalizedAmount) || normalizedAmount < 0)
+  ) {
     return {
       success: false,
       error: 'El monto estimado no es válido.',
@@ -146,7 +147,7 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     tipo_proyecto_id: payload.tipo_proyecto_id,
     categoria_id: payload.categoria_id,
     unidad_id: payload.unidad_id,
-    fuente_financiamiento_id: payload.fuente_financiamiento_id,
+    fuente_financiamiento_id: payload.fuente_financiamiento_id || null,
     responsable_id: payload.responsable_id,
     localizacion: payload.localizacion || null,
     anio_inicio: parsedYear,
