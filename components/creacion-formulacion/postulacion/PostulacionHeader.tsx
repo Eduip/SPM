@@ -23,7 +23,7 @@ export default function PostulacionHeader({ onSave, saving, backHref }: Props) {
           color: '#111827',
         }}
       >
-        Registro y Formulación de Proyectos
+        Creación y Formulación de Proyectos
       </h1>
 
       <div style={{ display: 'flex', gap: 12 }}>

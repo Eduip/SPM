@@ -62,7 +62,7 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
 
   return (
     <AppShell
-      title="Registro y Formulación de Proyectos"
+      title="Creación y Formulación de Proyectos"
       currentModule="creacion-formulacion"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
