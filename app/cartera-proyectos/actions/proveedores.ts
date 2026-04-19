@@ -62,10 +62,10 @@ export async function crearProveedorProyecto(formData: FormData) {
     return { success: false, error: 'No se recibió el proyecto.' }
   }
 
-  if (tipoProveedor !== 'persona_juridica') {
+  if (!['persona_natural', 'persona_juridica'].includes(tipoProveedor)) {
     return {
       success: false,
-      error: 'Por ahora solo está habilitado el registro de Persona jurídica.',
+      error: 'Selecciona un tipo de proveedor válido.',
     }
   }
 
@@ -73,7 +73,6 @@ export async function crearProveedorProyecto(formData: FormData) {
     !razonSocial ||
     !rut ||
     !rubro ||
-    !nombreContacto ||
     !correo ||
     !telefono ||
     !tipoContratacion ||
@@ -82,6 +81,10 @@ export async function crearProveedorProyecto(formData: FormData) {
     !plazoDesde ||
     !plazoHasta
   ) {
+    return { success: false, error: 'Completa todos los campos obligatorios.' }
+  }
+
+  if (tipoProveedor === 'persona_juridica' && !nombreContacto) {
     return { success: false, error: 'Completa todos los campos obligatorios.' }
   }
 
@@ -124,7 +127,7 @@ export async function crearProveedorProyecto(formData: FormData) {
       razon_social: razonSocial,
       rut,
       rubro,
-      nombre_contacto: nombreContacto,
+      nombre_contacto: tipoProveedor === 'persona_juridica' ? nombreContacto : null,
       correo,
       telefono,
     },
@@ -171,6 +174,7 @@ export async function actualizarProveedorProyecto(formData: FormData) {
 
   const proveedorId = String(formData.get('proveedor_id') || '')
   const proyectoId = String(formData.get('proyecto_id') || '')
+  const tipoProveedor = String(formData.get('tipo_proveedor') || '').trim()
   const razonSocial = String(formData.get('razon_social') || '').trim()
   const rut = String(formData.get('rut') || '').trim()
   const rubro = String(formData.get('rubro') || '').trim()
@@ -193,7 +197,6 @@ export async function actualizarProveedorProyecto(formData: FormData) {
     !razonSocial ||
     !rut ||
     !rubro ||
-    !nombreContacto ||
     !correo ||
     !telefono ||
     !tipoContratacion ||
@@ -230,11 +233,25 @@ export async function actualizarProveedorProyecto(formData: FormData) {
   }
 
   const metadataActual = proveedorActual.metadata as {
+    tipo_proveedor?: string
     contratacion?: {
       documento_contratacion?: unknown
       decreto_administrativo?: unknown
     }
   } | null
+  const tipoProveedorNormalizado =
+    tipoProveedor || metadataActual?.tipo_proveedor || 'persona_juridica'
+
+  if (!['persona_natural', 'persona_juridica'].includes(tipoProveedorNormalizado)) {
+    return {
+      success: false,
+      error: 'Selecciona un tipo de proveedor válido.',
+    }
+  }
+
+  if (tipoProveedorNormalizado === 'persona_juridica' && !nombreContacto) {
+    return { success: false, error: 'Completa todos los campos obligatorios.' }
+  }
 
   let documentoContratacionMeta =
     metadataActual?.contratacion?.documento_contratacion ?? null
@@ -268,12 +285,13 @@ export async function actualizarProveedorProyecto(formData: FormData) {
 
   const metadata = {
     modulo: 'proveedores',
-    tipo_proveedor: 'persona_juridica',
+    tipo_proveedor: tipoProveedorNormalizado,
     datos_empresa: {
       razon_social: razonSocial,
       rut,
       rubro,
-      nombre_contacto: nombreContacto,
+      nombre_contacto:
+        tipoProveedorNormalizado === 'persona_juridica' ? nombreContacto : null,
       correo,
       telefono,
     },

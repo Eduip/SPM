@@ -157,24 +157,18 @@ export default function ProveedoresTab({
           </Field>
 
           {tipoProveedor === 'persona_natural' && (
-            <div style={notice}>
-              El formulario para Persona natural lo configuraremos en el siguiente paso.
-            </div>
+            <ProveedorNaturalFields />
           )}
 
           {tipoProveedor === 'persona_juridica' && <ProveedorJuridicoFields />}
 
           <button
             type="submit"
-            disabled={saving || tipoProveedor !== 'persona_juridica'}
+            disabled={saving || !tipoProveedor}
             style={{
               ...submitButton,
-              background:
-                saving || tipoProveedor !== 'persona_juridica' ? '#93c5fd' : '#2563eb',
-              cursor:
-                saving || tipoProveedor !== 'persona_juridica'
-                  ? 'not-allowed'
-                  : 'pointer',
+              background: saving || !tipoProveedor ? '#93c5fd' : '#2563eb',
+              cursor: saving || !tipoProveedor ? 'not-allowed' : 'pointer',
             }}
           >
             {saving ? 'Guardando...' : 'Agregar proveedor'}
@@ -232,6 +226,153 @@ export default function ProveedoresTab({
         )}
       </div>
     </div>
+  )
+}
+
+function ProveedorNaturalFields({
+  metadata,
+  editing = false,
+}: {
+  metadata?: ProveedorMetadata | null
+  editing?: boolean
+}) {
+  const datos = metadata?.datos_empresa
+  const contratacion = metadata?.contratacion
+  const servicio = metadata?.servicio
+
+  return (
+    <>
+      <Section title="Datos del proveedor">
+        <div style={twoCols}>
+          <Field label="Nombre *">
+            <input
+              name="razon_social"
+              required
+              defaultValue={datos?.razon_social ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="RUT *">
+            <input name="rut" required defaultValue={datos?.rut ?? ''} style={input} />
+          </Field>
+          <Field label="Rubro / categoría *">
+            <select name="rubro" required defaultValue={datos?.rubro ?? ''} style={input}>
+              <option value="">Seleccione rubro</option>
+              <option value="Construcción">Construcción</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Suministros">Suministros</option>
+              <option value="Consultoría">Consultoría</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </Field>
+          <Field label="Correo *">
+            <input
+              name="correo"
+              type="email"
+              required
+              defaultValue={datos?.correo ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="Teléfono *">
+            <input
+              name="telefono"
+              required
+              defaultValue={datos?.telefono ?? ''}
+              style={input}
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Contratación y servicio">
+        <div style={twoCols}>
+          <Field label="Tipo de contratación *">
+            <select
+              name="tipo_contratacion"
+              required
+              defaultValue={contratacion?.tipo_contratacion ?? ''}
+              style={input}
+            >
+              <option value="">Seleccione tipo</option>
+              <option value="Licitación">Licitación</option>
+              <option value="Trato directo">Trato directo</option>
+              <option value="Contrato de suministro">Contrato de suministro</option>
+              <option value="Compra Ágil">Compra Ágil</option>
+            </select>
+          </Field>
+          <Field label="Tipo de servicio *">
+            <select
+              name="tipo_servicio"
+              required
+              defaultValue={servicio?.tipo_servicio ?? ''}
+              style={input}
+            >
+              <option value="">Seleccione servicio</option>
+              <option value="Consultoría">Consultoría</option>
+              <option value="Contratista">Contratista</option>
+              <option value="Inspección técnica">Inspección técnica</option>
+              <option value="Suministro de materiales">Suministro de materiales</option>
+              <option value="Mantención">Mantención</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </Field>
+          <Field label="Desde *">
+            <input
+              name="plazo_desde"
+              type="date"
+              required
+              defaultValue={servicio?.plazo_desde ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="Hasta *">
+            <input
+              name="plazo_hasta"
+              type="date"
+              required
+              defaultValue={servicio?.plazo_hasta ?? ''}
+              style={input}
+            />
+          </Field>
+        </div>
+        <Field label="Descripción *">
+          <textarea
+            name="descripcion_servicio"
+            required
+            defaultValue={servicio?.descripcion_servicio ?? ''}
+            style={{ ...input, minHeight: 110, padding: 14, resize: 'vertical' }}
+          />
+        </Field>
+      </Section>
+
+      <Section title="Documentos">
+        <div style={twoCols}>
+          <Field label={`Documento contratación${editing ? '' : ' *'}`}>
+            <input
+              name="documento_contratacion"
+              type="file"
+              required={!editing}
+              style={fileInput}
+            />
+          </Field>
+          <Field label={`Decreto administrativo${editing ? '' : ' *'}`}>
+            <input
+              name="decreto_administrativo"
+              type="file"
+              required={!editing}
+              style={fileInput}
+            />
+          </Field>
+        </div>
+        {editing && (
+          <div style={{ marginTop: 10, fontSize: 13, color: '#6b7280' }}>
+            Si no adjuntas nuevos archivos, se conservarán los documentos existentes.
+          </div>
+        )}
+      </Section>
+    </>
   )
 }
 
@@ -411,6 +552,7 @@ function ProveedorItem({
   const datosEmpresa = metadata?.datos_empresa
   const servicio = metadata?.servicio
   const contratacion = metadata?.contratacion
+  const esNatural = metadata?.tipo_proveedor === 'persona_natural'
 
   return (
     <div style={providerRow}>
@@ -419,6 +561,7 @@ function ProveedorItem({
           {datosEmpresa?.razon_social || proveedor.titulo || 'Proveedor sin nombre'}
         </div>
         <div style={{ marginTop: 4, fontSize: 14, color: '#6b7280' }}>
+          {esNatural ? 'Persona natural' : 'Persona jurídica'} ·{' '}
           {datosEmpresa?.rut || 'Sin RUT'} · {datosEmpresa?.rubro || 'Sin rubro'}
         </div>
         <div style={{ marginTop: 8, fontSize: 14, color: '#374151' }}>
@@ -462,13 +605,14 @@ function ProveedorDetalle({ proveedor }: { proveedor: BitacoraProyecto }) {
   const datos = metadata?.datos_empresa
   const contratacion = metadata?.contratacion
   const servicio = metadata?.servicio
+  const esNatural = metadata?.tipo_proveedor === 'persona_natural'
 
   return (
     <div style={detailBox}>
-      <Info label="Razón social" value={datos?.razon_social} />
+      <Info label={esNatural ? 'Nombre' : 'Razón social'} value={datos?.razon_social} />
       <Info label="RUT" value={datos?.rut} />
       <Info label="Rubro / categoría" value={datos?.rubro} />
-      <Info label="Nombre contacto" value={datos?.nombre_contacto} />
+      {!esNatural && <Info label="Nombre contacto" value={datos?.nombre_contacto} />}
       <Info label="Correo" value={datos?.correo} />
       <Info label="Teléfono" value={datos?.telefono} />
       <Info label="Tipo de contratación" value={contratacion?.tipo_contratacion} />
@@ -509,6 +653,10 @@ function ProveedorEditForm({
 }) {
   const [saving, setSaving] = useState(false)
   const metadata = proveedor.metadata as ProveedorMetadata | null
+  const tipoProveedor =
+    metadata?.tipo_proveedor === 'persona_natural'
+      ? 'persona_natural'
+      : 'persona_juridica'
 
   return (
     <form
@@ -516,6 +664,7 @@ function ProveedorEditForm({
         setSaving(true)
         formData.append('proveedor_id', proveedor.id)
         formData.append('proyecto_id', proyectoId)
+        formData.append('tipo_proveedor', tipoProveedor)
 
         const result = await actualizarProveedorProyecto(formData)
 
@@ -538,7 +687,11 @@ function ProveedorEditForm({
       }}
     >
       <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Editar proveedor</h3>
-      <ProveedorJuridicoFields metadata={metadata} editing />
+      {tipoProveedor === 'persona_natural' ? (
+        <ProveedorNaturalFields metadata={metadata} editing />
+      ) : (
+        <ProveedorJuridicoFields metadata={metadata} editing />
+      )}
       <div style={{ display: 'flex', gap: 10 }}>
         <button type="submit" disabled={saving} style={submitButton}>
           {saving ? 'Guardando...' : 'Guardar cambios'}
@@ -710,16 +863,6 @@ const dangerButton: React.CSSProperties = {
 const messageBox: React.CSSProperties = {
   borderRadius: 14,
   border: '1px solid',
-  padding: 14,
-  fontSize: 14,
-  fontWeight: 700,
-}
-
-const notice: React.CSSProperties = {
-  borderRadius: 14,
-  border: '1px solid #bfdbfe',
-  background: '#eff6ff',
-  color: '#1d4ed8',
   padding: 14,
   fontSize: 14,
   fontWeight: 700,
