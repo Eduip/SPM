@@ -141,7 +141,7 @@ export default function ContinueProjectPanel({
           title="Proyectos en formulación"
           emptyText="No hay proyectos en formulación pendientes para continuar."
           proyectos={proyectos}
-          maxHeight={318}
+          maxHeight={340}
           renderAction={(proyecto) => {
             const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
 
@@ -176,7 +176,7 @@ export default function ContinueProjectPanel({
           title="Proyectos aprobados"
           emptyText="No hay proyectos aprobados para consultar."
           proyectos={proyectosAprobados}
-          maxHeight={318}
+          maxHeight={340}
           renderAction={(proyecto) => (
             <button
               type="button"
@@ -242,69 +242,115 @@ function ProjectListSection({
           {emptyText}
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gap: 10,
-            maxHeight,
-            overflowY: 'auto',
-            paddingRight: 4,
-          }}
-        >
-          {proyectos.map((proyecto) => {
-            const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={tableHeaderStyle}>
+            <div>Proyecto</div>
+            <div>Unidad</div>
+            <div>Etapa</div>
+            <div>Estado</div>
+            <div>Avance</div>
+            <div>Actualización</div>
+            <div>Acciones</div>
+          </div>
 
-            return (
-              <div
-                key={proyecto.id}
-                style={{
-                  borderRadius: 14,
-                  border: '1px solid #e5e7eb',
-                  background: '#ffffff',
-                  padding: 14,
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  gap: 12,
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#111827' }}>
-                    {proyecto.nombre || 'Proyecto sin nombre'}
+          <div style={{ maxHeight, overflowY: 'auto' }}>
+            {proyectos.map((proyecto) => {
+              const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
+              const progreso = Number(proyecto.porcentaje_formulacion ?? 0)
+
+              return (
+                <div key={proyecto.id} style={tableRowStyle}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>
+                      {proyecto.nombre || 'Proyecto sin nombre'}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
+                      {proyecto.codigo_interno || 'Sin código'}
+                    </div>
                   </div>
-                  <div style={{ marginTop: 5, fontSize: 13, color: '#6b7280' }}>
-                    {proyecto.codigo_interno || 'Sin código'} · {proyecto.unidad?.nombre || 'Sin unidad'} · {etapa.label}
+
+                  <div style={cellStyle}>{proyecto.unidad?.nombre || 'Sin unidad'}</div>
+                  <div style={cellStyle}>{etapa.label}</div>
+                  <div>
+                    <StatusBadge proyecto={proyecto} />
                   </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      height: 8,
-                      borderRadius: 999,
-                      background: '#e5e7eb',
-                      overflow: 'hidden',
-                    }}
-                  >
+                  <div>
                     <div
                       style={{
-                        width: `${Number(proyecto.porcentaje_formulacion ?? 0)}%`,
-                        height: '100%',
-                        background:
-                          proyecto.estado === 'aprobado' ? '#16a34a' : '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
                       }}
-                    />
+                    >
+                      <div
+                        style={{
+                          width: 82,
+                          height: 8,
+                          borderRadius: 999,
+                          background: '#e5e7eb',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${progreso}%`,
+                            height: '100%',
+                            background:
+                              proyecto.estado === 'aprobado' ? '#16a34a' : '#2563eb',
+                          }}
+                        />
+                      </div>
+                      <span style={{ fontSize: 13, color: '#374151', fontWeight: 700 }}>
+                        {progreso}%
+                      </span>
+                    </div>
                   </div>
+                  <div style={cellStyle}>
+                    {proyecto.updated_at ? formatDate(proyecto.updated_at) : '-'}
+                  </div>
+                  <div style={actionsCellStyle}>{renderAction(proyecto)}</div>
                 </div>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {renderAction(proyecto)}
-                </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
     </section>
   )
+}
+
+function StatusBadge({ proyecto }: { proyecto: ContinueProject }) {
+  const approved = proyecto.estado === 'aprobado'
+  const label = approved ? 'Aprobado' : 'En formulación'
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        height: 28,
+        padding: '0 10px',
+        borderRadius: 999,
+        background: approved ? '#dcfce7' : '#dbeafe',
+        color: approved ? '#15803d' : '#1d4ed8',
+        fontSize: 12,
+        fontWeight: 800,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  )
+}
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 function normalizeStage(stage: number | null) {
@@ -348,4 +394,40 @@ const dangerActionStyle: React.CSSProperties = {
   color: '#b91c1c',
   fontWeight: 800,
   whiteSpace: 'nowrap',
+}
+
+const tableHeaderStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '2.2fr 1.2fr 1.1fr 1fr 1fr 1fr auto',
+  gap: 12,
+  padding: '13px 14px',
+  background: '#f9fafb',
+  color: '#6b7280',
+  fontSize: 12,
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+}
+
+const tableRowStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '2.2fr 1.2fr 1.1fr 1fr 1fr 1fr auto',
+  gap: 12,
+  padding: '14px',
+  borderTop: '1px solid #e5e7eb',
+  alignItems: 'center',
+  background: '#ffffff',
+}
+
+const cellStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: '#374151',
+  fontWeight: 600,
+}
+
+const actionsCellStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 8,
+  alignItems: 'center',
+  justifyContent: 'flex-end',
 }
