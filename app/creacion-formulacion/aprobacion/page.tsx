@@ -46,7 +46,8 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
         .from('proyecto_diagnostico')
         .select('*')
         .eq('proyecto_id', proyectoId)
-        .maybeSingle(),
+        .order('updated_at', { ascending: false })
+        .limit(1),
 
       supabase
         .from('proyecto_postulacion')
@@ -85,7 +86,9 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
 
   const proyecto = proyectoRes.data
   const datosGenerales = datosGeneralesRes.data
-  const diagnostico = diagnosticoRes.data
+  const diagnostico = Array.isArray(diagnosticoRes.data)
+    ? diagnosticoRes.data[0] ?? null
+    : diagnosticoRes.data
   const postulacion = postulacionRes.data
   const fuenteId = fuenteProyectoRes.data?.fuente_id ?? ''
   const fuenteNombre = extractFuenteNombre(fuenteProyectoRes.data?.fuente)
