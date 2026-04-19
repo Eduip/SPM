@@ -189,17 +189,17 @@ function ProjectTable({
       </div>
 
       <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={tableHeaderStyle}>
-          <div>Proyecto</div>
-          <div>Unidad</div>
-          <div>Etapa</div>
-          <div>Estado</div>
-          <div>Avance</div>
-          <div>Actualización</div>
-          <div>Acciones</div>
-        </div>
+        <div style={{ maxHeight: 440, overflow: 'auto' }}>
+          <div style={tableHeaderStyle}>
+            <div>Proyecto</div>
+            <div>Unidad</div>
+            <div>Etapa</div>
+            <div>Estado</div>
+            <div>Avance</div>
+            <div>Actualización</div>
+            <div style={{ textAlign: 'right' }}>Acciones</div>
+          </div>
 
-        <div style={{ maxHeight: 440, overflowY: 'auto' }}>
           {proyectos.map((proyecto) => {
             const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
             const progreso = Number(proyecto.porcentaje_formulacion ?? 0)
@@ -374,9 +374,12 @@ const dangerActionStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
 }
 
+const tableColumns =
+  'minmax(220px, 2.2fr) minmax(120px, 1.2fr) minmax(110px, 1.1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) 190px'
+
 const tableHeaderStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '2.2fr 1.2fr 1.1fr 1fr 1fr 1fr auto',
+  gridTemplateColumns: tableColumns,
   gap: 12,
   padding: '13px 14px',
   background: '#f9fafb',
@@ -385,16 +388,21 @@ const tableHeaderStyle: React.CSSProperties = {
   fontWeight: 800,
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  minWidth: 1080,
 }
 
 const tableRowStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '2.2fr 1.2fr 1.1fr 1fr 1fr 1fr auto',
+  gridTemplateColumns: tableColumns,
   gap: 12,
   padding: '14px',
   borderTop: '1px solid #e5e7eb',
   alignItems: 'center',
   background: '#ffffff',
+  minWidth: 1080,
 }
 
 const cellStyle: React.CSSProperties = {
