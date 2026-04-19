@@ -26,6 +26,7 @@ type ProjectDataFormProps = {
   ) => void
   onAddBeneficiary: () => void
   onRemoveBeneficiary: (rowId: string) => void
+  readOnly?: boolean
 }
 
 export default function ProjectDataForm({
@@ -40,7 +41,10 @@ export default function ProjectDataForm({
   onBeneficiaryChange,
   onAddBeneficiary,
   onRemoveBeneficiary,
+  readOnly = false,
 }: ProjectDataFormProps) {
+  const disabledInputStyle = readOnly ? disabledFieldStyle : {}
+
   return (
     <div
       style={{
@@ -55,8 +59,9 @@ export default function ProjectDataForm({
         <Field label="Nombre del Proyecto *">
           <input
             placeholder="Ej: Construcción Gimnasio Municipal"
-            style={inputStyle}
+            style={{ ...inputStyle, ...disabledInputStyle }}
             value={formData.nombre}
+            readOnly={readOnly}
             onChange={(e) => onFieldChange('nombre', e.target.value)}
           />
         </Field>
@@ -68,6 +73,7 @@ export default function ProjectDataForm({
               readOnly
               style={{
                 ...inputStyle,
+                ...disabledInputStyle,
                 background: '#f9fafb',
                 color: '#6b7280',
                 cursor: 'not-allowed',
@@ -78,8 +84,9 @@ export default function ProjectDataForm({
           <Field label="Código Adicional">
             <input
               placeholder="PRJ-2024-"
-              style={inputStyle}
+              style={{ ...inputStyle, ...disabledInputStyle }}
               value={formData.codigo_adicional}
+              readOnly={readOnly}
               onChange={(e) =>
                 onFieldChange('codigo_adicional', e.target.value)
               }
@@ -92,6 +99,7 @@ export default function ProjectDataForm({
             tiposProyecto={tiposProyecto}
             selectedTipoId={formData.tipo_proyecto_id}
             onSelect={onTypeSelect}
+            disabled={readOnly}
           />
         </Field>
 
@@ -99,8 +107,9 @@ export default function ProjectDataForm({
           <Field label="Categoría *">
             <select
               value={formData.categoria_id}
+              disabled={readOnly}
               onChange={(e) => onFieldChange('categoria_id', e.target.value)}
-              style={selectStyle}
+              style={{ ...selectStyle, ...disabledInputStyle }}
             >
               <option value="" disabled>
                 Selecciona una categoría
@@ -116,8 +125,9 @@ export default function ProjectDataForm({
           <Field label="Año de Inicio *">
             <select
               value={formData.anio_inicio}
+              disabled={readOnly}
               onChange={(e) => onFieldChange('anio_inicio', e.target.value)}
-              style={selectStyle}
+              style={{ ...selectStyle, ...disabledInputStyle }}
             >
               <option value="" disabled>
                 Selecciona un año
@@ -135,8 +145,9 @@ export default function ProjectDataForm({
           <Field label="Unidad Responsable *">
             <select
               value={formData.unidad_id}
+              disabled={readOnly}
               onChange={(e) => onFieldChange('unidad_id', e.target.value)}
-              style={selectStyle}
+              style={{ ...selectStyle, ...disabledInputStyle }}
             >
               <option value="" disabled>
                 Selecciona una unidad
@@ -152,8 +163,9 @@ export default function ProjectDataForm({
           <Field label="Localización">
             <input
               placeholder="Curacautín, Chile"
-              style={inputStyle}
+              style={{ ...inputStyle, ...disabledInputStyle }}
               value={formData.localizacion}
+              readOnly={readOnly}
               onChange={(e) => onFieldChange('localizacion', e.target.value)}
             />
           </Field>
@@ -216,9 +228,11 @@ export default function ProjectDataForm({
 
             <select
               value={formData.responsable_id}
+              disabled={readOnly}
               onChange={(e) => onFieldChange('responsable_id', e.target.value)}
               style={{
                 ...selectStyle,
+                ...disabledInputStyle,
                 width: 170,
                 height: 44,
                 borderRadius: 12,
@@ -244,10 +258,17 @@ export default function ProjectDataForm({
           onBeneficiaryChange={onBeneficiaryChange}
           onAddBeneficiary={onAddBeneficiary}
           onRemoveBeneficiary={onRemoveBeneficiary}
+          readOnly={readOnly}
         />
       </div>
     </div>
   )
+}
+
+const disabledFieldStyle: React.CSSProperties = {
+  background: '#f9fafb',
+  color: '#6b7280',
+  cursor: 'not-allowed',
 }
 
 function getInitials(name: string) {

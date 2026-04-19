@@ -13,6 +13,7 @@ type Props = {
   ) => void
   onAddBeneficiary: () => void
   onRemoveBeneficiary: (rowId: string) => void
+  readOnly?: boolean
 }
 
 export default function ProjectDescriptionAndBeneficiaries({
@@ -22,14 +23,18 @@ export default function ProjectDescriptionAndBeneficiaries({
   onBeneficiaryChange,
   onAddBeneficiary,
   onRemoveBeneficiary,
+  readOnly = false,
 }: Props) {
+  const disabledStyle = readOnly ? disabledFieldStyle : {}
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <Field label="Descripción del Proyecto *">
         <textarea
           placeholder="Describe el proyecto, sus objetivos y alcance..."
-          style={textareaStyle}
+          style={{ ...textareaStyle, ...disabledStyle }}
           value={descripcion}
+          readOnly={readOnly}
           onChange={(e) => onDescripcionChange(e.target.value)}
         />
       </Field>
@@ -87,10 +92,11 @@ export default function ProjectDescriptionAndBeneficiaries({
             >
               <input
                 value={row.group}
+                readOnly={readOnly}
                 onChange={(e) =>
                   onBeneficiaryChange(row.id, 'group', e.target.value)
                 }
-                style={tableInputStyle}
+                style={{ ...tableInputStyle, ...disabledStyle }}
               />
               <input
                 value={row.quantity}
@@ -98,10 +104,11 @@ export default function ProjectDescriptionAndBeneficiaries({
                 inputMode="numeric"
                 min="0"
                 step="1"
+                readOnly={readOnly}
                 onChange={(e) =>
                   onBeneficiaryChange(row.id, 'quantity', e.target.value)
                 }
-                style={tableInputStyle}
+                style={{ ...tableInputStyle, ...disabledStyle }}
               />
 
               <div
@@ -110,23 +117,27 @@ export default function ProjectDescriptionAndBeneficiaries({
                   justifyContent: 'center',
                 }}
               >
-                <button
-                  type="button"
-                  style={deleteButtonStyle}
-                  aria-label="Eliminar grupo"
-                  onClick={() => onRemoveBeneficiary(row.id)}
-                >
-                  <Trash2 size={20} />
-                </button>
+                {readOnly ? null : (
+                  <button
+                    type="button"
+                    style={deleteButtonStyle}
+                    aria-label="Eliminar grupo"
+                    onClick={() => onRemoveBeneficiary(row.id)}
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        <button type="button" style={addGroupButtonStyle} onClick={onAddBeneficiary}>
-          <Plus size={20} />
-          Añadir grupo
-        </button>
+        {!readOnly && (
+          <button type="button" style={addGroupButtonStyle} onClick={onAddBeneficiary}>
+            <Plus size={20} />
+            Añadir grupo
+          </button>
+        )}
       </div>
     </div>
   )
@@ -193,4 +204,10 @@ const addGroupButtonStyle: React.CSSProperties = {
   fontWeight: 600,
   cursor: 'pointer',
   padding: 0,
+}
+
+const disabledFieldStyle: React.CSSProperties = {
+  background: '#f9fafb',
+  color: '#6b7280',
+  cursor: 'not-allowed',
 }

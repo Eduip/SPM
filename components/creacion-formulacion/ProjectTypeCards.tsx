@@ -10,6 +10,7 @@ type ProjectTypeCardsProps = {
   tiposProyecto: CatalogOption[]
   selectedTipoId: string
   onSelect: (tipoId: string) => void
+  disabled?: boolean
 }
 
 function getIconByName(nombre: string) {
@@ -27,6 +28,7 @@ export default function ProjectTypeCards({
   tiposProyecto,
   selectedTipoId,
   onSelect,
+  disabled = false,
 }: ProjectTypeCardsProps) {
   return (
     <div
@@ -44,6 +46,7 @@ export default function ProjectTypeCards({
           <button
             key={tipo.id}
             type="button"
+            disabled={disabled}
             onClick={() => onSelect(tipo.id)}
             style={{
               height: 150,
@@ -55,7 +58,8 @@ export default function ProjectTypeCards({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 14,
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled && !active ? 0.65 : 1,
               transition: 'all 0.2s ease',
               padding: '0 8px',
             }}

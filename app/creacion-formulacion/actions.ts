@@ -107,6 +107,30 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     }
   }
 
+  if (payload.proyectoId) {
+    const { data: proyectoExistente, error: proyectoExistenteError } = await supabase
+      .from('proyectos')
+      .select('estado')
+      .eq('id', payload.proyectoId)
+      .maybeSingle()
+
+    if (proyectoExistenteError || !proyectoExistente) {
+      return {
+        success: false,
+        error:
+          proyectoExistenteError?.message ||
+          'No se pudo encontrar el proyecto que intentas actualizar.',
+      }
+    }
+
+    if (proyectoExistente.estado === 'aprobado') {
+      return {
+        success: false,
+        error: 'Este proyecto ya está aprobado y solo puede revisarse en modo consulta.',
+      }
+    }
+  }
+
   const { data: estadosSistema, error: estadosSistemaError } = await supabase
     .from('estados_sistema')
     .select('codigo, nombre, categoria')

@@ -41,6 +41,7 @@ export type ProjectFormData = {
 
 type ProyectoInicial = {
   nombre?: string | null
+  estado?: string | null
   codigo_adicional?: string | null
   tipo_proyecto_id?: string | null
   categoria_id?: string | null
@@ -101,8 +102,14 @@ export default function CreateProjectFormContainer({
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState('')
   const [savedProjectId, setSavedProjectId] = useState(proyectoId)
+  const readOnly = proyectoInicial?.estado === 'aprobado'
 
   const handleSave = async () => {
+    if (readOnly) {
+      setSaveError('Este proyecto ya está aprobado y solo puede revisarse en modo consulta.')
+      return
+    }
+
     setSaving(true)
     setSaveError('')
     setSaveSuccess('')
@@ -133,6 +140,8 @@ export default function CreateProjectFormContainer({
     field: keyof Omit<ProjectFormData, 'poblacion_beneficiaria'>,
     value: string
   ) => {
+    if (readOnly) return
+
     setFormData((prev) => ({
       ...prev,
       [field]: field === 'monto_estimado' ? keepOnlyDigits(value) : value,
@@ -140,6 +149,8 @@ export default function CreateProjectFormContainer({
   }
 
   const handleTypeSelect = (tipoId: string) => {
+    if (readOnly) return
+
     setFormData((prev) => ({
       ...prev,
       tipo_proyecto_id: tipoId,
@@ -151,6 +162,8 @@ export default function CreateProjectFormContainer({
     field: 'group' | 'quantity',
     value: string
   ) => {
+    if (readOnly) return
+
     setFormData((prev) => ({
       ...prev,
       poblacion_beneficiaria: prev.poblacion_beneficiaria.map((row) =>
@@ -162,6 +175,8 @@ export default function CreateProjectFormContainer({
   }
 
   const handleAddBeneficiary = () => {
+    if (readOnly) return
+
     setFormData((prev) => ({
       ...prev,
       poblacion_beneficiaria: [
@@ -176,6 +191,8 @@ export default function CreateProjectFormContainer({
   }
 
   const handleRemoveBeneficiary = (rowId: string) => {
+    if (readOnly) return
+
     setFormData((prev) => ({
       ...prev,
       poblacion_beneficiaria: prev.poblacion_beneficiaria.filter(
@@ -203,6 +220,23 @@ export default function CreateProjectFormContainer({
         </div>
       )}
 
+      {readOnly && (
+        <div
+          style={{
+            borderRadius: 16,
+            padding: '16px 18px',
+            marginBottom: 18,
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1d4ed8',
+            fontSize: 15,
+            fontWeight: 700,
+          }}
+        >
+          Proyecto aprobado: los datos se muestran en modo consulta.
+        </div>
+      )}
+
       <div
         style={{
           display: 'grid',
@@ -223,6 +257,7 @@ export default function CreateProjectFormContainer({
           onBeneficiaryChange={handleBeneficiaryChange}
           onAddBeneficiary={handleAddBeneficiary}
           onRemoveBeneficiary={handleRemoveBeneficiary}
+          readOnly={readOnly}
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -231,7 +266,7 @@ export default function CreateProjectFormContainer({
 
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || readOnly}
             style={{
               height: 58,
               borderRadius: 18,
@@ -240,12 +275,12 @@ export default function CreateProjectFormContainer({
               color: '#ffffff',
               fontWeight: 700,
               fontSize: 18,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.75 : 1,
+              cursor: saving || readOnly ? 'not-allowed' : 'pointer',
+              opacity: saving || readOnly ? 0.75 : 1,
               boxShadow: '0 14px 30px rgba(37,99,235,0.25)',
             }}
           >
-            {saving ? 'Guardando...' : 'Guardar proyecto'}
+            {readOnly ? 'Proyecto aprobado' : saving ? 'Guardando...' : 'Guardar proyecto'}
           </button>
 
           <button
