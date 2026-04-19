@@ -39,16 +39,37 @@ export async function aprobarProyecto(proyectoId: string) {
     }
   }
 
-  const [catalogoRes, documentosRes, postulacionRes] = await Promise.all([
+  const { data: fuenteProyecto, error: fuenteError } = await supabase
+    .from('proyecto_fuentes_financiamiento')
+    .select('fuente_id')
+    .eq('proyecto_id', proyectoId)
+    .limit(1)
+    .maybeSingle()
+
+  if (fuenteError) {
+    return {
+      success: false,
+      error: fuenteError.message || 'No se pudo validar la fuente de financiamiento.',
+    }
+  }
+
+  if (!fuenteProyecto?.fuente_id) {
+    return {
+      success: false,
+      error: 'Debes seleccionar una fuente de financiamiento antes de aprobar.',
+    }
+  }
+
+  const [documentosFuenteRes, documentosRes, postulacionRes] = await Promise.all([
     supabase
-      .from('catalogo_documentos_formulacion')
+      .from('documentos_fuente')
       .select('id, nombre, obligatorio')
-      .eq('activo', true)
-      .eq('etapa', 'documentos'),
+      .eq('fuente_id', fuenteProyecto.fuente_id),
     supabase
       .from('documentos_proyecto')
-      .select('catalogo_documento_id, estado_revision')
-      .eq('proyecto_id', proyectoId),
+      .select('catalogo_documento_id, observacion, estado_revision')
+      .eq('proyecto_id', proyectoId)
+      .eq('etapa', 'documentos'),
     supabase
       .from('proyecto_postulacion')
       .select('puntaje_total, monto_total')
@@ -56,10 +77,12 @@ export async function aprobarProyecto(proyectoId: string) {
       .maybeSingle(),
   ])
 
-  if (catalogoRes.error) {
+  if (documentosFuenteRes.error) {
     return {
       success: false,
-      error: catalogoRes.error.message || 'No se pudo validar el catálogo documental.',
+      error:
+        documentosFuenteRes.error.message ||
+        'No se pudo validar el catálogo documental de la fuente.',
     }
   }
 
@@ -77,16 +100,16 @@ export async function aprobarProyecto(proyectoId: string) {
     }
   }
 
-  const documentosPorCatalogo = new Map(
+  const documentosPorRequisito = new Map(
     (documentosRes.data ?? [])
-      .filter((doc) => doc.catalogo_documento_id)
-      .map((doc) => [doc.catalogo_documento_id, doc])
+      .map((doc) => [getRequirementId(doc), doc] as const)
+      .filter(([requirementId]) => Boolean(requirementId))
   )
 
-  const documentosFaltantes = (catalogoRes.data ?? [])
+  const documentosFaltantes = (documentosFuenteRes.data ?? [])
     .filter((item) => item.obligatorio)
     .filter((item) => {
-      const documento = documentosPorCatalogo.get(item.id)
+      const documento = documentosPorRequisito.get(item.id)
       return !ESTADOS_DOCUMENTO_VALIDOS.includes(documento?.estado_revision ?? '')
     })
 
@@ -159,4 +182,19 @@ export async function aprobarProyecto(proyectoId: string) {
   return {
     success: true,
   }
+}
+
+function getRequirementId(documento: {
+  catalogo_documento_id: string | null
+  observacion: string | null
+}) {
+  if (documento.catalogo_documento_id) return documento.catalogo_documento_id
+
+  const prefix = 'documento_fuente_id:'
+
+  if (documento.observacion?.startsWith(prefix)) {
+    return documento.observacion.slice(prefix.length)
+  }
+
+  return ''
 }
