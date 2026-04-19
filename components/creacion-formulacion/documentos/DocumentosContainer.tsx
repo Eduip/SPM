@@ -409,7 +409,7 @@ export default function DocumentosContainer({
             >
               <strong>Formatos aceptados</strong>
               <br />
-              Los documentos pueden ser subidos en formato PDF, Word (.doc, .docx), Excel (.xls, .xlsx) o imágenes (.jpg, .png). El tamaño máximo por archivo es de 10 MB.
+              Los documentos pueden ser subidos en formato PDF, Word (.doc, .docx), Excel (.xls, .xlsx) o imágenes (.jpg, .png). El tamaño máximo por archivo es de 25 MB.
             </div>
           </div>
           <DocumentosSubidosPanel documentos={visibleDocumentos} />

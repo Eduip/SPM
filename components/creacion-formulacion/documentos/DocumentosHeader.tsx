@@ -1,6 +1,30 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import StageBackButton from '../StageBackButton'
+import { marcarDocumentosCompletados } from '../../../app/creacion-formulacion/documentos/complete-actions'
 
 export default function DocumentosHeader({ proyectoId }: { proyectoId: string }) {
+    const router = useRouter()
+    const [saving, setSaving] = useState(false)
+
+    const handleSave = async () => {
+      setSaving(true)
+
+      const result = await marcarDocumentosCompletados(proyectoId)
+
+      setSaving(false)
+
+      if (!result.success) {
+        alert(result.error || 'No se pudo guardar la etapa de documentos.')
+        return
+      }
+
+      alert('Documentos guardados correctamente.')
+      router.refresh()
+    }
+
     return (
       <div
         style={{
@@ -41,19 +65,24 @@ export default function DocumentosHeader({ proyectoId }: { proyectoId: string })
           </button>
   
           <button
+            onClick={handleSave}
+            disabled={saving || !proyectoId}
             style={{
               height: 44,
               padding: '0 20px',
               borderRadius: 14,
               border: 'none',
-              background: '#2563eb',
+              background: saving || !proyectoId ? '#93c5fd' : '#2563eb',
               color: '#ffffff',
               fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 10px 18px rgba(37, 99, 235, 0.18)',
+              cursor: saving || !proyectoId ? 'not-allowed' : 'pointer',
+              boxShadow:
+                saving || !proyectoId
+                  ? 'none'
+                  : '0 10px 18px rgba(37, 99, 235, 0.18)',
             }}
           >
-            💾&nbsp;&nbsp;Guardar
+            💾&nbsp;&nbsp;{saving ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>
