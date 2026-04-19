@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { CatalogoDocumento, DocumentoProyecto } from '../../../app/creacion-formulacion/documentos/page'
 import { uploadDocumentoProyecto } from '../../../app/creacion-formulacion/documentos/actions'
 import AlertasActivasPanel from '../diagnostico/AlertasActivasPanel'
@@ -27,6 +28,7 @@ export default function DocumentosContainer({
   fuenteNombre,
   hasSelectedFuente,
 }: Props) {
+  const router = useRouter()
   const [uploadedDocumentos, setUploadedDocumentos] = useState<DocumentoProyecto[]>([])
   const [selectedCatalogId, setSelectedCatalogId] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -126,6 +128,7 @@ export default function DocumentosContainer({
     setFile(null)
     setFileInputKey((value) => value + 1)
     setUploading(false)
+    router.refresh()
   }
 
   return (
