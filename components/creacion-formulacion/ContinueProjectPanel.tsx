@@ -28,6 +28,7 @@ export default function ContinueProjectPanel({
   const router = useRouter()
   const [deletingId, setDeletingId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const allProjects = [...proyectos, ...proyectosAprobados]
 
   const handleDelete = async (proyecto: ContinueProject) => {
     const shouldDelete = window.confirm(
@@ -137,57 +138,17 @@ export default function ContinueProjectPanel({
           </div>
         )}
 
-        <ProjectListSection
-          title="Proyectos en formulación"
-          emptyText="No hay proyectos en formulación pendientes para continuar."
-          proyectos={proyectos}
-          maxHeight={340}
-          renderAction={(proyecto) => {
+        <ProjectTable
+          proyectos={allProjects}
+          deletingId={deletingId}
+          onContinue={(proyecto) => {
             const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
-
-            return (
-              <>
-                <button
-                  type="button"
-                  onClick={() => router.push(`${etapa.href}?proyectoId=${proyecto.id}`)}
-                  style={primaryActionStyle}
-                >
-                  Continuar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDelete(proyecto)}
-                  disabled={deletingId === proyecto.id}
-                  style={{
-                    ...dangerActionStyle,
-                    cursor: deletingId === proyecto.id ? 'not-allowed' : 'pointer',
-                    opacity: deletingId === proyecto.id ? 0.7 : 1,
-                  }}
-                >
-                  {deletingId === proyecto.id ? 'Eliminando...' : 'Eliminar'}
-                </button>
-              </>
-            )
+            router.push(`${etapa.href}?proyectoId=${proyecto.id}`)
           }}
-        />
-
-        <ProjectListSection
-          title="Proyectos aprobados"
-          emptyText="No hay proyectos aprobados para consultar."
-          proyectos={proyectosAprobados}
-          maxHeight={340}
-          renderAction={(proyecto) => (
-            <button
-              type="button"
-              onClick={() =>
-                router.push(`/creacion-formulacion/aprobacion?proyectoId=${proyecto.id}`)
-              }
-              style={primaryActionStyle}
-            >
-              Ver datos
-            </button>
-          )}
+          onView={(proyecto) =>
+            router.push(`/creacion-formulacion/aprobacion?proyectoId=${proyecto.id}`)
+          }
+          onDelete={handleDelete}
         />
         </>
       )}
@@ -195,18 +156,18 @@ export default function ContinueProjectPanel({
   )
 }
 
-function ProjectListSection({
-  title,
-  emptyText,
+function ProjectTable({
   proyectos,
-  maxHeight,
-  renderAction,
+  deletingId,
+  onContinue,
+  onView,
+  onDelete,
 }: {
-  title: string
-  emptyText: string
   proyectos: ContinueProject[]
-  maxHeight: number
-  renderAction: (proyecto: ContinueProject) => React.ReactNode
+  deletingId: string
+  onContinue: (proyecto: ContinueProject) => void
+  onView: (proyecto: ContinueProject) => void
+  onDelete: (proyecto: ContinueProject) => void
 }) {
   return (
     <section style={{ marginTop: 18 }}>
@@ -220,102 +181,119 @@ function ProjectListSection({
         }}
       >
         <h4 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>
-          {title}
+          Listado de proyectos
         </h4>
         <span style={{ fontSize: 13, fontWeight: 800, color: '#6b7280' }}>
           {proyectos.length} proyecto{proyectos.length === 1 ? '' : 's'}
         </span>
       </div>
 
-      {proyectos.length === 0 ? (
-        <div
-          style={{
-            borderRadius: 14,
-            border: '1px dashed #cbd5e1',
-            background: '#f9fafb',
-            padding: 16,
-            color: '#6b7280',
-            fontSize: 14,
-            fontWeight: 600,
-          }}
-        >
-          {emptyText}
+      <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={tableHeaderStyle}>
+          <div>Proyecto</div>
+          <div>Unidad</div>
+          <div>Etapa</div>
+          <div>Estado</div>
+          <div>Avance</div>
+          <div>Actualización</div>
+          <div>Acciones</div>
         </div>
-      ) : (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={tableHeaderStyle}>
-            <div>Proyecto</div>
-            <div>Unidad</div>
-            <div>Etapa</div>
-            <div>Estado</div>
-            <div>Avance</div>
-            <div>Actualización</div>
-            <div>Acciones</div>
-          </div>
 
-          <div style={{ maxHeight, overflowY: 'auto' }}>
-            {proyectos.map((proyecto) => {
-              const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
-              const progreso = Number(proyecto.porcentaje_formulacion ?? 0)
+        <div style={{ maxHeight: 440, overflowY: 'auto' }}>
+          {proyectos.map((proyecto) => {
+            const etapa = normalizeStage(proyecto.etapa_formulacion_actual)
+            const progreso = Number(proyecto.porcentaje_formulacion ?? 0)
+            const approved = proyecto.estado === 'aprobado'
 
-              return (
-                <div key={proyecto.id} style={tableRowStyle}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>
-                      {proyecto.nombre || 'Proyecto sin nombre'}
-                    </div>
-                    <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
-                      {proyecto.codigo_interno || 'Sin código'}
-                    </div>
+            return (
+              <div key={proyecto.id} style={tableRowStyle}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>
+                    {proyecto.nombre || 'Proyecto sin nombre'}
                   </div>
-
-                  <div style={cellStyle}>{proyecto.unidad?.nombre || 'Sin unidad'}</div>
-                  <div style={cellStyle}>{etapa.label}</div>
-                  <div>
-                    <StatusBadge proyecto={proyecto} />
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
+                    {proyecto.codigo_interno || 'Sin código'}
                   </div>
-                  <div>
+                </div>
+
+                <div style={cellStyle}>{proyecto.unidad?.nombre || 'Sin unidad'}</div>
+                <div style={cellStyle}>{etapa.label}</div>
+                <div>
+                  <StatusBadge proyecto={proyecto} />
+                </div>
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
                     <div
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
+                        width: 82,
+                        height: 8,
+                        borderRadius: 999,
+                        background: '#e5e7eb',
+                        overflow: 'hidden',
+                        flexShrink: 0,
                       }}
                     >
                       <div
                         style={{
-                          width: 82,
-                          height: 8,
-                          borderRadius: 999,
-                          background: '#e5e7eb',
-                          overflow: 'hidden',
-                          flexShrink: 0,
+                          width: `${progreso}%`,
+                          height: '100%',
+                          background: approved ? '#16a34a' : '#2563eb',
+                        }}
+                      />
+                    </div>
+                    <span style={{ fontSize: 13, color: '#374151', fontWeight: 700 }}>
+                      {progreso}%
+                    </span>
+                  </div>
+                </div>
+                <div style={cellStyle}>
+                  {proyecto.updated_at ? formatDate(proyecto.updated_at) : '-'}
+                </div>
+                <div style={actionsCellStyle}>
+                  {approved ? (
+                    <button
+                      type="button"
+                      onClick={() => onView(proyecto)}
+                      style={primaryActionStyle}
+                    >
+                      Ver datos
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onContinue(proyecto)}
+                        style={primaryActionStyle}
+                      >
+                        Continuar
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onDelete(proyecto)}
+                        disabled={deletingId === proyecto.id}
+                        style={{
+                          ...dangerActionStyle,
+                          cursor: deletingId === proyecto.id ? 'not-allowed' : 'pointer',
+                          opacity: deletingId === proyecto.id ? 0.7 : 1,
                         }}
                       >
-                        <div
-                          style={{
-                            width: `${progreso}%`,
-                            height: '100%',
-                            background:
-                              proyecto.estado === 'aprobado' ? '#16a34a' : '#2563eb',
-                          }}
-                        />
-                      </div>
-                      <span style={{ fontSize: 13, color: '#374151', fontWeight: 700 }}>
-                        {progreso}%
-                      </span>
-                    </div>
-                  </div>
-                  <div style={cellStyle}>
-                    {proyecto.updated_at ? formatDate(proyecto.updated_at) : '-'}
-                  </div>
-                  <div style={actionsCellStyle}>{renderAction(proyecto)}</div>
+                        {deletingId === proyecto.id ? 'Eliminando...' : 'Eliminar'}
+                      </button>
+                    </>
+                  )}
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )
+          })}
         </div>
-      )}
+      </div>
     </section>
   )
 }
