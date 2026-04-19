@@ -352,25 +352,27 @@ function normalizeStage(stage: number | null) {
 }
 
 const primaryActionStyle: React.CSSProperties = {
-  height: 42,
-  padding: '0 16px',
-  borderRadius: 12,
+  height: 34,
+  padding: '0 12px',
+  borderRadius: 10,
   border: 'none',
   background: '#111827',
   color: '#ffffff',
   fontWeight: 800,
+  fontSize: 13,
   cursor: 'pointer',
   whiteSpace: 'nowrap',
 }
 
 const dangerActionStyle: React.CSSProperties = {
-  height: 42,
-  padding: '0 14px',
-  borderRadius: 12,
+  height: 34,
+  padding: '0 11px',
+  borderRadius: 10,
   border: '1px solid #fecaca',
   background: '#fff7f7',
   color: '#b91c1c',
   fontWeight: 800,
+  fontSize: 13,
   whiteSpace: 'nowrap',
 }
 
