@@ -9,6 +9,7 @@ export default function ResumenProyectoCard({
   postulacion,
   datosGenerales,
   fuenteNombre,
+  montoTotalPostulacion,
 }: {
   proyecto: ProyectoAprobacion | null
   postulacion: PostulacionProyecto | null
@@ -17,7 +18,14 @@ export default function ResumenProyectoCard({
     poblacion_beneficiaria?: Array<{ group?: string; quantity?: string }> | null
   } | null
   fuenteNombre: string
+  montoTotalPostulacion: number | null
 }) {
+  const montoTotal =
+    montoTotalPostulacion ??
+    postulacion?.monto_total ??
+    proyecto?.monto_estimado ??
+    0
+
   return (
     <div style={cardStyle}>
       <h3 style={{ margin: 0, marginBottom: 18, fontSize: 20, fontWeight: 700 }}>
@@ -71,7 +79,7 @@ export default function ResumenProyectoCard({
             color: '#c2410c',
           }}
         >
-          CLP ${formatCurrency(postulacion?.monto_total ?? proyecto?.monto_estimado ?? 0)}
+          CLP ${formatCurrency(montoTotal)}
         </div>
       </div>
     </div>

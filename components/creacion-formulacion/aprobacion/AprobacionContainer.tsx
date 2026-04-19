@@ -61,6 +61,10 @@ export default function AprobacionContainer({
   const postulacionOk = Boolean(fuenteNombre)
   const datosProyectoOk = Boolean(proyecto?.nombre && datosGenerales?.descripcion)
   const yaAprobado = proyecto?.estado === 'aprobado'
+  const montoTotalPostulacion = calculateBudgetTotal(
+    camposPostulacion,
+    respuestasPostulacion
+  )
 
   const puedeAprobar =
     !yaAprobado && documentosOk && diagnosticoOk && postulacionOk && datosProyectoOk
@@ -100,6 +104,7 @@ export default function AprobacionContainer({
             postulacion={postulacion}
             datosGenerales={datosGenerales}
             fuenteNombre={fuenteNombre}
+            montoTotalPostulacion={montoTotalPostulacion}
           />
           <InformacionComplementariaCard diagnostico={diagnostico} />
           <PostulacionDinamicaCard
@@ -144,4 +149,46 @@ function getRequirementId(doc: DocumentoAprobacion) {
   }
 
   return ''
+}
+
+function calculateBudgetTotal(
+  campos: CampoPostulacion[],
+  respuestas: RespuestaPostulacion[]
+) {
+  const presupuestoCampoIds = new Set(
+    campos.filter((campo) => campo.tipo === 'presupuesto').map((campo) => campo.id)
+  )
+
+  if (presupuestoCampoIds.size === 0) {
+    return null
+  }
+
+  return respuestas
+    .filter((respuesta) => presupuestoCampoIds.has(respuesta.campo_id))
+    .reduce((total, respuesta) => total + responseValueToNumber(respuesta), 0)
+}
+
+function responseValueToNumber(respuesta: RespuestaPostulacion) {
+  if (respuesta.valor_numero !== null && respuesta.valor_numero !== undefined) {
+    return Number(respuesta.valor_numero) || 0
+  }
+
+  if (respuesta.valor_texto) {
+    return parseMoneyValue(respuesta.valor_texto)
+  }
+
+  if (typeof respuesta.valor_json === 'number') {
+    return respuesta.valor_json
+  }
+
+  if (typeof respuesta.valor_json === 'string') {
+    return parseMoneyValue(respuesta.valor_json)
+  }
+
+  return 0
+}
+
+function parseMoneyValue(value: string) {
+  const parsed = Number(value.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : 0
 }
