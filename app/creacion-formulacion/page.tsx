@@ -8,6 +8,7 @@ import ContinueProjectPanel from '../../components/creacion-formulacion/Continue
 type PageProps = {
   searchParams: Promise<{
     proyectoId?: string
+    nuevo?: string
   }>
 }
 
@@ -16,6 +17,7 @@ export default async function CreacionFormulacionPage({
 }: PageProps) {
   const params = await searchParams
   const proyectoId = params?.proyectoId ?? ''
+  const creatingNewProject = params?.nuevo === '1'
 
   const supabase = await createClient()
 
@@ -24,7 +26,7 @@ export default async function CreacionFormulacionPage({
     categoriasRes,
     unidadesRes,
     responsablesRes,
-    proyectosEnFormulacionRes,
+    proyectosRes,
     proyectoActualRes,
     datosGeneralesActualRes,
   ] = await Promise.all([
@@ -59,6 +61,7 @@ export default async function CreacionFormulacionPage({
         id,
         codigo_interno,
         nombre,
+        estado,
         etapa_formulacion_actual,
         porcentaje_formulacion,
         updated_at,
@@ -67,10 +70,8 @@ export default async function CreacionFormulacionPage({
       )
       .eq('activo', true)
       .eq('archivado', false)
-      .neq('estado', 'aprobado')
-      .lt('porcentaje_formulacion', 100)
       .order('updated_at', { ascending: false })
-      .limit(100),
+      .limit(200),
 
     proyectoId
       ? supabase
@@ -94,12 +95,17 @@ export default async function CreacionFormulacionPage({
   const categorias = categoriasRes.data ?? []
   const unidades = unidadesRes.data ?? []
   const responsables = responsablesRes.data ?? []
-  const proyectosEnFormulacion = (proyectosEnFormulacionRes.data ?? []).map((proyecto) => ({
+  const proyectos = (proyectosRes.data ?? []).map((proyecto) => ({
     ...proyecto,
     unidad: Array.isArray(proyecto.unidad) ? proyecto.unidad[0] ?? null : proyecto.unidad,
   }))
+  const proyectosEnFormulacion = proyectos.filter(
+    (proyecto) => proyecto.estado !== 'aprobado'
+  )
+  const proyectosAprobados = proyectos.filter((proyecto) => proyecto.estado === 'aprobado')
   const proyectoActual = proyectoActualRes.data
   const datosGeneralesActual = datosGeneralesActualRes.data
+  const showForm = Boolean(proyectoId || creatingNewProject)
 
   return (
     <AppShell
@@ -108,18 +114,31 @@ export default async function CreacionFormulacionPage({
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <FormulationHeader />
-        <ContinueProjectPanel proyectos={proyectosEnFormulacion} />
-        <FormulationStepper proyectoGuardado={Boolean(proyectoId)} />
+        {!showForm ? (
+          <ContinueProjectPanel
+            proyectos={proyectosEnFormulacion}
+            proyectosAprobados={proyectosAprobados}
+          />
+        ) : (
+          <>
+            <ContinueProjectPanel
+              proyectos={proyectosEnFormulacion}
+              proyectosAprobados={proyectosAprobados}
+              compact
+            />
+            <FormulationStepper proyectoGuardado={Boolean(proyectoId)} />
 
-        <CreateProjectFormContainer
-          proyectoId={proyectoId}
-          tiposProyecto={tiposProyecto}
-          categorias={categorias}
-          unidades={unidades}
-          responsables={responsables}
-          proyectoInicial={proyectoActual}
-          datosGeneralesIniciales={datosGeneralesActual}
-        />
+            <CreateProjectFormContainer
+              proyectoId={proyectoId}
+              tiposProyecto={tiposProyecto}
+              categorias={categorias}
+              unidades={unidades}
+              responsables={responsables}
+              proyectoInicial={proyectoActual}
+              datosGeneralesIniciales={datosGeneralesActual}
+            />
+          </>
+        )}
       </div>
     </AppShell>
   )
