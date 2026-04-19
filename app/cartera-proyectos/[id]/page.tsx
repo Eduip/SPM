@@ -57,6 +57,13 @@ export default async function ProyectoPage({
   .eq('proyecto_id', resolvedParams.id)
   .order('numero', { ascending: true })
 
+  const { data: documentosEjecucionData } = await supabase
+  .from('documentos_proyecto')
+  .select('id, nombre, nombre_archivo, fecha_subida, observacion')
+  .eq('proyecto_id', resolvedParams.id)
+  .eq('etapa', 'ejecucion')
+  .order('fecha_subida', { ascending: false })
+
   const { data: rendicionesData } = await supabase
   .from('proyecto_rendiciones')
   .select('*')
@@ -134,6 +141,21 @@ export default async function ProyectoPage({
   }
 
   const tab = resolvedSearchParams.tab ?? 'general'
+  const documentosPorEstadoPago = new Map<string, typeof documentosEjecucionData>()
+
+  for (const documento of documentosEjecucionData ?? []) {
+    const estadoPagoId = getEstadoPagoDocumentoId(documento.observacion)
+    if (!estadoPagoId) continue
+
+    const documentos = documentosPorEstadoPago.get(estadoPagoId) ?? []
+    documentos.push(documento)
+    documentosPorEstadoPago.set(estadoPagoId, documentos)
+  }
+
+  const estadosPago = (estadosPagoData ?? []).map((estadoPago) => ({
+    ...estadoPago,
+    documentos: documentosPorEstadoPago.get(estadoPago.id) ?? [],
+  }))
 
   return (
     <AppShell title="Ficha del Proyecto" currentModule="cartera-proyectos">
@@ -144,7 +166,7 @@ export default async function ProyectoPage({
   tab={tab}
   transferencias={transferenciasData ?? []}
   garantias={garantiasData ?? []}
-  estadosPago={estadosPagoData ?? []}
+  estadosPago={estadosPago}
   rendiciones={rendicionesData ?? []}
   historial={historialData ?? []}
   bitacora={bitacoraData ?? []}
@@ -155,4 +177,14 @@ export default async function ProyectoPage({
   )
 
   
+}
+
+function getEstadoPagoDocumentoId(observacion?: string | null) {
+  const prefix = 'estado_pago_id:'
+
+  if (observacion?.startsWith(prefix)) {
+    return observacion.slice(prefix.length)
+  }
+
+  return ''
 }

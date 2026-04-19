@@ -53,6 +53,14 @@ export type EstadoPagoProyecto = {
   monto?: number | string | null
   avance_fisico?: number | string | null
   estado?: string | null
+  documentos?: DocumentoEstadoPago[]
+}
+
+export type DocumentoEstadoPago = {
+  id: string
+  nombre?: string | null
+  nombre_archivo?: string | null
+  fecha_subida?: string | null
 }
 
 export type RendicionProyecto = {

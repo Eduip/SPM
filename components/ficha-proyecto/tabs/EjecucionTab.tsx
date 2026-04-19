@@ -2,7 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { crearEstadoPago } from '../../../app/cartera-proyectos/actions/estados-pago'
+import {
+  actualizarEstadoPagoEstado,
+  crearEstadoPago,
+  subirDocumentoEstadoPago,
+} from '../../../app/cartera-proyectos/actions/estados-pago'
 import type { EstadoPagoProyecto, ProyectoFicha } from '../../../lib/project-types'
 
 export default function EjecucionTab({
@@ -13,6 +17,8 @@ export default function EjecucionTab({
   estadosPago: EstadoPagoProyecto[]
 }) {
   const [showForm, setShowForm] = useState(false)
+  const [uploadingForId, setUploadingForId] = useState('')
+  const [message, setMessage] = useState('')
   const router = useRouter()
 
   if (!proyecto) {
@@ -23,7 +29,9 @@ export default function EjecucionTab({
     )
   }
 
-  const totalPagado = estadosPago.reduce(
+  const totalPagado = estadosPago
+    .filter((ep) => normalizeEstadoPago(ep.estado) === 'pagado')
+    .reduce(
     (acc, ep) => acc + Number(ep.monto ?? 0),
     0
   )
@@ -50,16 +58,25 @@ export default function EjecucionTab({
           >
             + Añadir Estado de Pago
           </button>
-
-          <button
-            type="button"
-            disabled
-            title="La subida de documentos de ejecución todavía no está implementada."
-            style={disabledButtonStyle}
-          >
-            Subir Documento
-          </button>
         </div>
+
+        {message && (
+          <div
+            style={{
+              borderRadius: 14,
+              border: message.includes('correctamente')
+                ? '1px solid #bbf7d0'
+                : '1px solid #fecaca',
+              background: message.includes('correctamente') ? '#ecfdf5' : '#fef2f2',
+              color: message.includes('correctamente') ? '#166534' : '#b91c1c',
+              padding: 14,
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            {message}
+          </div>
+        )}
 
         {showForm && (
           <form
@@ -114,32 +131,13 @@ export default function EjecucionTab({
         )}
 
         <div style={cardStyle}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-            }}
-          >
-            <div>
-              <div style={labelStyle}>Total Pagado</div>
-              <div style={valueStyle}>
-                CLP {formatCurrency(totalPagado)} / CLP {formatCurrency(montoProyecto)}
-              </div>
-              <div style={subStyle}>{porcentaje}% del presupuesto total ejecutado</div>
-            </div>
-
-            <div style={badgeStyle}>{porcentaje}%</div>
-          </div>
-        </div>
-
-        <div style={cardStyle}>
           <div style={tableHeaderStyle}>
             <div>Estado de Pago</div>
             <div>Estado</div>
             <div>Monto</div>
             <div>Avance Físico</div>
+            <div>Documentos</div>
+            <div>Acciones</div>
           </div>
 
           {estadosPago.length === 0 ? (
@@ -154,28 +152,108 @@ export default function EjecucionTab({
               Aún no hay estados de pago registrados.
             </div>
           ) : (
-            estadosPago.map((ep) => (
-              <div key={ep.id} style={rowStyle}>
-                <div>
-                  <div style={{ fontWeight: 700, color: '#111827' }}>
-                    Estado de Pago N°{ep.numero}
+            estadosPago.map((ep) => {
+              const documentos = ep.documentos ?? []
+
+              return (
+                <div key={ep.id}>
+                  <div style={rowStyle}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#111827' }}>
+                        Estado de Pago N°{ep.numero}
+                      </div>
+                      <div style={subStyle}>
+                        {ep.fecha ? formatDate(ep.fecha) : '-'}
+                      </div>
+                    </div>
+
+                    <EstadoSelect
+                      estado={ep.estado}
+                      onChange={async (estado) => {
+                        setMessage('')
+                        const formData = new FormData()
+                        formData.append('proyecto_id', proyecto.id)
+                        formData.append('estado_pago_id', ep.id)
+                        formData.append('estado', estado)
+
+                        const result = await actualizarEstadoPagoEstado(formData)
+
+                        if (!result.success) {
+                          setMessage(result.error || 'No se pudo actualizar el estado.')
+                          return
+                        }
+
+                        router.refresh()
+                      }}
+                    />
+
+                    <div style={cellStyle}>
+                      CLP {formatCurrency(Number(ep.monto ?? 0))}
+                    </div>
+
+                    <div style={cellStyle}>
+                      {Number(ep.avance_fisico ?? 0)}%
+                    </div>
+
+                    <div style={cellStyle}>
+                      {documentos.length === 0 ? (
+                        'Sin documentos'
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {documentos.slice(0, 2).map((documento) => (
+                            <span key={documento.id}>
+                              {documento.nombre_archivo || documento.nombre || 'Documento'}
+                            </span>
+                          ))}
+                          {documentos.length > 2 && (
+                            <span>+{documentos.length - 2} documento(s)</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUploadingForId(uploadingForId === ep.id ? '' : ep.id)
+                        }
+                        style={secondaryButtonStyle}
+                      >
+                        Subir documento
+                      </button>
+                    </div>
                   </div>
-                  <div style={subStyle}>
-                    {ep.fecha ? formatDate(ep.fecha) : '-'}
-                  </div>
-                </div>
 
-                <EstadoBadge estado={ep.estado} />
+                  {uploadingForId === ep.id && (
+                    <form
+                      action={async (formData) => {
+                        setMessage('')
+                        formData.append('proyecto_id', proyecto.id)
+                        formData.append('estado_pago_id', ep.id)
 
-                <div style={cellStyle}>
-                  CLP {formatCurrency(Number(ep.monto ?? 0))}
-                </div>
+                        const result = await subirDocumentoEstadoPago(formData)
 
-                <div style={cellStyle}>
-                  {Number(ep.avance_fisico ?? 0)}%
+                        if (!result.success) {
+                          setMessage(result.error || 'No se pudo subir el documento.')
+                          return
+                        }
+
+                        setMessage('Documento subido correctamente.')
+                        setUploadingForId('')
+                        router.refresh()
+                      }}
+                      style={uploadFormStyle}
+                    >
+                      <input name="documento" type="file" required style={fileInputStyle} />
+                      <button type="submit" style={submitStyle}>
+                        Guardar documento
+                      </button>
+                    </form>
+                  )}
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>
@@ -213,33 +291,27 @@ export default function EjecucionTab({
   )
 }
 
-function EstadoBadge({ estado }: { estado?: string | null }) {
-  const normalized = (estado ?? 'pendiente').toLowerCase()
-
-  const config =
-    normalized === 'pagado'
-      ? { label: 'Pagado', bg: '#dcfce7', color: '#16a34a' }
-      : normalized === 'rechazado'
-      ? { label: 'Rechazado', bg: '#fee2e2', color: '#dc2626' }
-      : { label: 'Pendiente', bg: '#fef3c7', color: '#ca8a04' }
-
+function EstadoSelect({
+  estado,
+  onChange,
+}: {
+  estado?: string | null
+  onChange: (estado: string) => void
+}) {
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        height: 30,
-        padding: '0 12px',
-        borderRadius: 999,
-        background: config.bg,
-        color: config.color,
-        fontSize: 13,
-        fontWeight: 700,
-      }}
+    <select
+      value={normalizeEstadoPago(estado)}
+      onChange={(event) => onChange(event.target.value)}
+      style={selectStateStyle}
     >
-      {config.label}
-    </span>
+      <option value="pendiente_pago">Pendiente de pago</option>
+      <option value="pagado">Pagado</option>
+    </select>
   )
+}
+
+function normalizeEstadoPago(estado?: string | null) {
+  return estado === 'pagado' ? 'pagado' : 'pendiente_pago'
 }
 
 function MetricCard({
@@ -334,12 +406,6 @@ const secondaryButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
-const disabledButtonStyle: React.CSSProperties = {
-  ...secondaryButtonStyle,
-  opacity: 0.55,
-  cursor: 'not-allowed',
-}
-
 const formStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr 1fr 1fr auto',
@@ -361,6 +427,11 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
+const fileInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  padding: '9px 12px',
+}
+
 const submitStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 10,
@@ -372,42 +443,14 @@ const submitStyle: React.CSSProperties = {
   padding: '0 14px',
 }
 
-const labelStyle: React.CSSProperties = {
-  fontSize: 14,
-  color: '#2563eb',
-  fontWeight: 700,
-  marginBottom: 8,
-}
-
-const valueStyle: React.CSSProperties = {
-  fontSize: 34,
-  fontWeight: 800,
-  color: '#1e3a8a',
-  marginBottom: 6,
-}
-
 const subStyle: React.CSSProperties = {
   fontSize: 13,
   color: '#6b7280',
 }
 
-const badgeStyle: React.CSSProperties = {
-  width: 74,
-  height: 74,
-  borderRadius: 16,
-  border: '2px solid #93c5fd',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 28,
-  fontWeight: 800,
-  color: '#1d4ed8',
-  flexShrink: 0,
-}
-
 const tableHeaderStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1.4fr 1fr 1fr 1fr',
+  gridTemplateColumns: '1.35fr 1.1fr 1fr 0.9fr 1.5fr 1.1fr',
   gap: 12,
   padding: '14px 16px',
   background: '#f9fafb',
@@ -421,7 +464,7 @@ const tableHeaderStyle: React.CSSProperties = {
 
 const rowStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1.4fr 1fr 1fr 1fr',
+  gridTemplateColumns: '1.35fr 1.1fr 1fr 0.9fr 1.5fr 1.1fr',
   gap: 12,
   padding: '16px',
   borderTop: '1px solid #e5e7eb',
@@ -431,4 +474,24 @@ const rowStyle: React.CSSProperties = {
 const cellStyle: React.CSSProperties = {
   fontSize: 14,
   color: '#374151',
+}
+
+const selectStateStyle: React.CSSProperties = {
+  height: 36,
+  borderRadius: 10,
+  border: '1px solid #d1d5db',
+  background: '#ffffff',
+  color: '#374151',
+  fontSize: 13,
+  fontWeight: 700,
+  padding: '0 10px',
+}
+
+const uploadFormStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr auto',
+  gap: 12,
+  padding: 14,
+  borderTop: '1px solid #e5e7eb',
+  background: '#f9fafb',
 }
