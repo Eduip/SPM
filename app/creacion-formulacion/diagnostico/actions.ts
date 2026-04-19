@@ -92,9 +92,10 @@ export async function saveDiagnosticoData(payload: SaveDiagnosticoPayload) {
     .from('proyecto_diagnostico')
     .select('id')
     .eq('proyecto_id', payload.proyectoId)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+    .limit(1)
 
-  let diagnosticoId = existingDiagnostico?.id ?? ''
+  let diagnosticoId = existingDiagnostico?.[0]?.id ?? ''
 
   if (diagnosticoId) {
     const { error: updateDiagnosticoError } = await supabase
@@ -219,6 +220,9 @@ export async function saveDiagnosticoData(payload: SaveDiagnosticoPayload) {
         'El diagnóstico se guardó, pero falló el registro en historial.',
     }
   }
+
+  revalidatePath('/creacion-formulacion/diagnostico')
+  revalidatePath('/creacion-formulacion/postulacion')
 
   return {
     success: true,

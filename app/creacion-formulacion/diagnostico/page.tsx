@@ -36,7 +36,8 @@ export default async function DiagnosticoPage({ searchParams }: PageProps) {
           `
           )
           .eq('proyecto_id', proyectoId)
-          .maybeSingle()
+          .order('updated_at', { ascending: false })
+          .limit(1)
       : Promise.resolve({ data: null, error: null }),
 
     proyectoId
@@ -49,9 +50,7 @@ export default async function DiagnosticoPage({ searchParams }: PageProps) {
             nombre_archivo,
             tamano_bytes,
             fecha_subida,
-            profile:profiles!documentos_proyecto_subido_por_fkey (
-              nombre_completo
-            )
+            subido_por
           `
           )
           .eq('proyecto_id', proyectoId)
@@ -60,8 +59,28 @@ export default async function DiagnosticoPage({ searchParams }: PageProps) {
       : Promise.resolve({ data: [], error: null }),
   ])
 
-  const diagnostico = diagnosticoRes.data ?? null
-  const documentos = documentosRes.data ?? []
+  const diagnostico = Array.isArray(diagnosticoRes.data)
+    ? diagnosticoRes.data[0] ?? null
+    : diagnosticoRes.data ?? null
+  const documentosRaw = documentosRes.data ?? []
+  const subidoPorIds = Array.from(
+    new Set(documentosRaw.map((documento) => documento.subido_por).filter(Boolean))
+  )
+  const { data: perfiles } = subidoPorIds.length
+    ? await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', subidoPorIds)
+    : { data: [] }
+  const perfilesMap = new Map(
+    (perfiles ?? []).map((perfil) => [perfil.id, perfil.nombre_completo])
+  )
+  const documentos = documentosRaw.map((documento) => ({
+    ...documento,
+    profile: documento.subido_por
+      ? [{ nombre_completo: perfilesMap.get(documento.subido_por) ?? 'Usuario' }]
+      : null,
+  }))
 
   return (
     <AppShell
