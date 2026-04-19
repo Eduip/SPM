@@ -85,10 +85,7 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
             estado_revision,
             porcentaje_validacion,
             obligatorio,
-            observacion,
-            profile:profiles!documentos_proyecto_subido_por_fkey (
-              nombre_completo
-            )
+            observacion
           `)
           .eq('proyecto_id', proyectoId)
           .eq('etapa', 'documentos')
@@ -100,7 +97,25 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
     ...documento,
     tipo: 'Documento fuente',
   }))
-  const documentos = documentosRes.data ?? []
+  const documentosRaw = documentosRes.data ?? []
+  const subidoPorIds = Array.from(
+    new Set(documentosRaw.map((doc) => doc.subido_por).filter(Boolean))
+  )
+  const { data: perfiles } = subidoPorIds.length
+    ? await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', subidoPorIds)
+    : { data: [] }
+  const perfilesMap = new Map(
+    (perfiles ?? []).map((perfil) => [perfil.id, perfil.nombre_completo])
+  )
+  const documentos = documentosRaw.map((documento) => ({
+    ...documento,
+    profile: documento.subido_por
+      ? [{ nombre_completo: perfilesMap.get(documento.subido_por) ?? 'Usuario' }]
+      : null,
+  }))
 
   return (
     <AppShell
