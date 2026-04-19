@@ -60,7 +60,7 @@ export async function aprobarProyecto(proyectoId: string) {
     }
   }
 
-  const [documentosFuenteRes, documentosRes, postulacionRes] = await Promise.all([
+  const [documentosFuenteRes, documentosRes] = await Promise.all([
     supabase
       .from('documentos_fuente')
       .select('id, nombre, obligatorio')
@@ -70,11 +70,6 @@ export async function aprobarProyecto(proyectoId: string) {
       .select('catalogo_documento_id, observacion, estado_revision')
       .eq('proyecto_id', proyectoId)
       .eq('etapa', 'documentos'),
-    supabase
-      .from('proyecto_postulacion')
-      .select('puntaje_total, monto_total')
-      .eq('proyecto_id', proyectoId)
-      .maybeSingle(),
   ])
 
   if (documentosFuenteRes.error) {
@@ -90,13 +85,6 @@ export async function aprobarProyecto(proyectoId: string) {
     return {
       success: false,
       error: documentosRes.error.message || 'No se pudieron validar los documentos.',
-    }
-  }
-
-  if (postulacionRes.error) {
-    return {
-      success: false,
-      error: postulacionRes.error.message || 'No se pudo validar la postulación.',
     }
   }
 
@@ -119,21 +107,6 @@ export async function aprobarProyecto(proyectoId: string) {
       error: `Faltan documentos obligatorios: ${documentosFaltantes
         .map((doc) => doc.nombre)
         .join(', ')}.`,
-    }
-  }
-
-  const postulacion = postulacionRes.data
-  if (Number(postulacion?.puntaje_total ?? 0) < 21) {
-    return {
-      success: false,
-      error: 'La evaluación técnica no alcanza el puntaje mínimo para aprobar.',
-    }
-  }
-
-  if (!postulacion?.monto_total) {
-    return {
-      success: false,
-      error: 'El presupuesto de la postulación no está validado.',
     }
   }
 
