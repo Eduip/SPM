@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import GeneralTab from './tabs/GeneralTab'
+import ProveedoresTab from './tabs/ProveedoresTab'
 import FinanciamientoTab from './tabs/FinanciamientoTab'
 import GarantiasTab from './tabs/GarantiasTab'
 import EjecucionTab from './tabs/EjecucionTab'
@@ -20,6 +21,7 @@ import type {
 
 const tabs = [
   { key: 'general', label: 'General' },
+  { key: 'proveedores', label: 'Proveedores' },
   { key: 'ejecucion', label: 'Ejecución' },
   { key: 'financiamiento', label: 'Financiamiento' },
   { key: 'rendicion', label: 'Rendición' },
@@ -144,6 +146,10 @@ function RenderTab({
     if (tab === 'general') {
         return <GeneralTab proyecto={proyecto} />
       }
+
+      if (tab === 'proveedores') {
+        return <ProveedoresTab proyecto={proyecto} />
+      }
       
       if (tab === 'financiamiento') {
         return (
@@ -237,6 +243,7 @@ function RenderTab({
 
 function getTabTitle(tab: string) {
   if (tab === 'ejecucion') return 'Ejecución'
+  if (tab === 'proveedores') return 'Proveedores'
   if (tab === 'financiamiento') return 'Financiamiento'
   if (tab === 'rendicion') return 'Rendición'
   if (tab === 'garantias') return 'Garantías'
