@@ -77,7 +77,9 @@ export type HistorialEvento = {
 export type BitacoraProyecto = {
   id: string
   tipo?: string | null
+  titulo?: string | null
   descripcion?: string | null
   usuario_id?: string | null
+  metadata?: Record<string, unknown> | null
   created_at: string
 }

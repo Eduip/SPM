@@ -148,7 +148,7 @@ function RenderTab({
       }
 
       if (tab === 'proveedores') {
-        return <ProveedoresTab proyecto={proyecto} />
+        return <ProveedoresTab proyecto={proyecto} bitacora={bitacora} />
       }
       
       if (tab === 'financiamiento') {
