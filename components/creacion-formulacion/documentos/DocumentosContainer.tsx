@@ -3,7 +3,10 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CatalogoDocumento, DocumentoProyecto } from '../../../app/creacion-formulacion/documentos/page'
-import { uploadDocumentoProyecto } from '../../../app/creacion-formulacion/documentos/actions'
+import {
+  eliminarDocumentoProyecto,
+  uploadDocumentoProyecto,
+} from '../../../app/creacion-formulacion/documentos/actions'
 import AlertasActivasPanel from '../diagnostico/AlertasActivasPanel'
 import UltimosDocumentosPanel from '../diagnostico/UltimosDocumentosPanel'
 import EstadoDocumentacionPanel from './EstadoDocumentacionPanel'
@@ -34,6 +37,7 @@ export default function DocumentosContainer({
   const [file, setFile] = useState<File | null>(null)
   const [fileInputKey, setFileInputKey] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [deletingId, setDeletingId] = useState('')
   const [message, setMessage] = useState('')
 
   const currentDocumentos = useMemo(
@@ -79,6 +83,7 @@ export default function DocumentosContainer({
       fechaSubida: existing?.fecha_subida ?? '',
       estado,
       porcentajeValidacion: existing?.porcentaje_validacion ?? 0,
+      documentoId: existing?.id ?? '',
     }
   })
 
@@ -128,6 +133,34 @@ export default function DocumentosContainer({
     setFile(null)
     setFileInputKey((value) => value + 1)
     setUploading(false)
+    router.refresh()
+  }
+
+  const handleDelete = async (row: (typeof rows)[number]) => {
+    if (!row.documentoId) return
+
+    const shouldDelete = window.confirm(
+      `¿Eliminar el documento "${row.nombre}" adjuntado a este requisito?`
+    )
+
+    if (!shouldDelete) return
+
+    setDeletingId(row.documentoId)
+    setMessage('')
+
+    const result = await eliminarDocumentoProyecto(row.documentoId)
+
+    if (!result.success) {
+      setMessage(result.error || 'No se pudo eliminar el documento.')
+      setDeletingId('')
+      return
+    }
+
+    setUploadedDocumentos((prev) =>
+      prev.filter((doc) => doc.id !== row.documentoId)
+    )
+    setMessage('Documento eliminado correctamente.')
+    setDeletingId('')
     router.refresh()
   }
 
@@ -392,6 +425,31 @@ export default function DocumentosContainer({
 
                   <div>
                     <EstadoBadge estado={row.estado} />
+                    {row.documentoId && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(row)}
+                        disabled={deletingId === row.documentoId}
+                        style={{
+                          marginTop: 8,
+                          height: 32,
+                          padding: '0 10px',
+                          borderRadius: 10,
+                          border: '1px solid #fecaca',
+                          background: '#fff7f7',
+                          color: '#b91c1c',
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor:
+                            deletingId === row.documentoId
+                              ? 'not-allowed'
+                              : 'pointer',
+                          opacity: deletingId === row.documentoId ? 0.7 : 1,
+                        }}
+                      >
+                        {deletingId === row.documentoId ? 'Eliminando...' : 'Eliminar'}
+                      </button>
+                    )}
                   </div>
                 </div>
                 ))

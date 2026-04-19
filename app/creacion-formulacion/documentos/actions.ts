@@ -157,3 +157,84 @@ export async function uploadDocumentoProyecto(formData: FormData) {
 
   return { success: true, documento }
 }
+
+export async function eliminarDocumentoProyecto(documentoId: string) {
+  const supabase = await createClient()
+
+  if (!documentoId) {
+    return { success: false, error: 'No se recibió el documento a eliminar.' }
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile) {
+    return { success: false, error: 'El usuario no tiene perfil asociado.' }
+  }
+
+  const { data: documento, error: documentoError } = await supabase
+    .from('documentos_proyecto')
+    .select('id, proyecto_id, nombre, nombre_archivo, ruta_storage, bucket, etapa')
+    .eq('id', documentoId)
+    .maybeSingle()
+
+  if (documentoError || !documento) {
+    return {
+      success: false,
+      error: documentoError?.message || 'No se encontró el documento a eliminar.',
+    }
+  }
+
+  if (documento.etapa !== 'documentos') {
+    return {
+      success: false,
+      error: 'Solo se pueden eliminar documentos cargados en la etapa Documentos.',
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('documentos_proyecto')
+    .delete()
+    .eq('id', documento.id)
+
+  if (deleteError) {
+    return {
+      success: false,
+      error: deleteError.message || 'No se pudo eliminar el registro del documento.',
+    }
+  }
+
+  if (documento.bucket && documento.ruta_storage) {
+    await supabase.storage.from(documento.bucket).remove([documento.ruta_storage])
+  }
+
+  await supabase.rpc('registrar_evento_historial', {
+    p_entidad: 'documento',
+    p_entidad_id: documento.proyecto_id,
+    p_accion: 'eliminar_documento',
+    p_descripcion: `Se eliminó el documento: ${documento.nombre || documento.nombre_archivo}`,
+    p_usuario_id: profile.id,
+    p_metadata: {
+      etapa: 'documentos',
+      documento_id: documento.id,
+      nombre_archivo: documento.nombre_archivo,
+    },
+  })
+
+  revalidatePath('/creacion-formulacion/documentos')
+  revalidatePath('/creacion-formulacion/aprobacion')
+
+  return { success: true, documentoId: documento.id }
+}
