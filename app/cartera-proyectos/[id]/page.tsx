@@ -2,6 +2,7 @@ import AppShell from '../../../components/AppShell'
 import { createClient } from '../../../lib/supabase-server'
 import ProyectoHeader from '../../../components/ficha-proyecto/ProyectoHeader'
 import ProyectoTabs from '../../../components/ficha-proyecto/ProyectoTabs'
+import { buildProjectBudgetMap } from '../../../lib/project-budget'
 
 export default async function ProyectoPage({
   params,
@@ -74,11 +75,37 @@ export default async function ProyectoPage({
   .eq('proyecto_id', resolvedParams.id)
   .order('created_at', { ascending: false })
 
- 
+  const [
+    fuentesProyectoRes,
+    camposPresupuestoRes,
+    respuestasPresupuestoRes,
+  ] = await Promise.all([
+    supabase
+      .from('proyecto_fuentes_financiamiento')
+      .select('proyecto_id, fuente_id')
+      .eq('proyecto_id', resolvedParams.id),
+    supabase
+      .from('campos_formulario_fuente')
+      .select('id, fuente_id, tipo')
+      .eq('tipo', 'presupuesto')
+      .eq('visible', true),
+    supabase
+      .from('proyecto_postulacion_respuestas')
+      .select('proyecto_id, campo_id, valor_texto, valor_numero, valor_json')
+      .eq('proyecto_id', resolvedParams.id),
+  ])
+
+  const presupuestoPorProyecto = buildProjectBudgetMap({
+    projectIds: [resolvedParams.id],
+    fundingSelections: fuentesProyectoRes.data ?? [],
+    budgetFields: camposPresupuestoRes.data ?? [],
+    responses: respuestasPresupuestoRes.data ?? [],
+  })
 
   const proyecto = data
     ? {
         ...data,
+        presupuesto_total: presupuestoPorProyecto.get(resolvedParams.id) ?? null,
         unidad: Array.isArray(data.unidad) ? data.unidad[0] ?? null : data.unidad,
         fuente: Array.isArray(data.fuente) ? data.fuente[0] ?? null : data.fuente,
         responsable: Array.isArray(data.responsable)

@@ -28,7 +28,7 @@ export default function EjecucionTab({
     0
   )
 
-  const montoProyecto = Number(proyecto.monto_estimado ?? 0)
+  const montoProyecto = getProjectBudget(proyecto)
 
   const porcentaje =
     montoProyecto > 0 ? Math.round((totalPagado / montoProyecto) * 100) : 0
@@ -278,6 +278,10 @@ function MetricCard({
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-CL').format(value)
+}
+
+function getProjectBudget(proyecto: ProyectoFicha) {
+  return Number(proyecto.presupuesto_total ?? proyecto.monto_estimado ?? 0)
 }
 
 function formatDate(dateString: string) {

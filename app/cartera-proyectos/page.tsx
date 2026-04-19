@@ -1,6 +1,7 @@
 import AppShell from '../../components/AppShell'
 import { createClient } from '../../lib/supabase-server'
 import CarteraContainer from '../../components/cartera-proyectos/CarteraContainer'
+import { buildProjectBudgetMap } from '../../lib/project-budget'
 
 export type ProyectoCartera = {
   id: string
@@ -8,6 +9,7 @@ export type ProyectoCartera = {
   nombre: string
   anio_inicio: number | null
   monto_estimado: number | null
+  presupuesto_total: number | null
   avance_fisico_actual: number | null
   avance_financiero_actual: number | null
   porcentaje_formulacion: number | null
@@ -67,8 +69,41 @@ export default async function CarteraProyectosPage() {
     )
   }
 
-  const proyectos: ProyectoCartera[] = ((data ?? []) as ProyectoCarteraRaw[]).map((p) => ({
+  const rawProjects = (data ?? []) as ProyectoCarteraRaw[]
+  const projectIds = rawProjects.map((proyecto) => proyecto.id)
+  const [fuentesProyectoRes, camposPresupuestoRes, respuestasPresupuestoRes] =
+    projectIds.length
+      ? await Promise.all([
+          supabase
+            .from('proyecto_fuentes_financiamiento')
+            .select('proyecto_id, fuente_id')
+            .in('proyecto_id', projectIds),
+          supabase
+            .from('campos_formulario_fuente')
+            .select('id, fuente_id, tipo')
+            .eq('tipo', 'presupuesto')
+            .eq('visible', true),
+          supabase
+            .from('proyecto_postulacion_respuestas')
+            .select('proyecto_id, campo_id, valor_texto, valor_numero, valor_json')
+            .in('proyecto_id', projectIds),
+        ])
+      : [
+          { data: [] },
+          { data: [] },
+          { data: [] },
+        ]
+
+  const presupuestoPorProyecto = buildProjectBudgetMap({
+    projectIds,
+    fundingSelections: fuentesProyectoRes.data ?? [],
+    budgetFields: camposPresupuestoRes.data ?? [],
+    responses: respuestasPresupuestoRes.data ?? [],
+  })
+
+  const proyectos: ProyectoCartera[] = rawProjects.map((p) => ({
     ...p,
+    presupuesto_total: presupuestoPorProyecto.get(p.id) ?? null,
     unidad: Array.isArray(p.unidad) ? p.unidad[0] ?? null : p.unidad,
     fuente: Array.isArray(p.fuente) ? p.fuente[0] ?? null : p.fuente,
     responsable: Array.isArray(p.responsable)

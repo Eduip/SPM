@@ -12,6 +12,7 @@ export type ProyectoFicha = {
   nombre?: string | null
   anio_inicio?: number | string | null
   monto_estimado?: number | string | null
+  presupuesto_total?: number | string | null
   localizacion?: string | null
   avance_fisico_actual?: number | string | null
   avance_financiero_actual?: number | string | null

@@ -9,7 +9,7 @@ export default function CarteraStats({
   const formulacion = proyectos.filter((p) => (p.porcentaje_formulacion ?? 0) < 100).length
   const ejecucion = proyectos.filter((p) => (p.avance_fisico_actual ?? 0) > 0).length
   const aprobados = proyectos.filter((p) => p.estado === 'aprobado').length
-  const monto = proyectos.reduce((acc, p) => acc + Number(p.monto_estimado ?? 0), 0)
+  const monto = proyectos.reduce((acc, p) => acc + getProjectBudget(p), 0)
 
   const cards = [
     { label: 'Total Proyectos', value: total, color: '#2563eb' },
@@ -57,4 +57,8 @@ export default function CarteraStats({
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-CL').format(value)
+}
+
+function getProjectBudget(proyecto: ProyectoCartera) {
+  return Number(proyecto.presupuesto_total ?? proyecto.monto_estimado ?? 0)
 }

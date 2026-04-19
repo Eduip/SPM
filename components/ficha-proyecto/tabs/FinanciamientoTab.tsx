@@ -32,7 +32,7 @@ export default function FinanciamientoTab({
       )
     }
   
-    const montoTotal = Number(proyecto.monto_estimado ?? 0)
+    const montoTotal = getProjectBudget(proyecto)
     const avanceFinanciero = Number(proyecto.avance_financiero_actual ?? 0)
     const montoEjecutado = Math.round((montoTotal * avanceFinanciero) / 100)
     const saldoPendiente = Math.max(montoTotal - montoEjecutado, 0)
@@ -429,6 +429,10 @@ export default function FinanciamientoTab({
   
   function formatCurrency(value: number) {
     return new Intl.NumberFormat('es-CL').format(value)
+  }
+
+  function getProjectBudget(proyecto: ProyectoFicha) {
+    return Number(proyecto.presupuesto_total ?? proyecto.monto_estimado ?? 0)
   }
 
   function formatDate(dateString: string) {

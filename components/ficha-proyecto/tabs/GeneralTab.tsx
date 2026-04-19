@@ -17,6 +17,8 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
       )
     }
   
+    const presupuestoTotal = getProjectBudget(proyecto)
+
     return (
       <div
         style={{
@@ -64,7 +66,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
             />
             <Info
               label="Presupuesto"
-              value={`CLP ${formatCurrency(Number(proyecto.monto_estimado ?? 0))}`}
+              value={`CLP ${formatCurrency(presupuestoTotal)}`}
             />
             <Info
               label="Año de inicio"
@@ -284,6 +286,10 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
     )
   }
   
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat('es-CL').format(value)
-  }
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('es-CL').format(value)
+}
+
+function getProjectBudget(proyecto: ProyectoFicha) {
+  return Number(proyecto.presupuesto_total ?? proyecto.monto_estimado ?? 0)
+}
