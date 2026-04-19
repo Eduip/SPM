@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { crearProveedorProyecto } from '../../../app/cartera-proyectos/actions/proveedores'
+import {
+  actualizarProveedorProyecto,
+  crearProveedorProyecto,
+  eliminarProveedorProyecto,
+} from '../../../app/cartera-proyectos/actions/proveedores'
 import type { BitacoraProyecto, ProyectoFicha } from '../../../lib/project-types'
 
 type ProveedorMetadata = {
@@ -12,11 +16,14 @@ type ProveedorMetadata = {
     razon_social?: string
     rut?: string
     rubro?: string
+    nombre_contacto?: string
     correo?: string
     telefono?: string
   }
   contratacion?: {
     tipo_contratacion?: string
+    documento_contratacion?: DocumentoMetadata | null
+    decreto_administrativo?: DocumentoMetadata | null
   }
   servicio?: {
     tipo_servicio?: string
@@ -24,6 +31,14 @@ type ProveedorMetadata = {
     plazo_desde?: string
     plazo_hasta?: string
   }
+}
+
+type DocumentoMetadata = {
+  nombre_archivo?: string
+  ruta_storage?: string
+  bucket?: string
+  mime_type?: string | null
+  tamano_bytes?: number
 }
 
 export default function ProveedoresTab({
@@ -36,6 +51,9 @@ export default function ProveedoresTab({
   const router = useRouter()
   const [tipoProveedor, setTipoProveedor] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState('')
+  const [viewingId, setViewingId] = useState('')
+  const [editingId, setEditingId] = useState('')
   const [message, setMessage] = useState('')
 
   const proveedores = useMemo(
@@ -49,11 +67,35 @@ export default function ProveedoresTab({
   )
 
   if (!proyecto) {
-    return (
-      <div style={errorCard}>
-        No se pudo cargar la información del proyecto.
-      </div>
-    )
+    return <div style={errorCard}>No se pudo cargar la información del proyecto.</div>
+  }
+
+  const handleDelete = async (proveedor: BitacoraProyecto) => {
+    const metadata = proveedor.metadata as ProveedorMetadata | null
+    const nombre =
+      metadata?.datos_empresa?.razon_social || proveedor.titulo || 'este proveedor'
+
+    if (!window.confirm(`¿Eliminar ${nombre}?`)) return
+
+    setDeletingId(proveedor.id)
+    setMessage('')
+
+    const result = await eliminarProveedorProyecto({
+      proveedorId: proveedor.id,
+      proyectoId: proyecto.id,
+    })
+
+    setDeletingId('')
+
+    if (!result.success) {
+      setMessage(result.error || 'No se pudo eliminar el proveedor.')
+      return
+    }
+
+    setMessage('Proveedor eliminado correctamente.')
+    setViewingId('')
+    setEditingId('')
+    router.refresh()
   }
 
   return (
@@ -120,96 +162,7 @@ export default function ProveedoresTab({
             </div>
           )}
 
-          {tipoProveedor === 'persona_juridica' && (
-            <>
-              <Section title="Datos de la empresa">
-                <div style={twoCols}>
-                  <Field label="Nombre o razón social *">
-                    <input name="razon_social" required style={input} />
-                  </Field>
-                  <Field label="RUT *">
-                    <input name="rut" required style={input} />
-                  </Field>
-                  <Field label="Rubro / categoría *">
-                    <select name="rubro" required style={input}>
-                      <option value="">Seleccione rubro</option>
-                      <option value="Construcción">Construcción</option>
-                      <option value="Servicios">Servicios</option>
-                      <option value="Suministros">Suministros</option>
-                      <option value="Tecnología">Tecnología</option>
-                      <option value="Transporte">Transporte</option>
-                      <option value="Otro">Otro</option>
-                    </select>
-                  </Field>
-                  <Field label="Correo *">
-                    <input name="correo" type="email" required style={input} />
-                  </Field>
-                  <Field label="Teléfono *">
-                    <input name="telefono" required style={input} />
-                  </Field>
-                </div>
-              </Section>
-
-              <Section title="Contratación">
-                <div style={twoCols}>
-                  <Field label="Tipo de contratación *">
-                    <select name="tipo_contratacion" required style={input}>
-                      <option value="">Seleccione tipo</option>
-                      <option value="Licitación">Licitación</option>
-                      <option value="Trato directo">Trato directo</option>
-                      <option value="Contrato de suministro">Contrato de suministro</option>
-                      <option value="Compra Ágil">Compra Ágil</option>
-                    </select>
-                  </Field>
-                  <Field label="Documento de contratación *">
-                    <input
-                      name="documento_contratacion"
-                      type="file"
-                      required
-                      style={fileInput}
-                    />
-                  </Field>
-                  <Field label="Decreto administrativo *">
-                    <input
-                      name="decreto_administrativo"
-                      type="file"
-                      required
-                      style={fileInput}
-                    />
-                  </Field>
-                </div>
-              </Section>
-
-              <Section title="Servicio">
-                <div style={twoCols}>
-                  <Field label="Tipo de servicio *">
-                    <select name="tipo_servicio" required style={input}>
-                      <option value="">Seleccione servicio</option>
-                      <option value="Consultoría">Consultoría</option>
-                      <option value="Contratista">Contratista</option>
-                      <option value="Inspección técnica">Inspección técnica</option>
-                      <option value="Suministro de materiales">Suministro de materiales</option>
-                      <option value="Mantención">Mantención</option>
-                      <option value="Otro">Otro</option>
-                    </select>
-                  </Field>
-                  <Field label="Desde *">
-                    <input name="plazo_desde" type="date" required style={input} />
-                  </Field>
-                  <Field label="Hasta *">
-                    <input name="plazo_hasta" type="date" required style={input} />
-                  </Field>
-                </div>
-                <Field label="Descripción del servicio *">
-                  <textarea
-                    name="descripcion_servicio"
-                    required
-                    style={{ ...input, minHeight: 110, padding: 14, resize: 'vertical' }}
-                  />
-                </Field>
-              </Section>
-            </>
-          )}
+          {tipoProveedor === 'persona_juridica' && <ProveedorJuridicoFields />}
 
           <button
             type="submit"
@@ -235,9 +188,46 @@ export default function ProveedoresTab({
           <div style={emptyState}>Aún no hay proveedores registrados para este proyecto.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {proveedores.map((proveedor) => (
-              <ProveedorItem key={proveedor.id} proveedor={proveedor} />
-            ))}
+            {proveedores.map((proveedor) => {
+              const viewing = viewingId === proveedor.id
+              const editing = editingId === proveedor.id
+
+              return (
+                <div key={proveedor.id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <ProveedorItem
+                    proveedor={proveedor}
+                    deleting={deletingId === proveedor.id}
+                    viewing={viewing}
+                    editing={editing}
+                    onView={() => {
+                      setViewingId(viewing ? '' : proveedor.id)
+                      setEditingId('')
+                    }}
+                    onEdit={() => {
+                      setEditingId(editing ? '' : proveedor.id)
+                      setViewingId('')
+                    }}
+                    onDelete={() => handleDelete(proveedor)}
+                  />
+
+                  {viewing && <ProveedorDetalle proveedor={proveedor} />}
+
+                  {editing && (
+                    <ProveedorEditForm
+                      proyectoId={proyecto.id}
+                      proveedor={proveedor}
+                      onCancel={() => setEditingId('')}
+                      onSaved={() => {
+                        setEditingId('')
+                        setMessage('Proveedor actualizado correctamente.')
+                        router.refresh()
+                      }}
+                      onError={(error) => setMessage(error)}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -245,7 +235,178 @@ export default function ProveedoresTab({
   )
 }
 
-function ProveedorItem({ proveedor }: { proveedor: BitacoraProyecto }) {
+function ProveedorJuridicoFields({
+  metadata,
+  editing = false,
+}: {
+  metadata?: ProveedorMetadata | null
+  editing?: boolean
+}) {
+  const datos = metadata?.datos_empresa
+  const contratacion = metadata?.contratacion
+  const servicio = metadata?.servicio
+
+  return (
+    <>
+      <Section title="Datos de la empresa">
+        <div style={twoCols}>
+          <Field label="Razón social *">
+            <input
+              name="razon_social"
+              required
+              defaultValue={datos?.razon_social ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="RUT *">
+            <input name="rut" required defaultValue={datos?.rut ?? ''} style={input} />
+          </Field>
+          <Field label="Rubro / categoría *">
+            <select name="rubro" required defaultValue={datos?.rubro ?? ''} style={input}>
+              <option value="">Seleccione rubro</option>
+              <option value="Construcción">Construcción</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Suministros">Suministros</option>
+              <option value="Tecnología">Tecnología</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </Field>
+          <Field label="Nombre contacto *">
+            <input
+              name="nombre_contacto"
+              required
+              defaultValue={datos?.nombre_contacto ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="Correo *">
+            <input
+              name="correo"
+              type="email"
+              required
+              defaultValue={datos?.correo ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="Teléfono *">
+            <input
+              name="telefono"
+              required
+              defaultValue={datos?.telefono ?? ''}
+              style={input}
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Contratación">
+        <div style={twoCols}>
+          <Field label="Tipo de contratación *">
+            <select
+              name="tipo_contratacion"
+              required
+              defaultValue={contratacion?.tipo_contratacion ?? ''}
+              style={input}
+            >
+              <option value="">Seleccione tipo</option>
+              <option value="Licitación">Licitación</option>
+              <option value="Trato directo">Trato directo</option>
+              <option value="Contrato de suministro">Contrato de suministro</option>
+              <option value="Compra Ágil">Compra Ágil</option>
+            </select>
+          </Field>
+          <Field label={`Documento de contratación${editing ? '' : ' *'}`}>
+            <input
+              name="documento_contratacion"
+              type="file"
+              required={!editing}
+              style={fileInput}
+            />
+          </Field>
+          <Field label={`Decreto administrativo${editing ? '' : ' *'}`}>
+            <input
+              name="decreto_administrativo"
+              type="file"
+              required={!editing}
+              style={fileInput}
+            />
+          </Field>
+        </div>
+        {editing && (
+          <div style={{ marginTop: 10, fontSize: 13, color: '#6b7280' }}>
+            Si no adjuntas nuevos archivos, se conservarán los documentos existentes.
+          </div>
+        )}
+      </Section>
+
+      <Section title="Servicio">
+        <div style={threeCols}>
+          <Field label="Tipo de servicio *">
+            <select
+              name="tipo_servicio"
+              required
+              defaultValue={servicio?.tipo_servicio ?? ''}
+              style={input}
+            >
+              <option value="">Seleccione servicio</option>
+              <option value="Consultoría">Consultoría</option>
+              <option value="Contratista">Contratista</option>
+              <option value="Inspección técnica">Inspección técnica</option>
+              <option value="Suministro de materiales">Suministro de materiales</option>
+              <option value="Mantención">Mantención</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </Field>
+          <Field label="Desde *">
+            <input
+              name="plazo_desde"
+              type="date"
+              required
+              defaultValue={servicio?.plazo_desde ?? ''}
+              style={input}
+            />
+          </Field>
+          <Field label="Hasta *">
+            <input
+              name="plazo_hasta"
+              type="date"
+              required
+              defaultValue={servicio?.plazo_hasta ?? ''}
+              style={input}
+            />
+          </Field>
+        </div>
+        <Field label="Descripción del servicio *">
+          <textarea
+            name="descripcion_servicio"
+            required
+            defaultValue={servicio?.descripcion_servicio ?? ''}
+            style={{ ...input, minHeight: 110, padding: 14, resize: 'vertical' }}
+          />
+        </Field>
+      </Section>
+    </>
+  )
+}
+
+function ProveedorItem({
+  proveedor,
+  deleting,
+  viewing,
+  editing,
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  proveedor: BitacoraProyecto
+  deleting: boolean
+  viewing: boolean
+  editing: boolean
+  onView: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
   const metadata = proveedor.metadata as ProveedorMetadata | null
   const datosEmpresa = metadata?.datos_empresa
   const servicio = metadata?.servicio
@@ -265,10 +426,147 @@ function ProveedorItem({ proveedor }: { proveedor: BitacoraProyecto }) {
           {contratacion?.tipo_contratacion || 'Contratación no informada'}
         </div>
       </div>
-      <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'right' }}>
-        {servicio?.plazo_desde && servicio?.plazo_hasta
-          ? `${formatDate(servicio.plazo_desde)} - ${formatDate(servicio.plazo_hasta)}`
-          : 'Sin plazo'}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+        <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'right' }}>
+          {servicio?.plazo_desde && servicio?.plazo_hasta
+            ? `${formatDate(servicio.plazo_desde)} - ${formatDate(servicio.plazo_hasta)}`
+            : 'Sin plazo'}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={onView} style={secondaryButton}>
+            {viewing ? 'Ocultar' : 'Ver'}
+          </button>
+          <button type="button" onClick={onEdit} style={secondaryButton}>
+            {editing ? 'Cancelar edición' : 'Editar'}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={deleting}
+            style={{
+              ...dangerButton,
+              cursor: deleting ? 'not-allowed' : 'pointer',
+              opacity: deleting ? 0.7 : 1,
+            }}
+          >
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProveedorDetalle({ proveedor }: { proveedor: BitacoraProyecto }) {
+  const metadata = proveedor.metadata as ProveedorMetadata | null
+  const datos = metadata?.datos_empresa
+  const contratacion = metadata?.contratacion
+  const servicio = metadata?.servicio
+
+  return (
+    <div style={detailBox}>
+      <Info label="Razón social" value={datos?.razon_social} />
+      <Info label="RUT" value={datos?.rut} />
+      <Info label="Rubro / categoría" value={datos?.rubro} />
+      <Info label="Nombre contacto" value={datos?.nombre_contacto} />
+      <Info label="Correo" value={datos?.correo} />
+      <Info label="Teléfono" value={datos?.telefono} />
+      <Info label="Tipo de contratación" value={contratacion?.tipo_contratacion} />
+      <Info label="Tipo de servicio" value={servicio?.tipo_servicio} />
+      <Info
+        label="Plazo"
+        value={
+          servicio?.plazo_desde && servicio?.plazo_hasta
+            ? `${formatDate(servicio.plazo_desde)} - ${formatDate(servicio.plazo_hasta)}`
+            : '-'
+        }
+      />
+      <Info label="Descripción" value={servicio?.descripcion_servicio} wide />
+      <Info
+        label="Documento contratación"
+        value={contratacion?.documento_contratacion?.nombre_archivo}
+      />
+      <Info
+        label="Decreto administrativo"
+        value={contratacion?.decreto_administrativo?.nombre_archivo}
+      />
+    </div>
+  )
+}
+
+function ProveedorEditForm({
+  proyectoId,
+  proveedor,
+  onCancel,
+  onSaved,
+  onError,
+}: {
+  proyectoId: string
+  proveedor: BitacoraProyecto
+  onCancel: () => void
+  onSaved: () => void
+  onError: (error: string) => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const metadata = proveedor.metadata as ProveedorMetadata | null
+
+  return (
+    <form
+      action={async (formData) => {
+        setSaving(true)
+        formData.append('proveedor_id', proveedor.id)
+        formData.append('proyecto_id', proyectoId)
+
+        const result = await actualizarProveedorProyecto(formData)
+
+        setSaving(false)
+
+        if (!result.success) {
+          onError(result.error || 'No se pudo actualizar el proveedor.')
+          return
+        }
+
+        onSaved()
+      }}
+      style={{
+        ...card,
+        borderColor: '#bfdbfe',
+        background: '#f8fafc',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 18,
+      }}
+    >
+      <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Editar proveedor</h3>
+      <ProveedorJuridicoFields metadata={metadata} editing />
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button type="submit" disabled={saving} style={submitButton}>
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+        <button type="button" onClick={onCancel} style={secondaryButton}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function Info({
+  label,
+  value,
+  wide = false,
+}: {
+  label: string
+  value?: string | null
+  wide?: boolean
+}) {
+  return (
+    <div style={{ gridColumn: wide ? '1 / -1' : undefined }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#6b7280', marginBottom: 4 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 14, color: '#111827', fontWeight: 600 }}>
+        {value || '-'}
       </div>
     </div>
   )
@@ -353,6 +651,12 @@ const twoCols: React.CSSProperties = {
   gap: 16,
 }
 
+const threeCols: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1.4fr 1fr 1fr',
+  gap: 16,
+}
+
 const input: React.CSSProperties = {
   width: '100%',
   minHeight: 44,
@@ -377,7 +681,29 @@ const submitButton: React.CSSProperties = {
   height: 46,
   borderRadius: 12,
   border: 'none',
+  background: '#2563eb',
   color: '#ffffff',
+  fontWeight: 800,
+}
+
+const secondaryButton: React.CSSProperties = {
+  height: 34,
+  padding: '0 12px',
+  borderRadius: 10,
+  border: '1px solid #d1d5db',
+  background: '#ffffff',
+  color: '#374151',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const dangerButton: React.CSSProperties = {
+  height: 34,
+  padding: '0 12px',
+  borderRadius: 10,
+  border: '1px solid #fecaca',
+  background: '#fff7f7',
+  color: '#b91c1c',
   fontWeight: 800,
 }
 
@@ -418,6 +744,16 @@ const providerRow: React.CSSProperties = {
   gridTemplateColumns: '1fr auto',
   gap: 16,
   alignItems: 'start',
+}
+
+const detailBox: React.CSSProperties = {
+  borderRadius: 16,
+  border: '1px solid #e5e7eb',
+  background: '#f9fafb',
+  padding: 16,
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gap: 16,
 }
 
 const errorCard: React.CSSProperties = {
