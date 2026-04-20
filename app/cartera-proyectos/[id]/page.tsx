@@ -3,6 +3,7 @@ import { createClient } from '../../../lib/supabase-server'
 import ProyectoHeader from '../../../components/ficha-proyecto/ProyectoHeader'
 import ProyectoTabs from '../../../components/ficha-proyecto/ProyectoTabs'
 import { buildProjectBudgetMap } from '../../../lib/project-budget'
+import type { DocumentoEstadoPago, PagoProveedorEstadoPago } from '../../../lib/project-types'
 
 export default async function ProyectoPage({
   params,
@@ -59,9 +60,37 @@ export default async function ProyectoPage({
 
   const { data: documentosEjecucionData } = await supabase
   .from('documentos_proyecto')
-  .select('id, nombre, nombre_archivo, fecha_subida, observacion')
+  .select('id, nombre, nombre_archivo, fecha_subida, observacion, ruta_storage, bucket')
   .eq('proyecto_id', resolvedParams.id)
   .eq('etapa', 'ejecucion')
+  .order('fecha_subida', { ascending: false })
+
+  const { data: documentosFinanciamientoData } = await supabase
+  .from('documentos_proyecto')
+  .select('id, nombre, nombre_archivo, fecha_subida, observacion, ruta_storage, bucket')
+  .eq('proyecto_id', resolvedParams.id)
+  .eq('etapa', 'financiamiento')
+  .order('fecha_subida', { ascending: false })
+
+  const { data: documentosRendicionData } = await supabase
+  .from('documentos_proyecto')
+  .select('id, nombre, nombre_archivo, fecha_subida, observacion, ruta_storage, bucket')
+  .eq('proyecto_id', resolvedParams.id)
+  .eq('etapa', 'rendicion')
+  .order('fecha_subida', { ascending: false })
+
+  const { data: documentosGarantiaData } = await supabase
+  .from('documentos_proyecto')
+  .select('id, nombre, nombre_archivo, fecha_subida, observacion, ruta_storage, bucket')
+  .eq('proyecto_id', resolvedParams.id)
+  .eq('etapa', 'garantias')
+  .order('fecha_subida', { ascending: false })
+
+  const { data: documentosBitacoraData } = await supabase
+  .from('documentos_proyecto')
+  .select('id, nombre, nombre_archivo, fecha_subida, observacion, ruta_storage, bucket')
+  .eq('proyecto_id', resolvedParams.id)
+  .eq('etapa', 'bitacora')
   .order('fecha_subida', { ascending: false })
 
   const { data: rendicionesData } = await supabase
@@ -81,6 +110,17 @@ export default async function ProyectoPage({
   .select('*')
   .eq('proyecto_id', resolvedParams.id)
   .order('created_at', { ascending: false })
+
+  const bitacoraUserIds = Array.from(
+    new Set((bitacoraData ?? []).map((item) => item.usuario_id).filter(Boolean))
+  )
+
+  const { data: perfilesBitacoraData } = bitacoraUserIds.length > 0
+    ? await supabase
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', bitacoraUserIds)
+    : { data: [] }
 
   const [
     fuentesProyectoRes,
@@ -109,10 +149,19 @@ export default async function ProyectoPage({
     responses: respuestasPresupuestoRes.data ?? [],
   })
 
+  const presupuestoTotal = presupuestoPorProyecto.get(resolvedParams.id) ?? null
+  const avanceFisicoCalculado = calcularAvanceFisico(estadosPagoData ?? [])
+  const avanceFinancieroCalculado = calcularAvanceFinanciero({
+    estadosPago: estadosPagoData ?? [],
+    presupuestoTotal: Number(presupuestoTotal ?? data?.monto_estimado ?? 0),
+  })
+
   const proyecto = data
     ? {
         ...data,
-        presupuesto_total: presupuestoPorProyecto.get(resolvedParams.id) ?? null,
+        presupuesto_total: presupuestoTotal,
+        avance_fisico_actual: avanceFisicoCalculado,
+        avance_financiero_actual: avanceFinancieroCalculado,
         unidad: Array.isArray(data.unidad) ? data.unidad[0] ?? null : data.unidad,
         fuente: Array.isArray(data.fuente) ? data.fuente[0] ?? null : data.fuente,
         responsable: Array.isArray(data.responsable)
@@ -142,6 +191,14 @@ export default async function ProyectoPage({
 
   const tab = resolvedSearchParams.tab ?? 'general'
   const documentosPorEstadoPago = new Map<string, typeof documentosEjecucionData>()
+  const pagoProveedorPorEstadoPago = new Map<string, PagoProveedorEstadoPago>()
+  const cartolasPorTransferencia = new Map<string, DocumentoEstadoPago>()
+  const documentosPorRendicion = new Map<string, typeof documentosRendicionData>()
+  const documentosPorGarantia = new Map<string, typeof documentosGarantiaData>()
+  const documentosPorBitacora = new Map<string, typeof documentosBitacoraData>()
+  const perfilesBitacoraMap = new Map(
+    (perfilesBitacoraData ?? []).map((perfil) => [perfil.id, perfil])
+  )
 
   for (const documento of documentosEjecucionData ?? []) {
     const estadoPagoId = getEstadoPagoDocumentoId(documento.observacion)
@@ -152,24 +209,91 @@ export default async function ProyectoPage({
     documentosPorEstadoPago.set(estadoPagoId, documentos)
   }
 
+  for (const item of bitacoraData ?? []) {
+    if (item.tipo !== 'pago_proveedor') continue
+
+    const metadata = item.metadata as (PagoProveedorEstadoPago & {
+      estado_pago_id?: string
+    }) | null
+    if (!metadata?.estado_pago_id) continue
+
+    pagoProveedorPorEstadoPago.set(metadata.estado_pago_id, metadata)
+  }
+
+  for (const documento of documentosFinanciamientoData ?? []) {
+    const transferenciaId = getTransferenciaDocumentoId(documento.observacion)
+    if (!transferenciaId) continue
+
+    cartolasPorTransferencia.set(transferenciaId, documento)
+  }
+
+  for (const documento of documentosRendicionData ?? []) {
+    const rendicionId = getRendicionDocumentoId(documento.observacion)
+    if (!rendicionId) continue
+
+    const documentos = documentosPorRendicion.get(rendicionId) ?? []
+    documentos.push(documento)
+    documentosPorRendicion.set(rendicionId, documentos)
+  }
+
+  for (const documento of documentosGarantiaData ?? []) {
+    const garantiaId = getGarantiaDocumentoId(documento.observacion)
+    if (!garantiaId) continue
+
+    const documentos = documentosPorGarantia.get(garantiaId) ?? []
+    documentos.push(documento)
+    documentosPorGarantia.set(garantiaId, documentos)
+  }
+
+  for (const documento of documentosBitacoraData ?? []) {
+    const bitacoraId = getBitacoraDocumentoId(documento.observacion)
+    if (!bitacoraId) continue
+
+    const documentos = documentosPorBitacora.get(bitacoraId) ?? []
+    documentos.push(documento)
+    documentosPorBitacora.set(bitacoraId, documentos)
+  }
+
   const estadosPago = (estadosPagoData ?? []).map((estadoPago) => ({
     ...estadoPago,
     documentos: documentosPorEstadoPago.get(estadoPago.id) ?? [],
+    pago_proveedor: pagoProveedorPorEstadoPago.get(estadoPago.id) ?? null,
+  }))
+
+  const transferencias = (transferenciasData ?? []).map((transferencia) => ({
+    ...transferencia,
+    cartola: cartolasPorTransferencia.get(transferencia.id) ?? null,
+  }))
+
+  const rendiciones = (rendicionesData ?? []).map((rendicion) => ({
+    ...rendicion,
+    documentos: documentosPorRendicion.get(rendicion.id) ?? [],
+  }))
+
+  const garantias = (garantiasData ?? []).map((garantia) => ({
+    ...garantia,
+    documentos: documentosPorGarantia.get(garantia.id) ?? [],
+  }))
+
+  const bitacora = (bitacoraData ?? []).map((item) => ({
+    ...item,
+    usuario: item.usuario_id ? perfilesBitacoraMap.get(item.usuario_id) ?? null : null,
+    documentos: documentosPorBitacora.get(item.id) ?? [],
   }))
 
   return (
     <AppShell title="Ficha del Proyecto" currentModule="cartera-proyectos">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <ProyectoHeader proyecto={proyecto} />
+        <ProyectoHeader proyecto={proyecto} tab={tab} />
         <ProyectoTabs
   proyecto={proyecto}
   tab={tab}
-  transferencias={transferenciasData ?? []}
-  garantias={garantiasData ?? []}
+  transferencias={transferencias}
+  garantias={garantias}
   estadosPago={estadosPago}
-  rendiciones={rendicionesData ?? []}
+  rendiciones={rendiciones}
   historial={historialData ?? []}
-  bitacora={bitacoraData ?? []}
+  bitacora={bitacora}
 
 />
       </div>
@@ -187,4 +311,78 @@ function getEstadoPagoDocumentoId(observacion?: string | null) {
   }
 
   return ''
+}
+
+function getTransferenciaDocumentoId(observacion?: string | null) {
+  const prefix = 'transferencia_id:'
+
+  if (observacion?.startsWith(prefix)) {
+    return observacion.slice(prefix.length)
+  }
+
+  return ''
+}
+
+function getRendicionDocumentoId(observacion?: string | null) {
+  const prefix = 'rendicion_id:'
+
+  if (observacion?.startsWith(prefix)) {
+    return observacion.slice(prefix.length)
+  }
+
+  return ''
+}
+
+function getGarantiaDocumentoId(observacion?: string | null) {
+  const prefix = 'garantia_id:'
+
+  if (observacion?.startsWith(prefix)) {
+    return observacion.slice(prefix.length)
+  }
+
+  return ''
+}
+
+function getBitacoraDocumentoId(observacion?: string | null) {
+  const prefix = 'bitacora_id:'
+
+  if (observacion?.startsWith(prefix)) {
+    return observacion.slice(prefix.length)
+  }
+
+  return ''
+}
+
+function calcularAvanceFisico(
+  estadosPago: Array<{ avance_fisico?: number | string | null }>
+) {
+  const avances = estadosPago
+    .map((estadoPago) => Number(estadoPago.avance_fisico ?? 0))
+    .filter((avance) => Number.isFinite(avance))
+
+  if (avances.length === 0) return 0
+
+  return clampPercentage(Math.max(...avances))
+}
+
+function calcularAvanceFinanciero({
+  estadosPago,
+  presupuestoTotal,
+}: {
+  estadosPago: Array<{ monto?: number | string | null; estado?: string | null }>
+  presupuestoTotal: number
+}) {
+  if (!presupuestoTotal || presupuestoTotal <= 0) return 0
+
+  const totalPagado = estadosPago
+    .filter((estadoPago) => estadoPago.estado === 'pagado')
+    .reduce((total, estadoPago) => total + Number(estadoPago.monto ?? 0), 0)
+
+  return clampPercentage(Math.round((totalPagado / presupuestoTotal) * 100))
+}
+
+function clampPercentage(value: number) {
+  if (!Number.isFinite(value)) return 0
+
+  return Math.max(0, Math.min(100, Math.round(value)))
 }

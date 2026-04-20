@@ -2,8 +2,10 @@ import type { ProyectoFicha } from '../../lib/project-types'
 
 export default function ProyectoHeader({
     proyecto,
+    tab,
   }: {
     proyecto: ProyectoFicha
+    tab: string
   }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -14,7 +16,7 @@ export default function ProyectoHeader({
             fontWeight: 500,
           }}
         >
-          Cartera de Proyectos &gt; {proyecto?.codigo_interno ?? '-'} &gt; General
+          Cartera de Proyectos &gt; {proyecto?.codigo_interno ?? '-'} &gt; {getTabTitle(tab)}
         </div>
   
         <h1
@@ -221,4 +223,15 @@ export default function ProyectoHeader({
       month: 'short',
       year: 'numeric',
     })
+  }
+
+  function getTabTitle(tab: string) {
+    if (tab === 'ejecucion') return 'Ejecución'
+    if (tab === 'proveedores') return 'Proveedores'
+    if (tab === 'financiamiento') return 'Financiamiento'
+    if (tab === 'rendicion') return 'Rendición'
+    if (tab === 'garantias') return 'Garantías'
+    if (tab === 'bitacora') return 'Bitácora'
+    if (tab === 'historial') return 'Historial'
+    return 'General'
   }

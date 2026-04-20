@@ -33,6 +33,7 @@ export type TransferenciaProyecto = {
   fecha?: string | null
   monto?: number | string | null
   estado?: string | null
+  cartola?: DocumentoEstadoPago | null
 }
 
 export type GarantiaProyecto = {
@@ -44,6 +45,8 @@ export type GarantiaProyecto = {
   fecha_emision?: string | null
   fecha_vencimiento?: string | null
   estado?: string | null
+  observacion?: string | null
+  documentos?: DocumentoEstadoPago[]
 }
 
 export type EstadoPagoProyecto = {
@@ -54,13 +57,24 @@ export type EstadoPagoProyecto = {
   avance_fisico?: number | string | null
   estado?: string | null
   documentos?: DocumentoEstadoPago[]
+  pago_proveedor?: PagoProveedorEstadoPago | null
 }
 
 export type DocumentoEstadoPago = {
-  id: string
+  id?: string
   nombre?: string | null
   nombre_archivo?: string | null
   fecha_subida?: string | null
+  ruta_storage?: string | null
+  bucket?: string | null
+}
+
+export type PagoProveedorEstadoPago = {
+  fecha_transferencia?: string | null
+  numero_cartola?: string | null
+  numero_decreto_pago?: string | null
+  cartola?: DocumentoEstadoPago | null
+  decreto_pago?: DocumentoEstadoPago | null
 }
 
 export type RendicionProyecto = {
@@ -71,6 +85,7 @@ export type RendicionProyecto = {
   monto_rendido?: number | string | null
   observacion?: string | null
   estado?: string | null
+  documentos?: DocumentoEstadoPago[]
 }
 
 export type HistorialEvento = {
@@ -89,6 +104,8 @@ export type BitacoraProyecto = {
   titulo?: string | null
   descripcion?: string | null
   usuario_id?: string | null
+  usuario?: ResponsableRef | null
   metadata?: Record<string, unknown> | null
   created_at: string
+  documentos?: DocumentoEstadoPago[]
 }
