@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 export async function crearBitacora(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.bitacoraEdit)
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const tipo = String(formData.get('tipo') || '')
@@ -16,20 +18,15 @@ export async function crearBitacora(formData: FormData) {
     return { success: false, error: 'Faltan campos en la bitácora.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!authGuard.success) {
+    return authGuard
   }
 
   const { data, error } = await supabase
     .from('proyecto_bitacora')
     .insert({
       proyecto_id,
-      usuario_id: user.id,
+      usuario_id: authGuard.userId,
       tipo,
       descripcion,
     })
@@ -69,7 +66,7 @@ export async function crearBitacora(formData: FormData) {
       extension: documentoArchivo.name.split('.').pop() || null,
       tamano_bytes: documentoArchivo.size,
       mime_type: documentoArchivo.type || null,
-      subido_por: user.id,
+      subido_por: authGuard.userId,
       fecha_subida: new Date().toISOString(),
       obligatorio: false,
       estado_revision: 'subido',
@@ -90,7 +87,7 @@ export async function crearBitacora(formData: FormData) {
     entidad_id: proyecto_id,
     accion: 'bitacora_registro',
     descripcion,
-    usuario_id: user.id,
+    usuario_id: authGuard.userId,
     metadata: {
       tipo,
       bitacora_id: data.id,
@@ -104,6 +101,11 @@ export async function crearBitacora(formData: FormData) {
 
 export async function actualizarBitacora(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.bitacoraEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const bitacora_id = String(formData.get('bitacora_id') || '')
@@ -129,6 +131,11 @@ export async function actualizarBitacora(formData: FormData) {
 
 export async function eliminarBitacora(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.bitacoraEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const bitacora_id = String(formData.get('bitacora_id') || '')

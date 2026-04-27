@@ -19,6 +19,7 @@ import type {
   DocumentoFuente,
   ReglaFuente,
 } from '../../../lib/formulacion-types'
+import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
 
 type FieldFormMode = 'descripcion' | 'plazo' | 'presupuesto'
 
@@ -225,7 +226,7 @@ export default function FuentesFinanciamientoPage({
               margin: 0,
               fontSize: 34,
               fontWeight: 800,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Fuentes de Financiamiento
@@ -332,7 +333,7 @@ export default function FuentesFinanciamientoPage({
                     style={{
                       fontSize: 15,
                       fontWeight: 800,
-                      color: '#111827',
+                      color: 'var(--text-strong)',
                       marginBottom: 4,
                       textAlign: 'left',
                     }}
@@ -946,6 +947,9 @@ function FieldConfigRow({
   const [nombre, setNombre] = useState(campo.nombre)
   const [tipo, setTipo] = useState(campo.tipo)
   const [obligatorio, setObligatorio] = useState(campo.obligatorio)
+  const [aiMode, setAiMode] = useState<FieldAIMode>(
+    campo.ai_mode ?? inferDefaultFieldAIMode(campo)
+  )
 
   const handleDelete = async () => {
     const confirmed = window.confirm(`¿Eliminar el campo ${campo.nombre}?`)
@@ -973,6 +977,7 @@ function FieldConfigRow({
           nombre: nombre.trim(),
           tipo,
           obligatorio,
+          ai_mode: aiMode,
         })
 
         setSaving(false)
@@ -993,7 +998,7 @@ function FieldConfigRow({
             width: 14,
             height: 14,
             borderRadius: 3,
-            background: '#1d4ed8',
+            background: 'var(--primary-dark)',
           }}
         />
         <div>
@@ -1032,6 +1037,15 @@ function FieldConfigRow({
           />
           Obligatorio
         </label>
+        <select
+          value={aiMode}
+          onChange={(event) => setAiMode(event.target.value as FieldAIMode)}
+          style={compactSelectStyle}
+        >
+          <option value="blocked">Bloquear IA</option>
+          <option value="suggest">Permitir IA</option>
+          <option value="improve_only">Solo mejorar</option>
+        </select>
         <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
@@ -1046,6 +1060,34 @@ function FieldConfigRow({
       </div>
     </form>
   )
+}
+
+function inferDefaultFieldAIMode(campo: CampoPostulacion): FieldAIMode {
+  if (!['texto', 'texto_largo'].includes(campo.tipo)) return 'blocked'
+
+  const normalized = normalizeText(campo.nombre)
+  const blockedTerms = [
+    'bip',
+    'codigo',
+    'código',
+    'rut',
+    'folio',
+    'resolucion',
+    'resolución',
+    'identificador',
+    'cartola',
+  ]
+
+  return blockedTerms.some((term) => normalized.includes(normalizeText(term)))
+    ? 'blocked'
+    : 'suggest'
+}
+
+function normalizeText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }
 
 function PreviewField({ campo }: { campo: CampoPostulacion }) {
@@ -1063,7 +1105,7 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
   return (
     <div style={previewFieldStyle}>
       <div style={fieldLabelStyle}>
-        {campo.nombre} {campo.obligatorio ? <span style={{ color: '#ef4444' }}>*</span> : null}
+        {campo.nombre} {campo.obligatorio ? <span style={{ color: 'var(--danger)' }}>*</span> : null}
       </div>
       <div style={previewInputStyle}>{placeholder}</div>
     </div>
@@ -1119,7 +1161,7 @@ function RuleRow({ text }: { text: string }) {
   return (
     <div style={ruleRowStyle}>
       <span style={{ fontSize: 13, color: '#92400e' }}>{text}</span>
-      <span style={{ color: '#ef4444' }}>🗑</span>
+      <span style={{ color: 'var(--danger)' }}>🗑</span>
     </div>
   )
 }
@@ -1149,7 +1191,7 @@ const panelCardStyle: React.CSSProperties = {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -1185,7 +1227,7 @@ const topNewFormStyle: React.CSSProperties = {
 const panelHeaderStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -1263,7 +1305,7 @@ const previewSectionStyle: React.CSSProperties = {
 const previewSectionTitleStyle: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const previewTotalStyle: React.CSSProperties = {
@@ -1354,7 +1396,7 @@ const inputStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '0 12px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -1366,7 +1408,7 @@ const compactInputStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '0 10px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -1397,7 +1439,7 @@ const textareaStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '10px 12px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
   resize: 'vertical',
 }
@@ -1417,7 +1459,7 @@ const requiredBadgeStyle: React.CSSProperties = {
   padding: '0 8px',
   borderRadius: 999,
   background: '#fee2e2',
-  color: '#ef4444',
+  color: 'var(--danger)',
   fontSize: 11,
   fontWeight: 700,
 }
@@ -1468,7 +1510,7 @@ const darkButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#111827',
+  background: 'var(--text-strong)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -1479,7 +1521,7 @@ const miniDarkButtonStyle: React.CSSProperties = {
   padding: '0 10px',
   borderRadius: 8,
   border: 'none',
-  background: '#111827',
+  background: 'var(--text-strong)',
   color: '#ffffff',
   fontWeight: 700,
   fontSize: 11,
@@ -1497,7 +1539,7 @@ const saveButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -1508,7 +1550,7 @@ const dangerButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#ef4444',
+  background: 'var(--danger)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',

@@ -7,6 +7,7 @@ import {
   crearRol,
   eliminarPermiso,
   eliminarRol,
+  sincronizarPermisosBase,
   togglePermisoRol,
 } from '../../../app/administracion/roles/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
@@ -51,6 +52,7 @@ export default function RolesPage({
   const [showNewPermissionForm, setShowNewPermissionForm] = useState(false)
   const [deletingRol, setDeletingRol] = useState(false)
   const [deletingPermisoId, setDeletingPermisoId] = useState<string | null>(null)
+  const [syncingPermissions, setSyncingPermissions] = useState(false)
 
   const selectedRol = useMemo(
     () => roles.find((r) => r.id === selectedRolId) ?? roles[0] ?? null,
@@ -156,6 +158,26 @@ export default function RolesPage({
     router.refresh()
   }
 
+  const handleSyncPermissions = async () => {
+    setSyncingPermissions(true)
+
+    const res = await sincronizarPermisosBase()
+
+    setSyncingPermissions(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    alert(
+      res.inserted > 0
+        ? `Se agregaron ${res.inserted} permisos base.`
+        : 'Los permisos base ya estaban actualizados.'
+    )
+    router.refresh()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div
@@ -183,7 +205,7 @@ export default function RolesPage({
               margin: 0,
               fontSize: 34,
               fontWeight: 800,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Roles y Permisos
@@ -204,6 +226,18 @@ export default function RolesPage({
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" onClick={handleExport} style={secondaryButtonStyle}>
             Exportar
+          </button>
+          <button
+            type="button"
+            onClick={handleSyncPermissions}
+            disabled={syncingPermissions}
+            style={{
+              ...secondaryButtonStyle,
+              opacity: syncingPermissions ? 0.7 : 1,
+              cursor: syncingPermissions ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {syncingPermissions ? 'Sincronizando...' : 'Sincronizar Permisos'}
           </button>
           <button
             type="button"
@@ -307,7 +341,7 @@ export default function RolesPage({
                     style={{
                       fontSize: 15,
                       fontWeight: 800,
-                      color: '#111827',
+                      color: 'var(--text-strong)',
                       marginBottom: 4,
                       textAlign: 'left',
                     }}
@@ -428,7 +462,7 @@ export default function RolesPage({
                           style={{
                             fontSize: 14,
                             fontWeight: 700,
-                            color: '#111827',
+                            color: 'var(--text-strong)',
                             marginBottom: 4,
                           }}
                         >
@@ -515,7 +549,7 @@ function MiniMetric({
         padding: 14,
       }}
     >
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{value}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-strong)' }}>{value}</div>
       <div style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginTop: 6 }}>
         {title}
       </div>
@@ -555,7 +589,7 @@ const panelCardStyle: React.CSSProperties = {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -581,7 +615,7 @@ const topFormStyle: React.CSSProperties = {
 const panelHeaderStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -593,7 +627,7 @@ const inputStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '0 12px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -632,7 +666,7 @@ const darkButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#111827',
+  background: 'var(--text-strong)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -643,7 +677,7 @@ const saveButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',

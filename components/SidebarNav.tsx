@@ -53,7 +53,7 @@ export default function SidebarNav() {
             width: 42,
             height: 42,
             borderRadius: 12,
-            background: '#1d4ed8',
+            background: 'var(--primary-dark)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -71,7 +71,7 @@ export default function SidebarNav() {
             style={{
               fontSize: 18,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
               lineHeight: 1.1,
             }}
           >
@@ -206,7 +206,7 @@ export default function SidebarNav() {
             style={{
               marginTop: 14,
               fontSize: 14,
-              color: '#2563eb',
+              color: 'var(--primary)',
               fontWeight: 700,
             }}
           >

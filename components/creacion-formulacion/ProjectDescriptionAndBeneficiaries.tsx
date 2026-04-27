@@ -46,7 +46,7 @@ export default function ProjectDescriptionAndBeneficiaries({
             marginBottom: 14,
             fontSize: 15,
             fontWeight: 700,
-            color: '#374151',
+            color: 'var(--text)',
           }}
         >
           Población Beneficiaria
@@ -54,10 +54,10 @@ export default function ProjectDescriptionAndBeneficiaries({
 
         <div
           style={{
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--border-strong)',
             borderRadius: 18,
             overflow: 'hidden',
-            background: '#ffffff',
+            background: 'var(--surface)',
           }}
         >
           <div
@@ -67,7 +67,7 @@ export default function ProjectDescriptionAndBeneficiaries({
               gap: 16,
               padding: '22px 24px',
               background: '#f9fafb',
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid var(--border)',
             }}
           >
             <div style={headerCellStyle}>Tipo de Grupo</div>
@@ -85,7 +85,7 @@ export default function ProjectDescriptionAndBeneficiaries({
                 padding: '20px 24px',
                 borderBottom:
                   index < beneficiarios.length - 1
-                    ? '1px solid #e5e7eb'
+                    ? '1px solid var(--border)'
                     : 'none',
                 alignItems: 'center',
               }}
@@ -147,11 +147,11 @@ const textareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 180,
   borderRadius: 20,
-  border: '1.5px solid #d1d5db',
-  background: '#ffffff',
+  border: '1.5px solid var(--border-strong)',
+  background: 'var(--surface)',
   padding: '18px',
   fontSize: 16,
-  color: '#111827',
+  color: 'var(--text-strong)',
   outline: 'none',
   boxSizing: 'border-box',
   resize: 'none',
@@ -163,11 +163,11 @@ const tableInputStyle: React.CSSProperties = {
   width: '100%',
   height: 58,
   borderRadius: 16,
-  border: '1px solid #d1d5db',
-  background: '#ffffff',
+  border: '1px solid var(--border-strong)',
+  background: 'var(--surface)',
   padding: '0 18px',
   fontSize: 16,
-  color: '#111827',
+  color: 'var(--text-strong)',
   outline: 'none',
   boxSizing: 'border-box',
 }
@@ -176,7 +176,7 @@ const headerCellStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 800,
   letterSpacing: '0.08em',
-  color: '#374151',
+  color: 'var(--text)',
   textTransform: 'uppercase',
 }
 
@@ -185,7 +185,7 @@ const deleteButtonStyle: React.CSSProperties = {
   height: 40,
   border: 'none',
   background: 'transparent',
-  color: '#ef4444',
+  color: 'var(--danger)',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -199,7 +199,7 @@ const addGroupButtonStyle: React.CSSProperties = {
   gap: 8,
   border: 'none',
   background: 'transparent',
-  color: '#2563eb',
+  color: 'var(--primary)',
   fontSize: 15,
   fontWeight: 600,
   cursor: 'pointer',
@@ -208,6 +208,6 @@ const addGroupButtonStyle: React.CSSProperties = {
 
 const disabledFieldStyle: React.CSSProperties = {
   background: '#f9fafb',
-  color: '#6b7280',
+  color: 'var(--text-muted)',
   cursor: 'not-allowed',
 }

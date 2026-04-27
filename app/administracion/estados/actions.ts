@@ -1,9 +1,15 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { requireAdmin } from '../../../lib/auth-guards'
 
 export async function crearEstadoSistema(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const nombre = String(formData.get('nombre') || '').trim()
   const codigo = String(formData.get('codigo') || '').trim()
@@ -76,6 +82,11 @@ export async function crearEstadoSistema(formData: FormData) {
 
 export async function eliminarEstadoSistema(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió el estado a eliminar.' }
@@ -111,6 +122,11 @@ export async function actualizarEstadoSistema({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id || !nombre.trim() || !categoria.trim()) {
     return { success: false, error: 'Faltan datos para actualizar el estado.' }

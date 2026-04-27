@@ -38,7 +38,9 @@ export default function FinanciamientoTab({
 
   const montoTotal = getProjectBudget(proyecto)
   const avanceFinanciero = Number(proyecto.avance_financiero_actual ?? 0)
-  const montoEjecutado = Math.round((montoTotal * avanceFinanciero) / 100)
+  const montoEjecutado = Number(
+    proyecto.monto_ejecutado_actual ?? Math.round((montoTotal * avanceFinanciero) / 100)
+  )
   const saldoPendiente = Math.max(montoTotal - montoEjecutado, 0)
 
   const handleDocumentoAction = async (
@@ -93,7 +95,7 @@ export default function FinanciamientoTab({
                   style={{
                     width: `${avanceFinanciero}%`,
                     height: '100%',
-                    background: '#2563eb',
+                    background: 'var(--primary)',
                   }}
                 />
               </div>
@@ -556,7 +558,7 @@ const titleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 20,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const sectionHeaderStyle: React.CSSProperties = {
@@ -582,7 +584,7 @@ const infoLabelStyle: React.CSSProperties = {
 const infoValueStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const progressHeaderStyle: React.CSSProperties = {
@@ -607,7 +609,7 @@ const primaryButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -702,7 +704,7 @@ const smallIconButtonStyle: React.CSSProperties = {
 
 const dangerIconButtonStyle: React.CSSProperties = {
   ...smallIconButtonStyle,
-  color: '#dc2626',
+  color: 'var(--danger)',
   borderColor: '#fecaca',
 }
 
@@ -742,7 +744,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0 12px',
   fontSize: 14,
   background: '#ffffff',
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -755,7 +757,7 @@ const submitStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -796,7 +798,7 @@ const modalTitleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 22,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const modalSubtitleStyle: React.CSSProperties = {

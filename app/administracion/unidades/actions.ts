@@ -1,9 +1,15 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { requireAdmin } from '../../../lib/auth-guards'
 
 export async function crearUnidad(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const nombre = String(formData.get('nombre') || '').trim()
   const codigo = String(formData.get('codigo') || '').trim()
@@ -69,6 +75,11 @@ export async function crearUnidad(formData: FormData) {
 
 export async function eliminarUnidad(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió la unidad a eliminar.' }
@@ -100,6 +111,11 @@ export async function actualizarUnidad({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id || !nombre.trim()) {
     return { success: false, error: 'Faltan datos para actualizar la unidad.' }

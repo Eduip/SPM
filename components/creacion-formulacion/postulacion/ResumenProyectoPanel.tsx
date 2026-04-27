@@ -43,18 +43,18 @@ export default function ResumenProyectoPanel({
             key={item.label}
             style={{
               borderRadius: 16,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               background: '#f9fafb',
               padding: '14px 16px',
             }}
           >
-            <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
               {item.label}
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-strong)' }}>
               {item.value}
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
               {item.sub}
             </div>
           </div>

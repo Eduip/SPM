@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   Building2,
   Eye,
+  EyeOff,
   Lock,
   LogIn,
   Mail,
@@ -14,14 +15,50 @@ import {
 } from 'lucide-react'
 import { createClient } from '../../lib/supabase-browser'
 
+type LoginMode = 'login' | 'forgot' | 'reset'
+
 export default function LoginPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [mode, setMode] = useState<LoginMode>('login')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const code = params.get('code')
+    const isRecovery =
+      params.get('reset') === '1' ||
+      params.get('type') === 'recovery' ||
+      hashParams.get('type') === 'recovery'
+
+    if (!code && !isRecovery) return
+
+    window.setTimeout(() => {
+      setMode('reset')
+      setError('')
+      setSuccess('')
+
+      if (!code) return
+
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+        if (exchangeError) {
+          setError(
+            exchangeError.message ||
+              'No se pudo validar el enlace de recuperación. Solicita uno nuevo.'
+          )
+        }
+      })
+    }, 0)
+  }, [supabase])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,6 +78,85 @@ export default function LoginPage() {
 
     router.push('/dashboard')
     router.refresh()
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setSuccess('')
+
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (!normalizedEmail) {
+      setError('Ingresa tu correo electrónico para recuperar la contraseña.')
+      setLoading(false)
+      return
+    }
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo: `${window.location.origin}/login?reset=1`,
+      }
+    )
+
+    if (resetError) {
+      setError(resetError.message || 'No se pudo enviar el correo de recuperación.')
+      setLoading(false)
+      return
+    }
+
+    setSuccess(
+      'Te enviamos un enlace de recuperación. Revisa tu correo y sigue las instrucciones.'
+    )
+    setLoading(false)
+  }
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setSuccess('')
+
+    if (!password || !confirmPassword) {
+      setError('Ingresa y confirma tu nueva contraseña.')
+      setLoading(false)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.')
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.')
+      setLoading(false)
+      return
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    })
+
+    if (updateError) {
+      setError(
+        updateError.message ||
+          'No se pudo actualizar la contraseña. Solicita un nuevo enlace de recuperación.'
+      )
+      setLoading(false)
+      return
+    }
+
+    await supabase.auth.signOut()
+    setPassword('')
+    setConfirmPassword('')
+    setMode('login')
+    setSuccess('Contraseña actualizada correctamente. Ahora puedes iniciar sesión.')
+    setLoading(false)
+    router.replace('/login')
   }
 
   const highlights = [
@@ -302,10 +418,14 @@ export default function LoginPage() {
                 fontSize: 38,
                 lineHeight: 1.1,
                 fontWeight: 800,
-                color: '#111827',
+                color: 'var(--text-strong)',
               }}
             >
-              Iniciar Sesión
+              {mode === 'forgot'
+                ? 'Recuperar Contraseña'
+                : mode === 'reset'
+                  ? 'Nueva Contraseña'
+                  : 'Iniciar Sesión'}
             </h2>
 
             <p
@@ -316,11 +436,21 @@ export default function LoginPage() {
                 color: '#6b7280',
               }}
             >
-              Ingrese sus credenciales para acceder al sistema
+              {mode === 'forgot'
+                ? 'Ingresa tu correo y te enviaremos un enlace de recuperación'
+                : mode === 'reset'
+                  ? 'Define una nueva contraseña para tu cuenta'
+                  : 'Ingrese sus credenciales para acceder al sistema'}
             </p>
 
             <form
-              onSubmit={handleLogin}
+              onSubmit={
+                mode === 'forgot'
+                  ? handleForgotPassword
+                  : mode === 'reset'
+                    ? handleUpdatePassword
+                    : handleLogin
+              }
               style={{
                 marginTop: 38,
                 display: 'flex',
@@ -328,6 +458,7 @@ export default function LoginPage() {
                 gap: 22,
               }}
             >
+              {mode !== 'reset' && (
               <div>
                 <label
                   style={{
@@ -335,7 +466,7 @@ export default function LoginPage() {
                     marginBottom: 10,
                     fontSize: 16,
                     fontWeight: 700,
-                    color: '#111827',
+                    color: 'var(--text-strong)',
                   }}
                 >
                   Correo electrónico
@@ -363,7 +494,9 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
+              )}
 
+              {mode !== 'forgot' && (
               <div>
                 <label
                   style={{
@@ -371,10 +504,10 @@ export default function LoginPage() {
                     marginBottom: 10,
                     fontSize: 16,
                     fontWeight: 700,
-                    color: '#111827',
+                    color: 'var(--text-strong)',
                   }}
                 >
-                  Contraseña
+                  {mode === 'reset' ? 'Nueva contraseña' : 'Contraseña'}
                 </label>
 
                 <div style={{ position: 'relative' }}>
@@ -389,7 +522,7 @@ export default function LoginPage() {
                     }}
                   />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -397,20 +530,102 @@ export default function LoginPage() {
                     className="soft-input"
                     style={{ paddingLeft: 54, paddingRight: 54, fontSize: 16 }}
                   />
-                  <Eye
-                    size={22}
-                    color="#9ca3af"
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     style={{
                       position: 'absolute',
-                      right: 18,
+                      right: 14,
                       top: '50%',
                       transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 6,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
                     }}
-                  />
+                  >
+                    {showPassword ? (
+                      <EyeOff size={22} color="#9ca3af" />
+                    ) : (
+                      <Eye size={22} color="#9ca3af" />
+                    )}
+                  </button>
                 </div>
               </div>
+              )}
 
-              <div
+              {mode === 'reset' && (
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: 10,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: 'var(--text-strong)',
+                    }}
+                  >
+                    Confirmar contraseña
+                  </label>
+
+                  <div style={{ position: 'relative' }}>
+                    <Lock
+                      size={22}
+                      color="#9ca3af"
+                      style={{
+                        position: 'absolute',
+                        left: 18,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                      }}
+                    />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="soft-input"
+                      style={{ paddingLeft: 54, paddingRight: 54, fontSize: 16 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((current) => !current)}
+                      aria-label={
+                        showConfirmPassword
+                          ? 'Ocultar confirmación de contraseña'
+                          : 'Mostrar confirmación de contraseña'
+                      }
+                      style={{
+                        position: 'absolute',
+                        right: 14,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        padding: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={22} color="#9ca3af" />
+                      ) : (
+                        <Eye size={22} color="#9ca3af" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {mode === 'login' && (
+                <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -421,10 +636,27 @@ export default function LoginPage() {
                 }}
               >
                 <span>Recordar sesión</span>
-                <span style={{ color: '#1557b0', fontWeight: 700 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot')
+                    setError('')
+                    setSuccess('')
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#1557b0',
+                    fontWeight: 700,
+                    fontSize: 16,
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
                   ¿Olvidaste tu contraseña?
-                </span>
+                </button>
               </div>
+              )}
 
               {error && (
                 <div
@@ -441,6 +673,21 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {success && (
+                <div
+                  style={{
+                    borderRadius: 16,
+                    padding: '14px 16px',
+                    background: '#dcfce7',
+                    border: '1px solid #bbf7d0',
+                    color: '#166534',
+                    fontSize: 14,
+                  }}
+                >
+                  {success}
+                </div>
+              )}
+
               <button type="submit" disabled={loading} className="primary-button">
                 <span
                   style={{
@@ -450,9 +697,42 @@ export default function LoginPage() {
                   }}
                 >
                   <LogIn size={20} />
-                  {loading ? 'Ingresando...' : 'Ingresar'}
+                  {loading
+                    ? mode === 'forgot'
+                      ? 'Enviando...'
+                      : mode === 'reset'
+                        ? 'Actualizando...'
+                        : 'Ingresando...'
+                    : mode === 'forgot'
+                      ? 'Enviar enlace de recuperación'
+                      : mode === 'reset'
+                        ? 'Actualizar contraseña'
+                        : 'Ingresar'}
                 </span>
               </button>
+
+              {mode !== 'login' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login')
+                    setError('')
+                    setSuccess('')
+                    setPassword('')
+                    setConfirmPassword('')
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#1557b0',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Volver al inicio de sesión
+                </button>
+              )}
             </form>
 
             <div

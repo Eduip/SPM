@@ -2,11 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 const MAX_DOCUMENT_SIZE_BYTES = 25 * 1024 * 1024
 
 export async function uploadDocumentoProyecto(formData: FormData) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proyectosEdit)
 
   const proyectoId = String(formData.get('proyectoId') || '')
   const catalogoId = String(formData.get('catalogoId') || '')
@@ -34,19 +36,14 @@ export async function uploadDocumentoProyecto(formData: FormData) {
     }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, nombre_completo')
-    .eq('id', user.id)
+    .eq('id', access.userId)
     .maybeSingle()
 
   if (!profile) {
@@ -160,24 +157,20 @@ export async function uploadDocumentoProyecto(formData: FormData) {
 
 export async function eliminarDocumentoProyecto(documentoId: string) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proyectosEdit)
 
   if (!documentoId) {
     return { success: false, error: 'No se recibió el documento a eliminar.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('id', user.id)
+    .eq('id', access.userId)
     .maybeSingle()
 
   if (!profile) {

@@ -23,9 +23,9 @@ export default function AnalysisListCard({
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--surface)',
         borderRadius: 18,
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border)',
         padding: 20,
       }}
     >
@@ -42,7 +42,7 @@ export default function AnalysisListCard({
             margin: 0,
             fontSize: 18,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           {title}
@@ -53,7 +53,7 @@ export default function AnalysisListCard({
           style={{
             border: 'none',
             background: 'transparent',
-            color: '#2563eb',
+            color: 'var(--primary)',
             cursor: 'pointer',
             fontSize: 22,
             lineHeight: 1,
@@ -69,9 +69,9 @@ export default function AnalysisListCard({
             key={item.id}
             style={{
               borderRadius: 16,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               padding: 16,
-              background: '#ffffff',
+              background: 'var(--surface)',
             }}
           >
             <div
@@ -124,7 +124,7 @@ export default function AnalysisListCard({
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  color: '#ef4444',
+                  color: 'var(--danger)',
                   cursor: 'pointer',
                   fontSize: 18,
                 }}
@@ -143,11 +143,11 @@ const inputTitleStyle: React.CSSProperties = {
   width: '100%',
   height: 40,
   borderRadius: 10,
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--border-strong)',
   padding: '0 12px',
   fontSize: 14,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
   outline: 'none',
   boxSizing: 'border-box',
 }
@@ -156,10 +156,10 @@ const textareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 72,
   borderRadius: 10,
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--border-strong)',
   padding: '10px 12px',
   fontSize: 14,
-  color: '#6b7280',
+  color: 'var(--text-muted)',
   outline: 'none',
   boxSizing: 'border-box',
   resize: 'vertical',

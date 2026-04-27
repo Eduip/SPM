@@ -1,9 +1,15 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { requireAdmin } from '../../../lib/auth-guards'
 
 export async function crearTipoAlerta(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const nombre = String(formData.get('nombre') || '').trim()
   const codigo = String(formData.get('codigo') || '').trim()
@@ -56,6 +62,11 @@ export async function actualizarTipoAlerta({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id || !nombre.trim() || !modulo.trim() || !severidad.trim() || !descripcion.trim()) {
     return { success: false, error: 'Faltan datos para actualizar la regla de alerta.' }
@@ -83,6 +94,11 @@ export async function actualizarTipoAlerta({
 
 export async function eliminarTipoAlerta(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió la regla de alerta a eliminar.' }
@@ -102,6 +118,11 @@ export async function eliminarTipoAlerta(id: string) {
 
 export async function activarTodasAlertas() {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const { error } = await supabase
     .from('tipos_alerta')

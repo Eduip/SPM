@@ -51,8 +51,8 @@ export default function ProjectTypeCards({
             style={{
               height: 150,
               borderRadius: 20,
-              border: active ? '2px solid #2563eb' : '1px solid #e5e7eb',
-              background: active ? '#eff6ff' : '#ffffff',
+              border: active ? '2px solid var(--primary)' : '1px solid var(--border)',
+              background: active ? 'var(--primary-tint)' : 'var(--surface)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -69,20 +69,20 @@ export default function ProjectTypeCards({
                 width: 54,
                 height: 54,
                 borderRadius: 14,
-                background: active ? '#2563eb' : '#f3f4f6',
+                background: active ? 'var(--primary)' : '#f3f4f6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Icon size={28} color={active ? '#ffffff' : '#6b7280'} />
+              <Icon size={28} color={active ? 'var(--surface)' : 'var(--text-muted)'} />
             </div>
 
             <div
               style={{
                 textAlign: 'center',
                 fontWeight: active ? 700 : 600,
-                color: '#374151',
+                color: 'var(--text)',
                 lineHeight: 1.3,
                 fontSize: 15,
               }}

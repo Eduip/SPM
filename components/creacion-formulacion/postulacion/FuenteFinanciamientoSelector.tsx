@@ -40,9 +40,9 @@ export default function FuenteFinanciamientoSelector({
           style={{
             marginTop: 14,
             borderRadius: 14,
-            border: '1px solid #bfdbfe',
-            background: '#eff6ff',
-            color: '#1d4ed8',
+            border: '1px solid var(--primary-soft)',
+            background: 'var(--primary-tint)',
+            color: 'var(--primary-dark)',
             padding: '12px 14px',
             fontSize: 14,
             fontWeight: 600,

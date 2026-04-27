@@ -1,9 +1,16 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { requireAdmin } from '../../../lib/auth-guards'
+import { saveFieldAIConfig, type FieldAIMode } from '../../../lib/ai/field-ai-config'
 
 export async function crearFuenteFinanciamiento(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const nombre = String(formData.get('nombre') || '').trim()
   const activo = formData.get('activo') === 'on'
@@ -70,6 +77,11 @@ export async function crearFuenteFinanciamiento(formData: FormData) {
 
 export async function eliminarFuenteFinanciamiento(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió la fuente a eliminar.' }
@@ -97,6 +109,11 @@ export async function actualizarFuenteFinanciamiento({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id || !nombre.trim()) {
     return { success: false, error: 'Faltan datos para actualizar.' }
@@ -133,6 +150,11 @@ export async function guardarConfiguracionFuente({
   }
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id || !payload.nombre.trim()) {
     return { success: false, error: 'Faltan datos para guardar la configuración.' }
@@ -170,6 +192,11 @@ export async function crearCampoFuente({
     obligatorio: boolean
   }) {
     const supabase = await createClient()
+    const adminGuard = await requireAdmin(supabase)
+
+    if (!adminGuard.success) {
+      return adminGuard
+    }
 
     if (!fuente_id || !nombre.trim()) {
       return { success: false, error: 'Faltan datos para crear el campo.' }
@@ -206,13 +233,20 @@ export async function actualizarCampoFuente({
   nombre,
   tipo,
   obligatorio,
+  ai_mode,
 }: {
   id: string
   nombre: string
   tipo: string
   obligatorio: boolean
+  ai_mode: FieldAIMode
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id || !nombre.trim()) {
     return { success: false, error: 'Faltan datos para actualizar el campo.' }
@@ -230,6 +264,8 @@ export async function actualizarCampoFuente({
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
+
+  await saveFieldAIConfig(id, ai_mode)
 
   return { success: true }
 }
@@ -250,6 +286,11 @@ function normalizeCampoTipo(tipo: string) {
 
 export async function eliminarCampoFuente(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió el campo a eliminar.' }
@@ -275,6 +316,11 @@ export async function crearDocumentoFuente({
   obligatorio: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!fuente_id || !nombre.trim()) {
     return { success: false, error: 'Faltan datos para crear el documento.' }
@@ -304,6 +350,11 @@ export async function crearDocumentoFuente({
 
 export async function eliminarDocumentoFuente(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió el documento a eliminar.' }
@@ -327,6 +378,11 @@ export async function eliminarDocumentoFuente(id: string) {
     descripcion: string
   }) {
     const supabase = await createClient()
+    const adminGuard = await requireAdmin(supabase)
+
+    if (!adminGuard.success) {
+      return adminGuard
+    }
   
     const { error } = await supabase
       .from('reglas_validacion_fuente')

@@ -1,7 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { guardarRespuestaDinamica } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
+import { useEffect, useMemo, useState } from 'react'
+import { Sparkles } from 'lucide-react'
+import {
+  guardarRespuestaDinamica,
+  sugerirCampoPostulacionConIA,
+} from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
 import type {
   CampoPostulacion,
   DynamicFieldValue,
@@ -22,6 +26,11 @@ export default function DynamicFuenteFields({
   respuestasIniciales?: RespuestaPostulacion[] | null
 }) {
   const [savingFieldId, setSavingFieldId] = useState<string | null>(null)
+  const [aiLoadingFieldId, setAiLoadingFieldId] = useState<string | null>(null)
+  const [aiMessageFieldId, setAiMessageFieldId] = useState<string | null>(null)
+  const [fieldFeedback, setFieldFeedback] = useState<
+    Record<string, { tone: 'success' | 'warning' | 'error'; message: string }>
+  >({})
   const safeRespuestas = useMemo(
     () => (Array.isArray(respuestasIniciales) ? respuestasIniciales : []),
     [respuestasIniciales]
@@ -53,6 +62,20 @@ export default function DynamicFuenteFields({
     }
     return initial
   })
+
+  useEffect(() => {
+    setValues((prev) => {
+      const next = { ...prev }
+
+      for (const campo of camposActivos) {
+        if (!(campo.id in next)) {
+          next[campo.id] = respuestaMap.get(campo.id) ?? defaultValueForType(campo.tipo)
+        }
+      }
+
+      return next
+    })
+  }, [camposActivos, respuestaMap])
   const camposDescripcion = camposActivos.filter(
     (campo) => getFieldSection(campo.tipo) === 'descripcion'
   )
@@ -68,10 +91,10 @@ export default function DynamicFuenteFields({
       <div
         style={{
           borderRadius: 16,
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
+          background: 'var(--primary-tint)',
+          border: '1px solid var(--primary-soft)',
           padding: 16,
-          color: '#1d4ed8',
+          color: 'var(--primary-dark)',
           fontSize: 14,
         }}
       >
@@ -86,9 +109,9 @@ export default function DynamicFuenteFields({
         style={{
           borderRadius: 16,
           background: '#f9fafb',
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--border)',
           padding: 16,
-          color: '#6b7280',
+          color: 'var(--text-muted)',
           fontSize: 14,
         }}
       >
@@ -101,29 +124,124 @@ export default function DynamicFuenteFields({
 
   const handleBlurSave = async (campo: CampoPostulacion, value: DynamicFieldValue) => {
     setSavingFieldId(campo.id)
-
-    const result = await guardarRespuestaDinamica({
-      proyectoId,
-      fuenteId,
-      campoId: campo.id,
-      tipo: campo.tipo,
-      valor: value,
+    setFieldFeedback((prev) => {
+      const next = { ...prev }
+      delete next[campo.id]
+      return next
     })
 
-    setSavingFieldId(null)
+    try {
+      const result = await guardarRespuestaDinamica({
+        proyectoId,
+        fuenteId,
+        campoId: campo.id,
+        tipo: campo.tipo,
+        valor: value,
+      })
 
-    if (!result.success) {
-      alert(result.error)
+      if (!result.success) {
+        setFieldFeedback((prev) => ({
+          ...prev,
+          [campo.id]: {
+            tone: 'error',
+            message: result.error || 'No se pudo guardar el campo.',
+          },
+        }))
+      }
+    } catch (error) {
+      setFieldFeedback((prev) => ({
+        ...prev,
+        [campo.id]: {
+          tone: 'error',
+          message:
+            error instanceof Error ? error.message : 'Ocurrió un error inesperado al guardar.',
+        },
+      }))
+    } finally {
+      setSavingFieldId(null)
+    }
+  }
+
+  const handleAISuggestion = async (campo: CampoPostulacion) => {
+    setAiLoadingFieldId(campo.id)
+    setAiMessageFieldId(null)
+    setFieldFeedback((prev) => {
+      const next = { ...prev }
+      delete next[campo.id]
+      return next
+    })
+
+    try {
+      const result = await sugerirCampoPostulacionConIA({
+        proyectoId,
+        fuenteId,
+        campoId: campo.id,
+        tituloCampo: campo.nombre,
+        tipo: campo.tipo,
+        valorActual: fieldValueToString(values[campo.id] ?? ''),
+      })
+
+      if (!result.success) {
+        setFieldFeedback((prev) => ({
+          ...prev,
+          [campo.id]: {
+            tone: 'error',
+            message: result.error || 'No se pudo generar la sugerencia IA.',
+          },
+        }))
+        return
+      }
+
+      const suggestion = String(result.suggestion ?? '').trim()
+
+      if (!suggestion) {
+        setFieldFeedback((prev) => ({
+          ...prev,
+          [campo.id]: {
+            tone: 'error',
+            message: 'La IA no devolvió contenido para este campo.',
+          },
+        }))
+        return
+      }
+
+      setValues((prev) => ({ ...prev, [campo.id]: suggestion }))
+      setAiMessageFieldId(campo.id)
+      setFieldFeedback((prev) => ({
+        ...prev,
+        [campo.id]: {
+          tone: result.mode === 'local' ? 'warning' : 'success',
+          message:
+            result.notice ||
+            (result.mode === 'local'
+              ? 'Se aplicó una sugerencia local de respaldo.'
+              : 'Sugerencia IA aplicada y guardada.'),
+        },
+      }))
+      await handleBlurSave(campo, suggestion)
+    } catch (error) {
+      setFieldFeedback((prev) => ({
+        ...prev,
+        [campo.id]: {
+          tone: 'error',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Ocurrió un error inesperado al consultar la IA.',
+        },
+      }))
+    } finally {
+      setAiLoadingFieldId(null)
     }
   }
 
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--surface)',
         borderRadius: 20,
         padding: 22,
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border)',
       }}
     >
       <h3
@@ -132,7 +250,7 @@ export default function DynamicFuenteFields({
           marginBottom: 18,
           fontSize: 20,
           fontWeight: 700,
-          color: '#111827',
+          color: 'var(--text-strong)',
         }}
       >
         Formulario de Postulación
@@ -142,7 +260,7 @@ export default function DynamicFuenteFields({
           marginTop: -12,
           marginBottom: 18,
           fontSize: 14,
-          color: '#6b7280',
+          color: 'var(--text-muted)',
           fontWeight: 600,
         }}
       >
@@ -156,16 +274,23 @@ export default function DynamicFuenteFields({
           values={values}
           savingFieldId={savingFieldId}
           emptyText="No hay campos de descripción configurados."
+          aiLoadingFieldId={aiLoadingFieldId}
+          aiMessageFieldId={aiMessageFieldId}
+          fieldFeedback={fieldFeedback}
           onChange={(campoId, newValue) =>
             setValues((prev) => ({ ...prev, [campoId]: newValue }))
           }
           onBlur={handleBlurSave}
+          onAISuggest={handleAISuggestion}
         />
         <FieldSection
           title="Plazos"
           campos={camposPlazo}
           values={values}
           savingFieldId={savingFieldId}
+          aiLoadingFieldId={aiLoadingFieldId}
+          aiMessageFieldId={aiMessageFieldId}
+          fieldFeedback={fieldFeedback}
           emptyText="No hay campos de plazo configurados."
           totalLabel="Plazo total"
           totalValue={`${plazoTotal} días`}
@@ -173,12 +298,16 @@ export default function DynamicFuenteFields({
             setValues((prev) => ({ ...prev, [campoId]: newValue }))
           }
           onBlur={handleBlurSave}
+          onAISuggest={handleAISuggestion}
         />
         <FieldSection
           title="Presupuesto"
           campos={camposPresupuesto}
           values={values}
           savingFieldId={savingFieldId}
+          aiLoadingFieldId={aiLoadingFieldId}
+          aiMessageFieldId={aiMessageFieldId}
+          fieldFeedback={fieldFeedback}
           emptyText="No hay campos de presupuesto configurados."
           totalLabel="Presupuesto total"
           totalValue={`CLP ${new Intl.NumberFormat('es-CL').format(presupuestoTotal)}`}
@@ -186,6 +315,7 @@ export default function DynamicFuenteFields({
             setValues((prev) => ({ ...prev, [campoId]: newValue }))
           }
           onBlur={handleBlurSave}
+          onAISuggest={handleAISuggestion}
         />
       </div>
     </div>
@@ -197,21 +327,29 @@ function FieldSection({
   campos,
   values,
   savingFieldId,
+  aiLoadingFieldId,
+  aiMessageFieldId,
+  fieldFeedback,
   emptyText,
   totalLabel,
   totalValue,
   onChange,
   onBlur,
+  onAISuggest,
 }: {
   title: string
   campos: CampoPostulacion[]
   values: Record<string, DynamicFieldValue>
   savingFieldId: string | null
+  aiLoadingFieldId: string | null
+  aiMessageFieldId: string | null
+  fieldFeedback: Record<string, { tone: 'success' | 'warning' | 'error'; message: string }>
   emptyText: string
   totalLabel?: string
   totalValue?: string
   onChange: (campoId: string, value: DynamicFieldValue) => void
   onBlur: (campo: CampoPostulacion, value: DynamicFieldValue) => void
+  onAISuggest: (campo: CampoPostulacion) => void
 }) {
   return (
     <section style={sectionStyle}>
@@ -221,29 +359,18 @@ function FieldSection({
       ) : (
         <div style={fieldsGridStyle}>
           {campos.map((campo) => (
-            <div
+            <FieldRow
               key={campo.id}
-              style={{
-                gridColumn: campo.tipo === 'texto_largo' ? '1 / -1' : 'auto',
-              }}
-            >
-              <label style={labelStyle}>
-                {campo.nombre} {campo.obligatorio ? <span style={{ color: '#ef4444' }}>*</span> : null}
-              </label>
-
-              {renderField({
-                campo,
-                value: values[campo.id] ?? defaultValueForType(campo.tipo),
-                onChange: (newValue) => onChange(campo.id, newValue),
-                onBlur: () => onBlur(campo, values[campo.id]),
-              })}
-
-              {savingFieldId === campo.id && (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#2563eb' }}>
-                  Guardando...
-                </div>
-              )}
-            </div>
+              campo={campo}
+              value={values[campo.id] ?? defaultValueForType(campo.tipo)}
+              aiLoadingFieldId={aiLoadingFieldId}
+              aiMessageFieldId={aiMessageFieldId}
+              feedback={fieldFeedback[campo.id] ?? null}
+              savingFieldId={savingFieldId}
+              onChange={(newValue) => onChange(campo.id, newValue)}
+              onBlur={() => onBlur(campo, values[campo.id])}
+              onAISuggest={() => onAISuggest(campo)}
+            />
           ))}
         </div>
       )}
@@ -258,24 +385,128 @@ function FieldSection({
   )
 }
 
+function FieldRow({
+  campo,
+  value,
+  savingFieldId,
+  aiLoadingFieldId,
+  aiMessageFieldId,
+  feedback,
+  onChange,
+  onBlur,
+  onAISuggest,
+}: {
+  campo: CampoPostulacion
+  value: DynamicFieldValue
+  savingFieldId: string | null
+  aiLoadingFieldId: string | null
+  aiMessageFieldId: string | null
+  feedback: { tone: 'success' | 'warning' | 'error'; message: string } | null
+  onChange: (value: DynamicFieldValue) => void
+  onBlur: () => void
+  onAISuggest: () => void
+}) {
+  const aiAvailability = getFieldAIAvailability(campo, value)
+  const usesExpandedTextField =
+    campo.tipo === 'texto' &&
+    (aiAvailability.showButton || fieldValueToString(value).trim().length > 80)
+
+  return (
+    <div
+      style={{
+        gridColumn: campo.tipo === 'texto_largo' ? '1 / -1' : 'auto',
+      }}
+    >
+      <label style={labelStyle}>
+        {campo.nombre} {campo.obligatorio ? <span style={{ color: 'var(--danger)' }}>*</span> : null}
+      </label>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 6,
+        }}
+      >
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          {aiAvailability.message}
+        </div>
+        {aiAvailability.showButton ? (
+          <button
+            type="button"
+            onClick={onAISuggest}
+            disabled={aiLoadingFieldId === campo.id}
+            style={aiButtonStyle(aiLoadingFieldId === campo.id)}
+          >
+            <Sparkles size={13} />
+            {aiAvailability.buttonLabel}
+          </button>
+        ) : null}
+      </div>
+
+      {renderField({
+        campo,
+        value,
+        expandedText: usesExpandedTextField,
+        onChange,
+        onBlur,
+      })}
+
+      {savingFieldId === campo.id && (
+        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--primary)' }}>
+          Guardando...
+        </div>
+      )}
+
+      {feedback ? (
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 12,
+            color:
+              feedback.tone === 'error'
+                ? 'var(--danger)'
+                : feedback.tone === 'warning'
+                  ? '#92400e'
+                  : 'var(--success)',
+          }}
+        >
+          {feedback.message}
+        </div>
+      ) : aiMessageFieldId === campo.id ? (
+        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--success)' }}>
+          Sugerencia IA aplicada y guardada.
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function renderField({
   campo,
   value,
+  expandedText = false,
   onChange,
   onBlur,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
+  expandedText?: boolean
   onChange: (value: DynamicFieldValue) => void
   onBlur: () => void
 }) {
-  if (campo.tipo === 'texto_largo') {
+  if (campo.tipo === 'texto_largo' || (campo.tipo === 'texto' && expandedText)) {
     return (
       <textarea
         value={fieldValueToString(value)}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
-        style={textareaStyle}
+        style={{
+          ...textareaStyle,
+          minHeight: campo.tipo === 'texto_largo' ? 96 : 140,
+        }}
         placeholder={`Ingrese ${campo.nombre.toLowerCase()}...`}
       />
     )
@@ -317,7 +548,7 @@ function renderField({
           gap: 8,
           height: 42,
           fontSize: 14,
-          color: '#374151',
+          color: 'var(--text)',
         }}
       >
         <input
@@ -348,6 +579,75 @@ function renderField({
 function defaultValueForType(tipo: string) {
   if (tipo === 'booleano') return false
   return ''
+}
+
+function getFieldAIAvailability(campo: CampoPostulacion, value: DynamicFieldValue) {
+  const hasContent = fieldValueToString(value).trim().length > 0
+
+  if (!['texto', 'texto_largo'].includes(campo.tipo)) {
+    return {
+      showButton: false,
+      buttonLabel: '',
+      message: '',
+    }
+  }
+
+  if (campo.ai_mode === 'blocked') {
+    return {
+      showButton: false,
+      buttonLabel: '',
+      message: 'Campo sensible: completar manualmente.',
+    }
+  }
+
+  if (campo.ai_mode === 'improve_only') {
+    return {
+      showButton: hasContent,
+      buttonLabel: 'Mejorar con IA',
+      message: hasContent
+        ? 'La IA puede ayudarte a mejorar este texto.'
+        : 'La mejora con IA se habilita cuando el campo ya tenga contenido.',
+    }
+  }
+
+  if (campo.ai_mode === 'suggest') {
+    return {
+      showButton: true,
+      buttonLabel: hasContent ? 'Mejorar con IA' : 'Completar con IA',
+      message: 'Sugerencia IA disponible para este campo.',
+    }
+  }
+
+  if (isSensitiveField(campo)) {
+    return {
+      showButton: false,
+      buttonLabel: '',
+      message: 'Campo sensible: completar manualmente.',
+    }
+  }
+
+  return {
+    showButton: true,
+    buttonLabel: hasContent ? 'Mejorar con IA' : 'Completar con IA',
+    message: 'Sugerencia IA disponible para este campo.',
+  }
+}
+
+function isSensitiveField(campo: CampoPostulacion) {
+  const normalized = normalizeText(campo.nombre)
+  const blockedTerms = [
+    'bip',
+    'codigo',
+    'código',
+    'rut',
+    'folio',
+    'resolucion',
+    'resolución',
+    'identificador',
+    'cartola',
+  ]
+
+  return blockedTerms.some((term) => normalized.includes(normalizeText(term)))
 }
 
 function getFieldSection(tipo: string) {
@@ -384,15 +684,22 @@ function fieldValueToString(value: DynamicFieldValue) {
   return String(value)
 }
 
+function normalizeText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 const inputStyle: React.CSSProperties = {
   width: '100%',
   height: 42,
   borderRadius: 12,
-  border: '1px solid #d1d5db',
-  background: '#ffffff',
+  border: '1px solid var(--border-strong)',
+  background: 'var(--surface)',
   padding: '0 12px',
   fontSize: 14,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -400,18 +707,18 @@ const textareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 96,
   borderRadius: 12,
-  border: '1px solid #d1d5db',
-  background: '#ffffff',
+  border: '1px solid var(--border-strong)',
+  background: 'var(--surface)',
   padding: '10px 12px',
   fontSize: 14,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
   resize: 'vertical',
 }
 
 const sectionStyle: React.CSSProperties = {
   borderRadius: 16,
-  border: '1px solid #e5e7eb',
+  border: '1px solid var(--border)',
   background: '#f9fafb',
   padding: 16,
 }
@@ -420,7 +727,7 @@ const sectionTitleStyle: React.CSSProperties = {
   margin: '0 0 14px',
   fontSize: 17,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const fieldsGridStyle: React.CSSProperties = {
@@ -433,20 +740,39 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: 13,
   fontWeight: 700,
-  color: '#374151',
+  color: 'var(--text)',
   marginBottom: 6,
 }
 
 const totalStyle: React.CSSProperties = {
   marginTop: 14,
   borderRadius: 14,
-  border: '1px solid #bfdbfe',
-  background: '#eff6ff',
-  color: '#1d4ed8',
+  border: '1px solid var(--primary-soft)',
+  background: 'var(--primary-tint)',
+  color: 'var(--primary-dark)',
   padding: '14px 16px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
   fontSize: 15,
   fontWeight: 800,
+}
+
+function aiButtonStyle(disabled: boolean): React.CSSProperties {
+  return {
+    height: 28,
+    borderRadius: 999,
+    border: '1px solid var(--primary-soft)',
+    background: 'var(--primary-tint)',
+    color: 'var(--primary-dark)',
+    padding: '0 10px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.7 : 1,
+    flexShrink: 0,
+  }
 }

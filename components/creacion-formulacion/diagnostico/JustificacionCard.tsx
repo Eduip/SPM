@@ -62,9 +62,9 @@ type Props = {
     return (
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--surface)',
           borderRadius: 18,
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--border)',
           padding: 20,
         }}
       >
@@ -81,13 +81,13 @@ type Props = {
               margin: 0,
               fontSize: 18,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Justificación del Proyecto
           </h3>
   
-          <div style={{ color: '#2563eb', fontSize: 18 }}>✎</div>
+          <div style={{ color: 'var(--primary)', fontSize: 18 }}>✎</div>
         </div>
   
         <textarea
@@ -98,10 +98,10 @@ type Props = {
             minHeight: 220,
             borderRadius: 16,
             background: '#f9fafb',
-            border: '1px solid #e5e7eb',
+            border: '1px solid var(--border)',
             padding: 20,
             fontSize: 15,
-            color: '#374151',
+            color: 'var(--text)',
             lineHeight: 1.7,
             resize: 'vertical',
             boxSizing: 'border-box',
@@ -116,7 +116,7 @@ type Props = {
             style={{
               fontSize: 15,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
               marginBottom: 12,
             }}
           >
@@ -152,8 +152,8 @@ type Props = {
                   subtitle={`${formatFileSize(
                     documento.tamano_bytes
                   )} • ${formatUploadDate(documento.fecha_subida)}`}
-                  bg={index % 2 === 0 ? '#eff6ff' : '#ecfdf5'}
-                  color={index % 2 === 0 ? '#2563eb' : '#16a34a'}
+                  bg={index % 2 === 0 ? 'var(--primary-tint)' : '#ecfdf5'}
+                  color={index % 2 === 0 ? 'var(--primary)' : 'var(--success)'}
                 />
               ))
             ) : (
@@ -163,7 +163,7 @@ type Props = {
                   border: '1px dashed #cbd5e1',
                   background: '#f9fafb',
                   padding: '14px 16px',
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                   fontSize: 14,
                   fontWeight: 500,
                 }}
@@ -188,8 +188,8 @@ type Props = {
                 height: 52,
                 borderRadius: 16,
                 border: '1px dashed #cbd5e1',
-                background: '#ffffff',
-                color: '#374151',
+                background: 'var(--surface)',
+                color: 'var(--text)',
                 cursor: uploading ? 'not-allowed' : 'pointer',
                 fontWeight: 600,
                 opacity: uploading ? 0.7 : 1,
@@ -253,7 +253,7 @@ type Props = {
             width: 42,
             height: 42,
             borderRadius: 12,
-            background: '#ffffff',
+            background: 'var(--surface)',
             color,
             display: 'flex',
             alignItems: 'center',
@@ -269,7 +269,7 @@ type Props = {
             style={{
               fontSize: 15,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
               marginBottom: 2,
             }}
           >
@@ -278,7 +278,7 @@ type Props = {
           <div
             style={{
               fontSize: 13,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
             }}
           >
             {subtitle}

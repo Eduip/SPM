@@ -74,7 +74,7 @@ export default function CarteraTable({
                 padding: '0 12px',
                 borderRadius: 10,
                 border: 'none',
-                background: '#2563eb',
+                background: 'var(--primary)',
                 color: '#fff',
                 fontWeight: 700,
                 cursor: 'pointer',

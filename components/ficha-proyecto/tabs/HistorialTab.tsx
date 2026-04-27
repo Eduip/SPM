@@ -260,7 +260,7 @@ function HistorialItem({
             height: 40,
             borderRadius: 12,
             background: '#dcfce7',
-            color: '#16a34a',
+            color: 'var(--success)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -276,7 +276,7 @@ function HistorialItem({
             style={{
               fontSize: 15,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
               marginBottom: 4,
             }}
           >
@@ -351,7 +351,7 @@ function MetricCard({
         •
       </div>
 
-      <div style={{ fontSize: 34, fontWeight: 800, color: '#111827' }}>
+      <div style={{ fontSize: 34, fontWeight: 800, color: 'var(--text-strong)' }}>
         {value}
       </div>
 
@@ -443,7 +443,7 @@ function MiniMetric({
         background: '#ffffff',
       }}
     >
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#111827' }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-strong)' }}>{value}</div>
       <div style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginTop: 6 }}>{label}</div>
       <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{subtitle}</div>
     </div>
@@ -528,7 +528,7 @@ const titleStyle: React.CSSProperties = {
   marginBottom: 18,
   fontSize: 20,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const secondaryButtonStyle: React.CSSProperties = {
@@ -553,7 +553,7 @@ const detailButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',

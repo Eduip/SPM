@@ -412,7 +412,7 @@ export default function TiposAlertaPage({
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>{alerta.nombre}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-strong)' }}>{alerta.nombre}</div>
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
                       {alerta.codigo || 'Sin código'}
                     </div>
@@ -825,7 +825,7 @@ const titleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 34,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const subtitleStyle: React.CSSProperties = {
@@ -881,7 +881,7 @@ const leftPanelStyle: React.CSSProperties = {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -896,7 +896,7 @@ const leftCardStyle: React.CSSProperties = {
 const leftCardTitleStyle: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 4,
   textAlign: 'left',
 }
@@ -980,7 +980,7 @@ const panelCardStyle: React.CSSProperties = {
 const panelHeaderStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -1016,7 +1016,7 @@ const inputStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '0 12px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -1028,7 +1028,7 @@ const textareaStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '10px 12px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
   resize: 'vertical',
 }
@@ -1085,7 +1085,7 @@ const darkButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#111827',
+  background: 'var(--text-strong)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -1096,7 +1096,7 @@ const saveButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',

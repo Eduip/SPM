@@ -1,18 +1,20 @@
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import {
-  Bell,
   Briefcase,
   FolderKanban,
   LayoutDashboard,
-  Search,
   Settings,
   ShieldAlert,
-  MessageSquare,
   Building2,
 } from 'lucide-react'
 import { createClient } from '../lib/supabase-server'
+import { loadActiveSystemAlertCount } from '../lib/system-alerts'
+import { getAuthorization, hasPermission, PERMISSIONS } from '../lib/auth-guards'
 import LogoutButton from './LogoutButton'
+import FontFamilySelector from './FontFamilySelector'
+import ThemePaletteSelector from './ThemePaletteSelector'
+import TopProjectSearch from './TopProjectSearch'
 
 type AppShellProps = {
   title: string
@@ -27,31 +29,49 @@ const menuItems = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    permission: PERMISSIONS.dashboardView,
   },
   {
     key: 'cartera-proyectos',
     label: 'Cartera de Proyectos',
     href: '/cartera-proyectos',
     icon: FolderKanban,
+    permission: [
+      PERMISSIONS.proyectosView,
+      PERMISSIONS.ejecucionView,
+      PERMISSIONS.financiamientoView,
+      PERMISSIONS.rendicionesView,
+      PERMISSIONS.garantiasView,
+      PERMISSIONS.proveedoresView,
+      PERMISSIONS.bitacoraView,
+      PERMISSIONS.historialView,
+    ],
   },
   {
     key: 'creacion-formulacion',
     label: 'Creación y Formulación',
     href: '/creacion-formulacion',
     icon: Briefcase,
+    permission: [
+      PERMISSIONS.proyectosView,
+      PERMISSIONS.proyectosCreate,
+      PERMISSIONS.proyectosEdit,
+      PERMISSIONS.proyectosApprove,
+    ],
   },
   {
     key: 'alertas',
     label: 'Alertas',
     href: '/alertas',
     icon: ShieldAlert,
-    badge: 5,
+    permission: PERMISSIONS.alertasView,
   },
   {
     key: 'administracion',
     label: 'Administración',
     href: '/administracion',
     icon: Settings,
+    permission: PERMISSIONS.administracionView,
   },
 ]
 
@@ -90,21 +110,30 @@ export default async function AppShell({
     .slice(0, 2)
     .toUpperCase()
 
+  const authorization = await getAuthorization(supabase)
+  const visibleMenuItems = menuItems.filter((item) =>
+    hasPermission(authorization, item.permission)
+  )
+  const canViewAlerts = hasPermission(authorization, PERMISSIONS.alertasView)
+  const { count: alertasActivas } = canViewAlerts
+    ? await loadActiveSystemAlertCount(supabase)
+    : { count: 0 }
+
   return (
     <div
       style={{
         minHeight: '100vh',
         display: 'grid',
         gridTemplateColumns: '260px 1fr',
-        background: '#f3f4f6',
-        fontFamily: 'Inter, Arial, sans-serif',
+        background: 'var(--app-bg)',
+        fontFamily: 'var(--font-app)',
       }}
     >
       {/* SIDEBAR */}
       <aside
         style={{
-          background: '#f8fafc',
-          borderRight: '1px solid #e5e7eb',
+          background: 'var(--surface-muted)',
+          borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -115,7 +144,7 @@ export default async function AppShell({
           <div
             style={{
               height: 92,
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               padding: '0 18px',
@@ -127,11 +156,11 @@ export default async function AppShell({
                 width: 40,
                 height: 40,
                 borderRadius: 12,
-                background: 'linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)',
+                background: 'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 8px 18px rgba(37, 99, 235, 0.22)',
+                boxShadow: '0 8px 18px var(--focus-ring)',
                 flexShrink: 0,
               }}
             >
@@ -145,7 +174,7 @@ export default async function AppShell({
                 style={{
                   fontSize: 18,
                   fontWeight: 700,
-                  color: '#111827',
+                  color: 'var(--text-strong)',
                   lineHeight: 1.1,
                 }}
               >
@@ -155,7 +184,7 @@ export default async function AppShell({
                 style={{
                   marginTop: 6,
                   fontSize: 14,
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                 }}
               >
                 Curacautín
@@ -172,9 +201,10 @@ export default async function AppShell({
                 gap: 8,
               }}
             >
-              {menuItems.map((item) => {
+              {visibleMenuItems.map((item) => {
                 const Icon = item.icon
                 const isActive = currentModule === item.key
+                const badge = item.key === 'alertas' ? alertasActivas : 0
 
                 return (
                   <Link
@@ -192,8 +222,8 @@ export default async function AppShell({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        background: isActive ? '#dbeafe' : 'transparent',
-                        color: isActive ? '#2563eb' : '#374151',
+                        background: isActive ? 'var(--primary-soft)' : 'transparent',
+                        color: isActive ? 'var(--primary)' : 'var(--text)',
                         fontWeight: isActive ? 600 : 500,
                         transition: 'all 0.2s ease',
                       }}
@@ -209,13 +239,13 @@ export default async function AppShell({
                         <span style={{ fontSize: 15 }}>{item.label}</span>
                       </div>
 
-                      {item.badge && (
+                      {badge > 0 && (
                         <div
                           style={{
                             minWidth: 22,
                             height: 22,
                             borderRadius: 999,
-                            background: '#e11d48',
+                            background: 'var(--danger)',
                             color: 'white',
                             fontSize: 12,
                             fontWeight: 700,
@@ -225,7 +255,7 @@ export default async function AppShell({
                             padding: '0 6px',
                           }}
                         >
-                          {item.badge}
+                          {badge}
                         </div>
                       )}
                     </div>
@@ -240,8 +270,8 @@ export default async function AppShell({
         <div style={{ padding: 16 }}>
           <div
             style={{
-              background: '#eaf2ff',
-              border: '1px solid #dbeafe',
+              background: 'var(--primary-tint)',
+              border: '1px solid var(--primary-soft)',
               borderRadius: 18,
               padding: 18,
             }}
@@ -251,21 +281,21 @@ export default async function AppShell({
                 width: 36,
                 height: 36,
                 borderRadius: 999,
-                background: '#dbeafe',
+                background: 'var(--primary-soft)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <span style={{ color: '#2563eb', fontWeight: 700 }}>?</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>?</span>
             </div>
 
             <div
               style={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: '#1f2937',
+                color: 'var(--text-strong)',
                 marginBottom: 4,
               }}
             >
@@ -275,7 +305,7 @@ export default async function AppShell({
             <div
               style={{
                 fontSize: 13,
-                color: '#6b7280',
+                color: 'var(--text-muted)',
                 lineHeight: 1.5,
                 marginBottom: 14,
               }}
@@ -286,7 +316,7 @@ export default async function AppShell({
             <div
               style={{
                 fontSize: 14,
-                color: '#2563eb',
+                color: 'var(--primary)',
                 fontWeight: 600,
               }}
             >
@@ -302,7 +332,7 @@ export default async function AppShell({
         <header
           style={{
             height: 68,
-            background: '#1f5fbf',
+            background: 'var(--primary-strong)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -323,14 +353,14 @@ export default async function AppShell({
                 width: 38,
                 height: 38,
                 borderRadius: 11,
-                background: '#f8fafc',
+                background: 'var(--surface-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              <Building2 size={22} color="#1f5fbf" />
+              <Building2 size={22} color="var(--primary-strong)" />
             </div>
 
             <div style={{ color: 'white', lineHeight: 1.15 }}>
@@ -357,24 +387,7 @@ export default async function AppShell({
               padding: '0 24px',
             }}
           >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 520,
-                height: 40,
-                borderRadius: 999,
-                border: '1px solid rgba(255,255,255,0.18)',
-                background: 'rgba(255,255,255,0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '0 16px',
-                color: 'rgba(255,255,255,0.82)',
-              }}
-            >
-              <Search size={18} />
-              <span style={{ fontSize: 15 }}>Buscar proyecto...</span>
-            </div>
+            <TopProjectSearch />
           </div>
 
           {/* Actions */}
@@ -382,27 +395,12 @@ export default async function AppShell({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 18,
+              gap: 14,
               color: 'white',
             }}
           >
-            <div style={{ position: 'relative' }}>
-              <Bell size={19} />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -5,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 999,
-                  background: '#ef4444',
-                }}
-              />
-            </div>
-
-            <MessageSquare size={19} />
-            <Settings size={19} />
+            <FontFamilySelector />
+            <ThemePaletteSelector />
 
             <div
               style={{
@@ -424,8 +422,8 @@ export default async function AppShell({
                   width: 36,
                   height: 36,
                   borderRadius: 999,
-                  background: '#f8fafc',
-                  color: '#1f5fbf',
+                  background: 'var(--surface-muted)',
+                  color: 'var(--primary-strong)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -449,7 +447,7 @@ export default async function AppShell({
         <main
           style={{
             padding: '26px 32px 32px 32px',
-            background: '#f3f4f6',
+            background: 'var(--app-bg)',
             minHeight: 'calc(100vh - 68px)',
           }}
         >
@@ -461,7 +459,7 @@ export default async function AppShell({
                   fontSize: 34,
                   lineHeight: 1.1,
                   fontWeight: 800,
-                  color: '#111827',
+                  color: 'var(--text-strong)',
                 }}
               >
                 {title}

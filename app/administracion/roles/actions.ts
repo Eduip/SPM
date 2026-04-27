@@ -1,6 +1,8 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { requireAdmin } from '../../../lib/auth-guards'
+import { ensureBasePermissions } from '../../../lib/permissions-catalog'
 
 function generateCode(value: string) {
   return value
@@ -16,6 +18,11 @@ function generateCode(value: string) {
 
 export async function crearRol(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const nombre = String(formData.get('nombre') || '').trim()
   const codigo = String(formData.get('codigo') || '').trim() || generateCode(nombre)
@@ -72,6 +79,11 @@ export async function crearRol(formData: FormData) {
 
 export async function eliminarRol(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió el rol a eliminar.' }
@@ -89,6 +101,11 @@ export async function eliminarRol(id: string) {
 
 export async function crearPermiso(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   const nombre = String(formData.get('nombre') || '').trim()
   const codigo = String(formData.get('codigo') || '').trim() || generateCode(nombre)
@@ -127,8 +144,24 @@ export async function crearPermiso(formData: FormData) {
   return { success: true }
 }
 
+export async function sincronizarPermisosBase() {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  return ensureBasePermissions(supabase)
+}
+
 export async function eliminarPermiso(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (!id) {
     return { success: false, error: 'No se recibió el permiso a eliminar.' }
@@ -163,6 +196,11 @@ export async function togglePermisoRol({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
 
   if (activo) {
     const { error } = await supabase

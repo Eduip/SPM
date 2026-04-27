@@ -54,7 +54,7 @@ export default function AdminModuleCard({
         style={{
           fontSize: 24,
           fontWeight: 800,
-          color: '#111827',
+          color: 'var(--text-strong)',
           lineHeight: 1.2,
           marginBottom: 20,
         }}
@@ -91,7 +91,7 @@ export default function AdminModuleCard({
           height: 52,
           borderRadius: 14,
           border: 'none',
-          background: '#2563eb',
+          background: 'var(--primary)',
           color: '#ffffff',
           fontWeight: 700,
           fontSize: 16,

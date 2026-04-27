@@ -2,9 +2,16 @@
 
 import { createClient } from '../../../lib/supabase-server'
 import { createAdminClient } from '../../../lib/supabase-admin'
+import { requireAdmin } from '../../../lib/auth-guards'
 
 export async function crearUsuarioPerfil(formData: FormData) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
   const adminSupabase = createAdminClient()
 
   const nombre_completo = String(formData.get('nombre_completo') || '').trim()
@@ -148,6 +155,12 @@ export async function actualizarUsuarioPerfil({
   activo: boolean
 }) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
   const adminSupabase = createAdminClient()
 
   const normalizedName = nombre_completo.trim()
@@ -191,21 +204,17 @@ export async function actualizarUsuarioPerfil({
 
 export async function eliminarUsuarioPerfil(id: string) {
   const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!adminGuard.success) {
+    return adminGuard
   }
 
   if (!id) {
     return { success: false, error: 'No se recibió el usuario a eliminar.' }
   }
 
-  if (id === user.id) {
+  if (id === adminGuard.userId) {
     return { success: false, error: 'No puedes eliminar tu propio usuario mientras estás conectado.' }
   }
 

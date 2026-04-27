@@ -226,9 +226,9 @@ export default function CreateProjectFormContainer({
             borderRadius: 16,
             padding: '16px 18px',
             marginBottom: 18,
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            color: '#1d4ed8',
+            background: 'var(--primary-tint)',
+            border: '1px solid var(--primary-soft)',
+            color: 'var(--primary-dark)',
             fontSize: 15,
             fontWeight: 700,
           }}
@@ -271,13 +271,13 @@ export default function CreateProjectFormContainer({
               height: 58,
               borderRadius: 18,
               border: 'none',
-              background: '#2563eb',
-              color: '#ffffff',
+              background: 'var(--primary)',
+              color: 'var(--primary-contrast)',
               fontWeight: 700,
               fontSize: 18,
               cursor: saving || readOnly ? 'not-allowed' : 'pointer',
               opacity: saving || readOnly ? 0.75 : 1,
-              boxShadow: '0 14px 30px rgba(37,99,235,0.25)',
+              boxShadow: '0 14px 30px var(--focus-ring)',
             }}
           >
             {readOnly ? 'Proyecto aprobado' : saving ? 'Guardando...' : 'Guardar proyecto'}
@@ -293,13 +293,13 @@ export default function CreateProjectFormContainer({
     height: 58,
     borderRadius: 18,
     border: 'none',
-    background: savedProjectId ? '#2563eb' : '#93c5fd',
-    color: '#ffffff',
+    background: savedProjectId ? 'var(--primary)' : 'var(--primary-soft)',
+    color: 'var(--primary-contrast)',
     fontWeight: 700,
     fontSize: 18,
     cursor: savedProjectId ? 'pointer' : 'not-allowed',
     boxShadow: savedProjectId
-      ? '0 14px 30px rgba(37,99,235,0.25)'
+      ? '0 14px 30px var(--focus-ring)'
       : 'none',
     opacity: savedProjectId ? 1 : 0.9,
   }}

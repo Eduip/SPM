@@ -24,7 +24,7 @@ export default function ProyectoHeader({
             margin: 0,
             fontSize: 40,
             fontWeight: 800,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           Ficha del Proyecto
@@ -64,7 +64,7 @@ export default function ProyectoHeader({
       style={{
         fontSize: 36,
         fontWeight: 800,
-        color: '#111827',
+        color: 'var(--text-strong)',
         marginBottom: 10,
       }}
     >
@@ -74,7 +74,7 @@ export default function ProyectoHeader({
     <div
       style={{
         fontSize: 18,
-        color: '#2563eb',
+        color: 'var(--primary)',
         fontWeight: 700,
         marginBottom: 20,
       }}
@@ -151,7 +151,7 @@ export default function ProyectoHeader({
           style={{
             fontSize: 16,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           {value}
@@ -195,7 +195,7 @@ export default function ProyectoHeader({
               justifyContent: 'center',
               fontSize: 28,
               fontWeight: 800,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             {value}%

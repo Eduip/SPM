@@ -21,7 +21,7 @@ export default function DocumentosRevisionCard({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {requeridos.length === 0 ? (
-          <div style={{ color: '#6b7280', fontSize: 14 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>
             No hay documentos requeridos configurados para esta fuente.
           </div>
         ) : (
@@ -34,7 +34,7 @@ export default function DocumentosRevisionCard({
                 key={item.id}
                 style={{
                   borderRadius: 14,
-                  border: '1px solid #e5e7eb',
+                  border: '1px solid var(--border)',
                   background: '#f9fafb',
                   padding: 16,
                   display: 'grid',
@@ -44,10 +44,10 @@ export default function DocumentosRevisionCard({
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)' }}>
                     {item.nombre}
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 13, color: '#6b7280' }}>
+                  <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-muted)' }}>
                     {documento?.nombre_archivo ?? (item.obligatorio ? 'Obligatorio' : 'Opcional')}
                   </div>
                 </div>

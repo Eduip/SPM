@@ -157,7 +157,7 @@ export default function RendicionTab({
               return (
                 <div key={r.id} style={rowStyle}>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#111827' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-strong)' }}>
                       Rendición N°{r.numero_rendicion}
                     </div>
                     <div style={subStyle}>{r.observacion || 'Sin observación'}</div>
@@ -753,7 +753,7 @@ const titleStyle: React.CSSProperties = {
   marginBottom: 18,
   fontSize: 20,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -761,7 +761,7 @@ const primaryButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -784,7 +784,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0 12px',
   fontSize: 14,
   background: '#ffffff',
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -797,7 +797,7 @@ const submitStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -814,7 +814,7 @@ const messageStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 14,
-  color: '#2563eb',
+  color: 'var(--primary)',
   fontWeight: 700,
   marginBottom: 8,
 }
@@ -958,7 +958,7 @@ const smallIconButtonStyle: React.CSSProperties = {
 
 const dangerIconButtonStyle: React.CSSProperties = {
   ...smallIconButtonStyle,
-  color: '#dc2626',
+  color: 'var(--danger)',
   borderColor: '#fecaca',
 }
 
@@ -1001,7 +1001,7 @@ const modalTitleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 22,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const modalSubtitleStyle: React.CSSProperties = {
@@ -1055,7 +1055,7 @@ const detailLabelStyle: React.CSSProperties = {
 }
 
 const detailValueStyle: React.CSSProperties = {
-  color: '#111827',
+  color: 'var(--text-strong)',
   fontSize: 14,
   textAlign: 'right',
 }
@@ -1092,7 +1092,7 @@ const removeDocumentButtonStyle: React.CSSProperties = {
   borderRadius: 10,
   border: '1px solid #fecaca',
   background: '#ffffff',
-  color: '#dc2626',
+  color: 'var(--danger)',
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',

@@ -2,11 +2,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 const ESTADOS_RENDICION = ['en_revision', 'observada', 'rendido']
 
 export async function crearRendicion(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.rendicionesEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const estado_pago_id = String(formData.get('estado_pago_id') || '')
@@ -42,6 +48,11 @@ export async function crearRendicion(formData: FormData) {
 
 export async function actualizarRendicion(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.rendicionesEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const rendicion_id = String(formData.get('rendicion_id') || '')
@@ -78,6 +89,11 @@ export async function actualizarRendicion(formData: FormData) {
 
 export async function actualizarEstadoRendicion(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.rendicionesEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const rendicion_id = String(formData.get('rendicion_id') || '')
@@ -108,6 +124,11 @@ export async function actualizarEstadoRendicion(formData: FormData) {
 
 export async function eliminarRendicion(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.rendicionesEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const rendicion_id = String(formData.get('rendicion_id') || '')
@@ -162,6 +183,7 @@ export async function eliminarRendicion(formData: FormData) {
 
 export async function adjuntarDocumentosRendicion(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.rendicionesEdit)
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const rendicion_id = String(formData.get('rendicion_id') || '')
@@ -183,13 +205,8 @@ export async function adjuntarDocumentosRendicion(formData: FormData) {
     return { success: false, error: 'Adjunta al menos un documento.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!authGuard.success) {
+    return authGuard
   }
 
   for (const { archivo, nombre } of documentosValidos) {
@@ -223,7 +240,7 @@ export async function adjuntarDocumentosRendicion(formData: FormData) {
       extension: archivo.name.split('.').pop() || null,
       tamano_bytes: archivo.size,
       mime_type: archivo.type || null,
-      subido_por: user.id,
+      subido_por: authGuard.userId,
       fecha_subida: new Date().toISOString(),
       obligatorio: false,
       estado_revision: 'subido',

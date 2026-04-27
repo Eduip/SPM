@@ -1,7 +1,9 @@
 import AppShell from '../../components/AppShell'
+import AccessDenied from '../../components/AccessDenied'
 import { createClient } from '../../lib/supabase-server'
 import CarteraContainer from '../../components/cartera-proyectos/CarteraContainer'
 import { buildProjectBudgetMap } from '../../lib/project-budget'
+import { PERMISSIONS, requirePermission } from '../../lib/auth-guards'
 
 export type ProyectoCartera = {
   id: string
@@ -27,8 +29,31 @@ type ProyectoCarteraRaw = Omit<ProyectoCartera, 'unidad' | 'fuente' | 'responsab
   responsable: { nombre_completo: string } | { nombre_completo: string }[] | null
 }
 
-export default async function CarteraProyectosPage() {
+export default async function CarteraProyectosPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ search?: string }>
+}) {
   const supabase = await createClient()
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const access = await requirePermission(supabase, [
+    PERMISSIONS.proyectosView,
+    PERMISSIONS.ejecucionView,
+    PERMISSIONS.financiamientoView,
+    PERMISSIONS.rendicionesView,
+    PERMISSIONS.garantiasView,
+    PERMISSIONS.proveedoresView,
+    PERMISSIONS.bitacoraView,
+    PERMISSIONS.historialView,
+  ])
+
+  if (!access.success) {
+    return (
+      <AppShell title="Cartera de Proyectos" currentModule="cartera-proyectos">
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const { data, error } = await supabase
     .from('proyectos')
@@ -113,7 +138,10 @@ export default async function CarteraProyectosPage() {
 
   return (
     <AppShell title="Cartera de Proyectos" currentModule="cartera-proyectos">
-      <CarteraContainer proyectos={proyectos} />
+      <CarteraContainer
+        proyectos={proyectos}
+        initialSearch={resolvedSearchParams?.search ?? ''}
+      />
     </AppShell>
   )
 }

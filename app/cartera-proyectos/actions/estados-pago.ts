@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 type EstadoPagoDocumentoMeta = {
   id?: string
@@ -57,6 +58,11 @@ async function uploadDocumento({
 
 export async function crearEstadoPago(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.ejecucionEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const numero = Number(formData.get('numero'))
@@ -86,6 +92,11 @@ export async function crearEstadoPago(formData: FormData) {
 
 export async function actualizarEstadoPagoEstado(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.ejecucionEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const estadoPagoId = String(formData.get('estado_pago_id') || '')
   const proyectoId = String(formData.get('proyecto_id') || '')
@@ -158,6 +169,7 @@ export async function obtenerUrlDocumentoEstadoPago({
 
 export async function subirDocumentoEstadoPago(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.ejecucionEdit)
 
   const proyectoId = String(formData.get('proyecto_id') || '')
   const estadoPagoId = String(formData.get('estado_pago_id') || '')
@@ -171,13 +183,8 @@ export async function subirDocumentoEstadoPago(formData: FormData) {
     return { success: false, error: 'Selecciona un documento para subir.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!authGuard.success) {
+    return authGuard
   }
 
   const safeFileName = file.name.replace(/\s+/g, '-')
@@ -210,7 +217,7 @@ export async function subirDocumentoEstadoPago(formData: FormData) {
     extension: file.name.split('.').pop() || null,
     tamano_bytes: documentoMeta?.tamano_bytes,
     mime_type: documentoMeta?.mime_type,
-    subido_por: user.id,
+    subido_por: authGuard.userId,
     fecha_subida: new Date().toISOString(),
     obligatorio: false,
     estado_revision: 'subido',
@@ -230,7 +237,7 @@ export async function subirDocumentoEstadoPago(formData: FormData) {
     entidad_id: proyectoId,
     accion: 'subir_documento_estado_pago',
     descripcion: `Documento cargado para estado de pago: ${file.name}`,
-    usuario_id: user.id,
+    usuario_id: authGuard.userId,
     metadata: {
       etapa: 'ejecucion',
       estado_pago_id: estadoPagoId,
@@ -245,6 +252,7 @@ export async function subirDocumentoEstadoPago(formData: FormData) {
 
 export async function guardarInformacionPagoProveedor(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.ejecucionEdit)
 
   const proyectoId = String(formData.get('proyecto_id') || '')
   const estadoPagoId = String(formData.get('estado_pago_id') || '')
@@ -262,13 +270,8 @@ export async function guardarInformacionPagoProveedor(formData: FormData) {
     return { success: false, error: 'Completa la fecha, número de cartola y decreto de pago.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!authGuard.success) {
+    return authGuard
   }
 
   const { data: registros, error: registroError } = await supabase
@@ -339,7 +342,7 @@ export async function guardarInformacionPagoProveedor(formData: FormData) {
         .eq('id', registroActual.id)
     : supabase.from('proyecto_bitacora').insert({
         proyecto_id: proyectoId,
-        usuario_id: user.id,
+        usuario_id: authGuard.userId,
         tipo: 'pago_proveedor',
         titulo: 'Información de pago a proveedor',
         descripcion: `Pago registrado con cartola ${numeroCartola}`,
@@ -355,7 +358,7 @@ export async function guardarInformacionPagoProveedor(formData: FormData) {
     entidad_id: proyectoId,
     accion: 'registrar_pago_proveedor',
     descripcion: `Información de pago registrada para estado de pago ${estadoPagoId}.`,
-    usuario_id: user.id,
+    usuario_id: authGuard.userId,
     metadata,
   })
 

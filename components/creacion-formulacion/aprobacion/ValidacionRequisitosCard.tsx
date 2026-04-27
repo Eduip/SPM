@@ -47,7 +47,7 @@ export default function ValidacionRequisitosCard({
             >
               {item.ok ? '✓' : '✕'} {item.label}
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>{item.detail}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{item.detail}</div>
           </div>
         ))}
 
@@ -57,7 +57,7 @@ export default function ValidacionRequisitosCard({
             borderRadius: 16,
             padding: 16,
             background: allOk ? '#dcfce7' : '#fef2f2',
-            border: `1px solid ${allOk ? '#86efac' : '#fecaca'}`,
+            border: `1px solid ${allOk ? 'var(--success-soft)' : '#fecaca'}`,
             color: allOk ? '#166534' : '#b91c1c',
             fontSize: 15,
             fontWeight: 700,

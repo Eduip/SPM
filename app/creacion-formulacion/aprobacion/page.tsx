@@ -1,6 +1,8 @@
 import AppShell from '../../../components/AppShell'
+import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import AprobacionContainer from '../../../components/creacion-formulacion/aprobacion/AprobacionContainer'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 type PageProps = {
   searchParams: Promise<{
@@ -13,6 +15,18 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
   const proyectoId = params?.proyectoId ?? ''
 
   const supabase = await createClient()
+  const access = await requirePermission(supabase, [PERMISSIONS.proyectosView, PERMISSIONS.proyectosCreate, PERMISSIONS.proyectosEdit, PERMISSIONS.proyectosApprove])
+
+  if (!access.success) {
+    return (
+      <AppShell
+        title="Creación y Formulación de Proyectos"
+        currentModule="creacion-formulacion"
+      >
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const [
     proyectoRes,

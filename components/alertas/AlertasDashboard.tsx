@@ -16,43 +16,7 @@ import {
   Search,
   UserCheck,
 } from 'lucide-react'
-
-export type AlertStatus =
-  | 'Activa'
-  | 'En Proceso'
-  | 'Resuelta'
-  | 'Vigente'
-  | 'Por vencer'
-  | 'Vencido'
-  | 'Pendiente de pago'
-  | 'Pagado'
-  | 'En revisión'
-  | 'Observada'
-  | 'Rendido'
-  | 'Sin estado'
-export type AlertSeverity = 'Crítica' | 'Advertencia' | 'Informativa'
-
-export type AlertHistoryItem = {
-  id: string
-  title: string
-  date: string
-  time: string
-  description: string
-  user: string
-  tone: 'info' | 'purple' | 'green' | 'orange'
-}
-
-export type SystemAlert = {
-  id: string
-  proyectoId: string
-  proyecto: string
-  codigo: string
-  descripcion: string
-  estado: AlertStatus
-  severidad: AlertSeverity
-  detectedAt: string
-  history: AlertHistoryItem[]
-}
+import type { AlertHistoryItem, AlertStatus, SystemAlert } from '../../lib/system-alerts'
 
 type AlertasDashboardProps = {
   alerts: SystemAlert[]
@@ -89,10 +53,10 @@ export default function AlertasDashboard({ alerts }: AlertasDashboardProps) {
       label: 'Alertas Totales',
       value: alerts.length,
       icon: Bell,
-      color: '#111827',
-      iconColor: '#64748b',
-      background: '#ffffff',
-      border: '#e5e7eb',
+      color: 'var(--text-strong)',
+      iconColor: 'var(--text-muted)',
+      background: 'var(--surface)',
+      border: 'var(--border)',
     },
     {
       label: 'Críticas',
@@ -116,10 +80,10 @@ export default function AlertasDashboard({ alerts }: AlertasDashboardProps) {
       label: 'Informativas',
       value: alerts.filter((alert) => alert.severidad === 'Informativa').length,
       icon: Info,
-      color: '#1e40af',
-      iconColor: '#3b82f6',
-      background: '#eff6ff',
-      border: '#bfdbfe',
+      color: 'var(--primary-dark)',
+      iconColor: 'var(--primary)',
+      background: 'var(--primary-tint)',
+      border: 'var(--primary-soft)',
     },
   ]
 
@@ -211,7 +175,7 @@ export default function AlertasDashboard({ alerts }: AlertasDashboardProps) {
                   key={alert.id}
                   style={{
                     ...tableRowStyle,
-                    background: selectedAlert?.id === alert.id ? '#f8fbff' : '#ffffff',
+                    background: selectedAlert?.id === alert.id ? 'var(--primary-tint)' : 'var(--surface)',
                   }}
                 >
                   <div>
@@ -226,7 +190,7 @@ export default function AlertasDashboard({ alerts }: AlertasDashboardProps) {
                     <button
                       type="button"
                       onClick={() => router.push(`/cartera-proyectos/${alert.proyectoId}`)}
-                      style={iconButtonStyle('#16a34a')}
+                      style={iconButtonStyle('var(--success)')}
                       title="Abrir proyecto"
                       aria-label="Abrir proyecto"
                     >
@@ -235,7 +199,7 @@ export default function AlertasDashboard({ alerts }: AlertasDashboardProps) {
                     <button
                       type="button"
                       onClick={() => router.push('/administracion/alertas')}
-                      style={iconButtonStyle('#4b5563')}
+                      style={iconButtonStyle('var(--text-muted)')}
                       title="Editar reglas"
                       aria-label="Editar reglas"
                     >
@@ -290,7 +254,7 @@ export default function AlertasDashboard({ alerts }: AlertasDashboardProps) {
 
                     <article style={historyCardStyle}>
                       <div style={historyCardHeaderStyle}>
-                        <strong style={{ color: '#111827' }}>{item.title}</strong>
+                        <strong style={{ color: 'var(--text-strong)' }}>{item.title}</strong>
                         <span style={historyDateStyle}>
                           {item.date}
                           <br />
@@ -315,13 +279,13 @@ const pageTitleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 32,
   lineHeight: 1.12,
-  color: '#111827',
+  color: 'var(--text-strong)',
   fontWeight: 850,
 }
 
 const pageSubtitleStyle: React.CSSProperties = {
   margin: '8px 0 0',
-  color: '#64748b',
+  color: 'var(--text-muted)',
   fontSize: 16,
   lineHeight: 1.45,
 }
@@ -354,7 +318,7 @@ const metricIconWrapStyle: React.CSSProperties = {
 }
 
 const metricLabelStyle: React.CSSProperties = {
-  color: '#334155',
+  color: 'var(--text)',
   fontSize: 14,
   fontWeight: 800,
 }
@@ -368,8 +332,8 @@ const contentGridStyle: React.CSSProperties = {
 
 const filterBarStyle: React.CSSProperties = {
   minHeight: 74,
-  background: '#ffffff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   padding: 16,
   display: 'grid',
@@ -381,11 +345,11 @@ const filterBarStyle: React.CSSProperties = {
 
 const selectStyle: React.CSSProperties = {
   height: 42,
-  border: '1px solid #dbe3ef',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   padding: '0 14px',
-  color: '#475569',
-  background: '#ffffff',
+  color: 'var(--text-muted)',
+  background: 'var(--surface)',
   fontSize: 14,
   fontWeight: 650,
   outline: 'none',
@@ -393,7 +357,7 @@ const selectStyle: React.CSSProperties = {
 
 const searchWrapStyle: React.CSSProperties = {
   height: 42,
-  border: '1px solid #dbe3ef',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   padding: '0 14px',
   display: 'flex',
@@ -406,15 +370,15 @@ const searchInputStyle: React.CSSProperties = {
   border: 'none',
   outline: 'none',
   width: '100%',
-  color: '#111827',
+  color: 'var(--text-strong)',
   fontSize: 14,
   fontWeight: 600,
   background: 'transparent',
 }
 
 const tableCardStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   overflow: 'hidden',
 }
@@ -424,9 +388,9 @@ const tableHeaderStyle: React.CSSProperties = {
   gridTemplateColumns: '1.35fr 1.1fr 126px 122px',
   gap: 18,
   padding: '18px 22px',
-  background: '#f8fafc',
-  borderBottom: '1px solid #e5e7eb',
-  color: '#64748b',
+  background: 'var(--surface-muted)',
+  borderBottom: '1px solid var(--border)',
+  color: 'var(--text-muted)',
   fontSize: 12,
   fontWeight: 850,
   textTransform: 'uppercase',
@@ -439,25 +403,25 @@ const tableRowStyle: React.CSSProperties = {
   gap: 18,
   padding: '20px 22px',
   alignItems: 'center',
-  borderBottom: '1px solid #eef2f7',
+  borderBottom: '1px solid var(--border)',
 }
 
 const projectNameStyle: React.CSSProperties = {
-  color: '#111827',
+  color: 'var(--text-strong)',
   fontWeight: 850,
   fontSize: 14,
   lineHeight: 1.25,
 }
 
 const projectCodeStyle: React.CSSProperties = {
-  color: '#64748b',
+  color: 'var(--text-muted)',
   fontSize: 12,
   fontWeight: 700,
   marginTop: 4,
 }
 
 const descriptionStyle: React.CSSProperties = {
-  color: '#334155',
+  color: 'var(--text)',
   fontSize: 14,
   fontWeight: 700,
   lineHeight: 1.35,
@@ -471,7 +435,7 @@ const actionsStyle: React.CSSProperties = {
 
 const emptyStateStyle: React.CSSProperties = {
   padding: 28,
-  color: '#64748b',
+  color: 'var(--text-muted)',
   fontSize: 15,
   fontWeight: 650,
 }
@@ -486,7 +450,7 @@ const paginationStyle: React.CSSProperties = {
 }
 
 const paginationTextStyle: React.CSSProperties = {
-  color: '#64748b',
+  color: 'var(--text-muted)',
   fontSize: 13,
   fontWeight: 650,
 }
@@ -499,10 +463,10 @@ const paginationButtonsStyle: React.CSSProperties = {
 
 const pageButtonStyle: React.CSSProperties = {
   height: 34,
-  border: '1px solid #dbe3ef',
+  border: '1px solid var(--border)',
   borderRadius: 7,
-  background: '#ffffff',
-  color: '#334155',
+  background: 'var(--surface)',
+  color: 'var(--text)',
   fontSize: 13,
   fontWeight: 800,
   padding: '0 10px',
@@ -521,28 +485,28 @@ const numberPageButtonStyle: React.CSSProperties = {
 
 const activePageButtonStyle: React.CSSProperties = {
   ...numberPageButtonStyle,
-  borderColor: '#2563eb',
-  background: '#2563eb',
-  color: '#ffffff',
+  borderColor: 'var(--primary)',
+  background: 'var(--primary)',
+  color: 'var(--primary-contrast)',
 }
 
 const historyPanelStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
   borderRadius: 8,
   padding: 22,
 }
 
 const historyTitleStyle: React.CSSProperties = {
   margin: 0,
-  color: '#111827',
+  color: 'var(--text-strong)',
   fontSize: 18,
   fontWeight: 850,
 }
 
 const historySubtitleStyle: React.CSSProperties = {
   marginTop: 4,
-  color: '#64748b',
+  color: 'var(--text-muted)',
   fontSize: 13,
   fontWeight: 700,
 }
@@ -562,9 +526,9 @@ const timelineItemStyle: React.CSSProperties = {
 }
 
 const historyCardStyle: React.CSSProperties = {
-  border: '1px solid #e5e7eb',
+  border: '1px solid var(--border)',
   borderRadius: 8,
-  background: '#f8fafc',
+  background: 'var(--surface-muted)',
   padding: 14,
 }
 
@@ -577,7 +541,7 @@ const historyCardHeaderStyle: React.CSSProperties = {
 }
 
 const historyDateStyle: React.CSSProperties = {
-  color: '#94a3b8',
+  color: 'var(--text-soft)',
   fontSize: 11,
   fontWeight: 800,
   textAlign: 'right',
@@ -586,20 +550,20 @@ const historyDateStyle: React.CSSProperties = {
 
 const historyDescriptionStyle: React.CSSProperties = {
   margin: '10px 0 12px',
-  color: '#475569',
+  color: 'var(--text-muted)',
   fontSize: 12,
   lineHeight: 1.45,
   fontWeight: 650,
 }
 
 const historyUserStyle: React.CSSProperties = {
-  color: '#2563eb',
+  color: 'var(--primary)',
   fontSize: 12,
   fontWeight: 850,
 }
 
 const emptyHistoryStyle: React.CSSProperties = {
-  color: '#64748b',
+  color: 'var(--text-muted)',
   fontSize: 14,
   fontWeight: 650,
   lineHeight: 1.5,
@@ -607,18 +571,18 @@ const emptyHistoryStyle: React.CSSProperties = {
 
 function statusBadgeStyle(status: AlertStatus): React.CSSProperties {
   const palette = {
-    Activa: { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' },
+    Activa: { bg: '#fee2e2', color: 'var(--danger)', border: '#fecaca' },
     'En Proceso': { bg: '#ffedd5', color: '#c2410c', border: '#fed7aa' },
     Resuelta: { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' },
     Vigente: { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' },
     'Por vencer': { bg: '#ffedd5', color: '#c2410c', border: '#fed7aa' },
-    Vencido: { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' },
+    Vencido: { bg: '#fee2e2', color: 'var(--danger)', border: '#fecaca' },
     'Pendiente de pago': { bg: '#ffedd5', color: '#c2410c', border: '#fed7aa' },
     Pagado: { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' },
-    'En revisión': { bg: '#dbeafe', color: '#2563eb', border: '#bfdbfe' },
-    Observada: { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' },
+    'En revisión': { bg: '#dbeafe', color: 'var(--primary)', border: 'var(--primary-soft)' },
+    Observada: { bg: '#fee2e2', color: 'var(--danger)', border: '#fecaca' },
     Rendido: { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' },
-    'Sin estado': { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' },
+    'Sin estado': { bg: '#f1f5f9', color: 'var(--text-muted)', border: '#e2e8f0' },
   }[status]
 
   return {
@@ -643,7 +607,7 @@ function iconButtonStyle(background: string): React.CSSProperties {
     border: 'none',
     borderRadius: 7,
     background,
-    color: '#ffffff',
+    color: 'var(--surface)',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -655,7 +619,7 @@ function timelineIconStyle(tone: AlertHistoryItem['tone']): React.CSSProperties 
   const palette: Record<AlertHistoryItem['tone'], { bg: string; color: string; border: string }> = {
     info: { bg: '#eef2ff', color: '#4f46e5', border: '#c7d2fe' },
     purple: { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
-    green: { bg: '#ecfdf5', color: '#16a34a', border: '#bbf7d0' },
+    green: { bg: '#ecfdf5', color: 'var(--success)', border: '#bbf7d0' },
     orange: { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
   }
 

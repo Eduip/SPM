@@ -12,11 +12,11 @@ export default function CarteraStats({
   const monto = proyectos.reduce((acc, p) => acc + getProjectBudget(p), 0)
 
   const cards = [
-    { label: 'Total Proyectos', value: total, color: '#2563eb' },
+    { label: 'Total Proyectos', value: total, color: 'var(--primary)' },
     { label: 'En Formulación', value: formulacion, color: '#ea580c' },
-    { label: 'En Ejecución', value: ejecucion, color: '#16a34a' },
-    { label: 'Aprobados', value: aprobados, color: '#16a34a' },
-    { label: 'Monto Total', value: `CLP ${formatCurrency(monto)}`, color: '#2563eb' },
+    { label: 'En Ejecución', value: ejecucion, color: 'var(--success)' },
+    { label: 'Aprobados', value: aprobados, color: 'var(--success)' },
+    { label: 'Monto Total', value: `CLP ${formatCurrency(monto)}`, color: 'var(--primary)' },
   ]
 
   return (

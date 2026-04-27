@@ -15,13 +15,13 @@ export default function InformacionComplementariaCard({
       <div
         style={{
           borderRadius: 16,
-          border: '1px solid #dbeafe',
-          background: '#eff6ff',
+          border: '1px solid var(--primary-soft)',
+          background: 'var(--primary-tint)',
           padding: 16,
           marginBottom: 14,
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 6 }}>
           Problema Central
         </div>
         <div style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>

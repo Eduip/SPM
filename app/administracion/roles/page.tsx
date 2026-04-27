@@ -1,9 +1,23 @@
 import AppShell from '../../../components/AppShell'
+import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import RolesPage from '../../../components/administracion/roles/RolesPage'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
+import { ensureBasePermissions } from '../../../lib/permissions-catalog'
 
 export default async function Page() {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.administracionManage)
+
+  if (!access.success) {
+    return (
+      <AppShell title="Roles y Permisos" currentModule="administracion">
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
+
+  await ensureBasePermissions(supabase)
 
   const [rolesRes, permisosRes, relRes] = await Promise.all([
     supabase.from('roles').select('*').eq('activo', true).order('nombre', { ascending: true }),

@@ -39,8 +39,8 @@ export default function DocumentosProgressPanel({
       <div
         style={{
           borderRadius: 18,
-          background: '#eff6ff',
-          border: '1px solid #dbeafe',
+          background: 'var(--primary-tint)',
+          border: '1px solid var(--primary-soft)',
           padding: 18,
           marginBottom: 18,
         }}
@@ -77,11 +77,11 @@ export default function DocumentosProgressPanel({
             height: 50,
             borderRadius: 14,
             border: 'none',
-            background: completo ? '#2563eb' : '#93c5fd',
-            color: '#ffffff',
+            background: completo ? 'var(--primary)' : 'var(--primary-soft)',
+            color: 'var(--primary-contrast)',
             fontWeight: 700,
             cursor: completo ? 'pointer' : 'not-allowed',
-            boxShadow: completo ? '0 10px 18px rgba(37,99,235,0.20)' : 'none',
+            boxShadow: completo ? '0 10px 18px var(--focus-ring)' : 'none',
             marginBottom: 12,
           }}
         >
@@ -94,9 +94,9 @@ export default function DocumentosProgressPanel({
             width: '100%',
             height: 46,
             borderRadius: 14,
-            border: '1px solid #d1d5db',
-            background: '#ffffff',
-            color: '#374151',
+            border: '1px solid var(--border-strong)',
+            background: 'var(--surface)',
+            color: 'var(--text)',
             fontWeight: 600,
             cursor: 'pointer',
           }}
@@ -117,7 +117,7 @@ export default function DocumentosProgressPanel({
           }}
         >
           <span>Progreso de formulación</span>
-          <span style={{ color: '#2563eb' }}>{progresoFormulacion}%</span>
+          <span style={{ color: 'var(--primary)' }}>{progresoFormulacion}%</span>
         </div>
 
         <div
@@ -125,7 +125,7 @@ export default function DocumentosProgressPanel({
             width: '100%',
             height: 8,
             borderRadius: 999,
-            background: '#e5e7eb',
+            background: 'var(--border)',
             overflow: 'hidden',
             marginBottom: 10,
           }}
@@ -134,7 +134,7 @@ export default function DocumentosProgressPanel({
             style={{
               width: `${progresoFormulacion}%`,
               height: '100%',
-              background: '#2563eb',
+              background: 'var(--primary)',
             }}
           />
         </div>
@@ -142,7 +142,7 @@ export default function DocumentosProgressPanel({
         <div
           style={{
             fontSize: 13,
-            color: '#6b7280',
+            color: 'var(--text-muted)',
           }}
         >
           {completo ? '4 de 5 secciones completadas' : '3 de 5 secciones completadas'}
@@ -161,7 +161,7 @@ export default function DocumentosProgressPanel({
           }}
         >
           <span>Documentos obligatorios</span>
-          <span style={{ color: '#16a34a' }}>{progresoDocumental}%</span>
+          <span style={{ color: 'var(--success)' }}>{progresoDocumental}%</span>
         </div>
 
         <div
@@ -169,7 +169,7 @@ export default function DocumentosProgressPanel({
             width: '100%',
             height: 8,
             borderRadius: 999,
-            background: '#e5e7eb',
+            background: 'var(--border)',
             overflow: 'hidden',
             marginBottom: 10,
           }}
@@ -178,7 +178,7 @@ export default function DocumentosProgressPanel({
             style={{
               width: `${progresoDocumental}%`,
               height: '100%',
-              background: '#16a34a',
+              background: 'var(--success)',
             }}
           />
         </div>
@@ -186,7 +186,7 @@ export default function DocumentosProgressPanel({
         <div
           style={{
             fontSize: 13,
-            color: '#6b7280',
+            color: 'var(--text-muted)',
           }}
         >
           {subidos} subidos, {faltantes} faltantes

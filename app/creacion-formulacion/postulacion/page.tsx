@@ -1,6 +1,9 @@
 import AppShell from '../../../components/AppShell'
+import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import PostulacionFormContainer from '../../../components/creacion-formulacion/postulacion/PostulacionFormContainer'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
+import { listFieldAIConfigs } from '../../../lib/ai/field-ai-config'
 
 type PageProps = {
   searchParams: Promise<{
@@ -13,6 +16,18 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
   const proyectoId = params?.proyectoId ?? ''
 
   const supabase = await createClient()
+  const access = await requirePermission(supabase, [PERMISSIONS.proyectosView, PERMISSIONS.proyectosCreate, PERMISSIONS.proyectosEdit, PERMISSIONS.proyectosApprove])
+
+  if (!access.success) {
+    return (
+      <AppShell
+        title="Creación y Formulación de Proyectos"
+        currentModule="creacion-formulacion"
+      >
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const [
     fuentesRes,
@@ -20,6 +35,7 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
     reglasRes,
     respuestasRes,
     fuentesProyectoRes,
+    fieldAIConfigs,
   ] = await Promise.all([
     supabase
       .from('fuentes_financiamiento')
@@ -52,10 +68,15 @@ export default async function PostulacionPage({ searchParams }: PageProps) {
           .limit(1)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    listFieldAIConfigs(),
   ])
 
   const fuentes = fuentesRes.data ?? []
-  const campos = camposRes.data ?? []
+  const aiModeMap = new Map(fieldAIConfigs.map((item) => [item.fieldId, item.mode]))
+  const campos = (camposRes.data ?? []).map((campo) => ({
+    ...campo,
+    ai_mode: aiModeMap.get(campo.id),
+  }))
   const reglas = reglasRes.data ?? []
   const respuestas = respuestasRes.data ?? []
   const selectedFuenteId = fuentesProyectoRes.data?.fuente_id ?? ''

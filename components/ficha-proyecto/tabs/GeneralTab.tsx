@@ -1,6 +1,21 @@
+import ProjectVisualizationCard from '../ProjectVisualizationCard'
 import type { ProyectoFicha } from '../../../lib/project-types'
 
-export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | null }) {
+export default function GeneralTab({
+  proyecto,
+  descripcionProyecto,
+  visualization,
+}: {
+  proyecto: ProyectoFicha | null
+  descripcionProyecto?: string | null
+  visualization?: {
+    referenceUrl: string
+    generatedUrls: string[]
+    referencePrompt: string
+    userInstructions: string
+    generatedAt: string
+  } | null
+}) {
     if (!proyecto) {
       return (
         <div
@@ -22,12 +37,25 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
     return (
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '2.5fr 1fr',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 20,
-          alignItems: 'start',
         }}
       >
+        <ProjectVisualizationCard
+          projectId={proyecto.id}
+          projectName={proyecto.nombre ?? 'Proyecto'}
+          initialVisualization={visualization ?? null}
+        />
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '2.5fr 1fr',
+            gap: 20,
+            alignItems: 'start',
+          }}
+        >
         {/* COLUMNA IZQUIERDA */}
         <div
           style={{
@@ -43,7 +71,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
               marginBottom: 20,
               fontSize: 22,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Información General
@@ -91,7 +119,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
               style={{
                 fontSize: 15,
                 fontWeight: 700,
-                color: '#111827',
+                color: 'var(--text-strong)',
                 marginBottom: 10,
               }}
             >
@@ -105,9 +133,8 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
                 lineHeight: 1.7,
               }}
             >
-              Proyecto orientado al mejoramiento de infraestructura y fortalecimiento
-              de la gestión pública local. Esta sección puede luego conectarse con la
-              descripción real guardada en el módulo de creación y formulación.
+              {descripcionProyecto?.trim() ||
+                'Aún no se ha cargado una descripción detallada para este proyecto.'}
             </div>
           </div>
         </div>
@@ -136,6 +163,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
             />
           </SideCard>
         </div>
+        </div>
       </div>
     )
   }
@@ -163,7 +191,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
           style={{
             fontSize: 16,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           {value ?? '-'}
@@ -194,7 +222,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
             marginBottom: 16,
             fontSize: 18,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           {title}
@@ -226,7 +254,7 @@ export default function GeneralTab({ proyecto }: { proyecto: ProyectoFicha | nul
           style={{
             fontSize: 15,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
             marginBottom: 4,
           }}
         >

@@ -20,7 +20,7 @@ export default function UltimosDocumentosPanel() {
             key={doc}
             style={{
               borderRadius: 16,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
@@ -32,7 +32,7 @@ export default function UltimosDocumentosPanel() {
                 style={{
                   fontSize: 15,
                   fontWeight: 700,
-                  color: '#111827',
+                  color: 'var(--text-strong)',
                   marginBottom: 4,
                 }}
               >
@@ -41,7 +41,7 @@ export default function UltimosDocumentosPanel() {
               <div
                 style={{
                   fontSize: 13,
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                 }}
               >
                 {index === 0

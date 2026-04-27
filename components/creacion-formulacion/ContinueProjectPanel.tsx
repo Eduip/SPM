@@ -64,10 +64,10 @@ export default function ContinueProjectPanel({
         }}
       >
         <div>
-          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#111827' }}>
+          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text-strong)' }}>
             Proyectos de Creación y Formulación
           </h3>
-          <div style={{ marginTop: 4, fontSize: 14, color: '#6b7280' }}>
+          <div style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>
             Revise proyectos aprobados o retome una formulación pendiente.
           </div>
         </div>
@@ -80,8 +80,8 @@ export default function ContinueProjectPanel({
             padding: '0 16px',
             borderRadius: 12,
             border: 'none',
-            background: '#2563eb',
-            color: '#ffffff',
+            background: 'var(--primary)',
+            color: 'var(--primary-contrast)',
             fontWeight: 800,
             cursor: 'pointer',
             whiteSpace: 'nowrap',
@@ -95,9 +95,9 @@ export default function ContinueProjectPanel({
         <div
           style={{
             borderRadius: 14,
-            border: '1px solid #dbeafe',
-            background: '#eff6ff',
-            color: '#1d4ed8',
+            border: '1px solid var(--primary-soft)',
+            background: 'var(--primary-tint)',
+            color: 'var(--primary-dark)',
             padding: 14,
             fontSize: 14,
             fontWeight: 700,
@@ -112,7 +112,7 @@ export default function ContinueProjectPanel({
             border: '1px dashed #cbd5e1',
             background: '#f9fafb',
             padding: 16,
-            color: '#6b7280',
+            color: 'var(--text-muted)',
             fontSize: 14,
             fontWeight: 600,
           }}
@@ -180,15 +180,15 @@ function ProjectTable({
           gap: 12,
         }}
       >
-        <h4 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>
+        <h4 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--text-strong)' }}>
           Listado de proyectos
         </h4>
-        <span style={{ fontSize: 13, fontWeight: 800, color: '#6b7280' }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)' }}>
           {proyectos.length} proyecto{proyectos.length === 1 ? '' : 's'}
         </span>
       </div>
 
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
         <div style={{ maxHeight: 440, overflow: 'auto' }}>
           <div style={tableHeaderStyle}>
             <div>Proyecto</div>
@@ -208,10 +208,10 @@ function ProjectTable({
             return (
               <div key={proyecto.id} style={tableRowStyle}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-strong)' }}>
                     {proyecto.nombre || 'Proyecto sin nombre'}
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
+                  <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>
                     {proyecto.codigo_interno || 'Sin código'}
                   </div>
                 </div>
@@ -234,7 +234,7 @@ function ProjectTable({
                         width: 82,
                         height: 8,
                         borderRadius: 999,
-                        background: '#e5e7eb',
+                        background: 'var(--border)',
                         overflow: 'hidden',
                         flexShrink: 0,
                       }}
@@ -243,11 +243,11 @@ function ProjectTable({
                         style={{
                           width: `${progreso}%`,
                           height: '100%',
-                          background: approved ? '#16a34a' : '#2563eb',
+                          background: approved ? 'var(--success)' : 'var(--primary)',
                         }}
                       />
                     </div>
-                    <span style={{ fontSize: 13, color: '#374151', fontWeight: 700 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>
                       {progreso}%
                     </span>
                   </div>
@@ -310,8 +310,8 @@ function StatusBadge({ proyecto }: { proyecto: ContinueProject }) {
         height: 28,
         padding: '0 10px',
         borderRadius: 999,
-        background: approved ? '#dcfce7' : '#dbeafe',
-        color: approved ? '#15803d' : '#1d4ed8',
+        background: approved ? '#dcfce7' : 'var(--primary-soft)',
+        color: approved ? '#15803d' : 'var(--primary-dark)',
         fontSize: 12,
         fontWeight: 800,
         whiteSpace: 'nowrap',
@@ -356,8 +356,8 @@ const primaryActionStyle: React.CSSProperties = {
   padding: '0 12px',
   borderRadius: 10,
   border: 'none',
-  background: '#111827',
-  color: '#ffffff',
+  background: 'var(--text-strong)',
+  color: 'var(--primary-contrast)',
   fontWeight: 800,
   fontSize: 13,
   cursor: 'pointer',
@@ -385,7 +385,7 @@ const tableHeaderStyle: React.CSSProperties = {
   gap: 12,
   padding: '13px 14px',
   background: '#f9fafb',
-  color: '#6b7280',
+  color: 'var(--text-muted)',
   fontSize: 12,
   fontWeight: 800,
   textTransform: 'uppercase',
@@ -401,15 +401,15 @@ const tableRowStyle: React.CSSProperties = {
   gridTemplateColumns: tableColumns,
   gap: 12,
   padding: '14px',
-  borderTop: '1px solid #e5e7eb',
+  borderTop: '1px solid var(--border)',
   alignItems: 'center',
-  background: '#ffffff',
+  background: 'var(--surface)',
   minWidth: 1080,
 }
 
 const cellStyle: React.CSSProperties = {
   fontSize: 13,
-  color: '#374151',
+  color: 'var(--text)',
   fontWeight: 600,
 }
 

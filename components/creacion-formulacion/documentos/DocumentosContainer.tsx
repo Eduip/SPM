@@ -223,7 +223,7 @@ export default function DocumentosContainer({
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
                   Documentos Obligatorios a Subir
                 </h3>
-                <div style={{ marginTop: 4, fontSize: 14, color: '#6b7280' }}>
+                <div style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>
                   Gestione los documentos requeridos para el proyecto
                   {fuenteNombre ? ` según ${fuenteNombre}` : ''}
                 </div>
@@ -237,8 +237,8 @@ export default function DocumentosContainer({
                   padding: '0 16px',
                   borderRadius: 12,
                   border: 'none',
-                  background: '#2563eb',
-                  color: '#ffffff',
+                  background: 'var(--primary)',
+                  color: 'var(--primary-contrast)',
                   fontWeight: 700,
                   cursor: uploading ? 'not-allowed' : 'pointer',
                 }}
@@ -251,7 +251,7 @@ export default function DocumentosContainer({
               style={{
                 borderRadius: 16,
                 background: '#f8fafc',
-                border: '1px solid #dbeafe',
+                border: '1px solid var(--primary-soft)',
                 padding: 16,
                 marginBottom: 18,
               }}
@@ -263,15 +263,15 @@ export default function DocumentosContainer({
                   marginBottom: 8,
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
                   Progreso de Documentación
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: '#2563eb' }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--primary)' }}>
                   {progreso}%
                 </div>
               </div>
 
-              <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
                 {subidos} de {total} documentos obligatorios subidos
               </div>
 
@@ -280,7 +280,7 @@ export default function DocumentosContainer({
                   width: '100%',
                   height: 8,
                   borderRadius: 999,
-                  background: '#e5e7eb',
+                  background: 'var(--border)',
                   overflow: 'hidden',
                 }}
               >
@@ -288,7 +288,7 @@ export default function DocumentosContainer({
                   style={{
                     width: `${progreso}%`,
                     height: '100%',
-                    background: '#2563eb',
+                    background: 'var(--primary)',
                   }}
                 />
               </div>
@@ -308,7 +308,7 @@ export default function DocumentosContainer({
                 style={{
                   height: 48,
                   borderRadius: 14,
-                  border: '1px solid #d1d5db',
+                  border: '1px solid var(--border-strong)',
                   padding: '0 14px',
                   fontSize: 14,
                 }}
@@ -328,7 +328,7 @@ export default function DocumentosContainer({
                 style={{
                   height: 48,
                   borderRadius: 14,
-                  border: '1px solid #d1d5db',
+                  border: '1px solid var(--border-strong)',
                   padding: '10px 14px',
                   fontSize: 14,
                   boxSizing: 'border-box',
@@ -339,7 +339,7 @@ export default function DocumentosContainer({
             <div
               style={{
                 borderRadius: 18,
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border)',
                 overflow: 'hidden',
               }}
             >
@@ -352,7 +352,7 @@ export default function DocumentosContainer({
                   background: '#f9fafb',
                   fontSize: 12,
                   fontWeight: 800,
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                 }}
@@ -367,8 +367,8 @@ export default function DocumentosContainer({
                 <div
                   style={{
                     padding: 18,
-                    borderTop: '1px solid #e5e7eb',
-                    color: '#6b7280',
+                    borderTop: '1px solid var(--border)',
+                    color: 'var(--text-muted)',
                     fontSize: 14,
                     fontWeight: 600,
                   }}
@@ -386,16 +386,16 @@ export default function DocumentosContainer({
                     gridTemplateColumns: '2fr 1fr 1fr 1.2fr',
                     gap: 12,
                     padding: '16px',
-                    borderTop: '1px solid #e5e7eb',
+                    borderTop: '1px solid var(--border)',
                     alignItems: 'center',
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)' }}>
                       {row.nombre}
                     </div>
                     {row.obligatorio && (
-                      <div style={{ fontSize: 13, color: '#ef4444', marginTop: 4 }}>
+                      <div style={{ fontSize: 13, color: 'var(--danger)', marginTop: 4 }}>
                         * Obligatorio
                       </div>
                     )}
@@ -411,7 +411,7 @@ export default function DocumentosContainer({
                         borderRadius: 999,
                         background: '#f3f4f6',
                         fontSize: 13,
-                        color: '#374151',
+                        color: 'var(--text)',
                         fontWeight: 600,
                       }}
                     >
@@ -419,7 +419,7 @@ export default function DocumentosContainer({
                     </span>
                   </div>
 
-                  <div style={{ fontSize: 14, color: '#6b7280' }}>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
                     {row.subidoPor || '-'}
                   </div>
 
@@ -460,11 +460,11 @@ export default function DocumentosContainer({
               style={{
                 marginTop: 16,
                 borderRadius: 14,
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
+                background: 'var(--primary-tint)',
+                border: '1px solid var(--primary-soft)',
                 padding: 14,
                 fontSize: 14,
-                color: '#1d4ed8',
+                color: 'var(--primary-dark)',
                 lineHeight: 1.6,
               }}
             >
@@ -500,10 +500,10 @@ export default function DocumentosContainer({
 function EstadoBadge({ estado }: { estado: string }) {
   const config =
     estado === 'Subido correctamente'
-      ? { bg: '#dcfce7', color: '#16a34a' }
+      ? { bg: '#dcfce7', color: 'var(--success)' }
       : estado === 'Pendiente de revisión'
       ? { bg: '#fef3c7', color: '#ca8a04' }
-      : { bg: '#fee2e2', color: '#dc2626' }
+      : { bg: '#fee2e2', color: 'var(--danger)' }
 
   return (
     <span

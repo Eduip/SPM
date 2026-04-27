@@ -6,7 +6,7 @@ export default function CarteraHeader() {
             margin: 0,
             fontSize: 32,
             fontWeight: 800,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           Cartera de Proyectos

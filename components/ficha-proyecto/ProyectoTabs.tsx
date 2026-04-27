@@ -28,20 +28,35 @@ const tabs = [
   { key: 'garantias', label: 'Garantías' },
   { key: 'bitacora', label: 'Bitácora' },
   { key: 'historial', label: 'Historial' },
-]
+] as const
+
+type TabKey = (typeof tabs)[number]['key']
+type TabPermissions = Record<TabKey, boolean>
 
 export default function ProyectoTabs({
   proyecto,
   tab,
+  descripcionProyecto,
+  visualization,
   transferencias,
   garantias,
   estadosPago,
   rendiciones,
   historial,
   bitacora,
+  tabPermissions,
 }: {
   proyecto: ProyectoFicha
   tab: string
+  descripcionProyecto?: string | null
+  visualization?: {
+    referenceUrl: string
+    generatedUrls: string[]
+    referencePrompt: string
+    userInstructions: string
+    generatedAt: string
+  } | null
+  tabPermissions: TabPermissions
   transferencias: TransferenciaProyecto[]
   garantias: GarantiaProyecto[]
   estadosPago: EstadoPagoProyecto[]
@@ -50,6 +65,7 @@ export default function ProyectoTabs({
   bitacora: BitacoraProyecto[]
 }) {
   const router = useRouter()
+  const visibleTabs = tabs.filter((item) => tabPermissions[item.key])
 
   return (
     <div
@@ -77,7 +93,7 @@ export default function ProyectoTabs({
             borderBottom: '1px solid #e5e7eb',
           }}
         >
-          {tabs.map((t) => {
+          {visibleTabs.map((t) => {
             const active = tab === t.key
 
             return (
@@ -112,12 +128,15 @@ export default function ProyectoTabs({
       <RenderTab
   proyecto={proyecto}
   tab={tab}
+  descripcionProyecto={descripcionProyecto}
+  visualization={visualization}
   transferencias={transferencias}
   garantias={garantias}
   estadosPago={estadosPago}
   rendiciones={rendiciones}
   historial={historial}
   bitacora={bitacora}
+  tabPermissions={tabPermissions}
 />
     </div>
   )
@@ -126,25 +145,51 @@ export default function ProyectoTabs({
 function RenderTab({
   proyecto,
   tab,
+  descripcionProyecto,
+  visualization,
   transferencias,
   garantias,
   estadosPago,
   rendiciones,
   historial,
   bitacora,
+  tabPermissions,
 }: {
   proyecto: ProyectoFicha
   tab: string
+  descripcionProyecto?: string | null
+  visualization?: {
+    referenceUrl: string
+    generatedUrls: string[]
+    referencePrompt: string
+    userInstructions: string
+    generatedAt: string
+  } | null
   transferencias: TransferenciaProyecto[]
   garantias: GarantiaProyecto[]
   estadosPago: EstadoPagoProyecto[]
   rendiciones: RendicionProyecto[]
   historial: HistorialEvento[]
   bitacora: BitacoraProyecto[]
+  tabPermissions: TabPermissions
 
 }) {
+    if (!tabPermissions[tab as TabKey]) {
+      return (
+        <div style={emptyStateStyle}>
+          No tienes permisos para ver esta pestaña.
+        </div>
+      )
+    }
+
     if (tab === 'general') {
-        return <GeneralTab proyecto={proyecto} />
+        return (
+          <GeneralTab
+            proyecto={proyecto}
+            descripcionProyecto={descripcionProyecto}
+            visualization={visualization}
+          />
+        )
       }
 
       if (tab === 'proveedores') {
@@ -207,21 +252,14 @@ function RenderTab({
       }
 
   return (
-    <div
-      style={{
-        background: '#ffffff',
-        borderRadius: 20,
-        padding: 28,
-        border: '1px solid #e5e7eb',
-      }}
-    >
+    <div style={emptyStateStyle}>
       <h2
         style={{
           marginTop: 0,
           marginBottom: 12,
           fontSize: 26,
           fontWeight: 800,
-          color: '#111827',
+          color: 'var(--text-strong)',
         }}
       >
         {getTabTitle(tab)}
@@ -250,4 +288,11 @@ function getTabTitle(tab: string) {
   if (tab === 'bitacora') return 'Bitácora'
   if (tab === 'historial') return 'Historial'
   return 'General'
+}
+
+const emptyStateStyle: React.CSSProperties = {
+  background: '#ffffff',
+  borderRadius: 20,
+  padding: 28,
+  border: '1px solid #e5e7eb',
 }

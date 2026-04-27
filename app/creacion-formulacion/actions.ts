@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../lib/auth-guards'
 
 type BeneficiaryGroup = {
   id: string
@@ -32,17 +33,13 @@ function normalizeEstadoCode(value?: string | null) {
 
 export async function saveProjectData(payload: SaveProjectPayload) {
   const supabase = await createClient()
+  const access = await requirePermission(
+    supabase,
+    payload.proyectoId ? PERMISSIONS.proyectosEdit : PERMISSIONS.proyectosCreate
+  )
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return {
-      success: false,
-      error: 'No se pudo identificar al usuario autenticado.',
-    }
+  if (!access.success) {
+    return access
   }
 
   const requiredFields = [
@@ -97,7 +94,7 @@ export async function saveProjectData(payload: SaveProjectPayload) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('id', user.id)
+    .eq('id', access.userId)
     .maybeSingle()
 
   if (!profile) {
@@ -164,6 +161,35 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     .eq('codigo', INITIAL_PROJECT_STATE_CODE)
     .maybeSingle()
 
+  const { data: fallbackFuente, error: fallbackFuenteError } = payload.fuente_financiamiento_id
+    ? { data: null, error: null }
+    : await supabase
+        .from('fuentes_financiamiento')
+        .select('id')
+        .eq('activo', true)
+        .order('nombre', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+  if (fallbackFuenteError) {
+    return {
+      success: false,
+      error:
+        fallbackFuenteError.message ||
+        'No se pudo resolver una fuente de financiamiento temporal.',
+    }
+  }
+
+  const legacyFuenteId = payload.fuente_financiamiento_id || fallbackFuente?.id || null
+
+  if (!legacyFuenteId) {
+    return {
+      success: false,
+      error:
+        'Debes tener al menos una fuente de financiamiento activa configurada en Administración.',
+    }
+  }
+
   const projectPayload = {
     codigo_adicional: payload.codigo_adicional || null,
     nombre: payload.nombre,
@@ -171,12 +197,12 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     tipo_proyecto_id: payload.tipo_proyecto_id,
     categoria_id: payload.categoria_id,
     unidad_id: payload.unidad_id,
-    fuente_financiamiento_id: payload.fuente_financiamiento_id || null,
+    fuente_financiamiento_id: legacyFuenteId,
     responsable_id: payload.responsable_id,
     localizacion: payload.localizacion || null,
     anio_inicio: parsedYear,
-    monto_estimado: normalizedAmount,
     updated_by: profile.id,
+    ...(normalizedAmount !== null ? { monto_estimado: normalizedAmount } : {}),
   }
 
   const mutation = payload.proyectoId
@@ -191,6 +217,7 @@ export async function saveProjectData(payload: SaveProjectPayload) {
         .from('proyectos')
         .insert({
           ...projectPayload,
+          monto_estimado: normalizedAmount ?? 0,
           estado: estadoInicial,
           estado_proyecto_id: estadoFormulacionLegacy?.id ?? null,
           etapa_formulacion_actual: 1,
@@ -233,16 +260,37 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     }
   }
 
-  const { error: datosGeneralesError } = await supabase
+  const datosGeneralesPayload = {
+    proyecto_id: proyecto.id,
+    descripcion: payload.descripcion,
+    poblacion_beneficiaria: beneficiariosLimpios,
+  }
+
+  const { data: datosGeneralesExistentes, error: datosGeneralesExistentesError } = await supabase
     .from('proyecto_datos_generales')
-    .upsert(
-      {
-        proyecto_id: proyecto.id,
-        descripcion: payload.descripcion,
-        poblacion_beneficiaria: beneficiariosLimpios,
-      },
-      { onConflict: 'proyecto_id' }
-    )
+    .select('id')
+    .eq('proyecto_id', proyecto.id)
+    .limit(1)
+
+  if (datosGeneralesExistentesError) {
+    return {
+      success: false,
+      error:
+        datosGeneralesExistentesError.message ||
+        'No se pudo verificar la existencia de los datos generales del proyecto.',
+    }
+  }
+
+  const { error: datosGeneralesError } =
+    datosGeneralesExistentes && datosGeneralesExistentes.length > 0
+      ? await supabase
+          .from('proyecto_datos_generales')
+          .update({
+            descripcion: payload.descripcion,
+            poblacion_beneficiaria: beneficiariosLimpios,
+          })
+          .eq('proyecto_id', proyecto.id)
+      : await supabase.from('proyecto_datos_generales').insert(datosGeneralesPayload)
 
   if (datosGeneralesError) {
     return {
@@ -286,6 +334,11 @@ export async function saveProjectData(payload: SaveProjectPayload) {
 
 export async function eliminarProyectoEnFormulacion(proyectoId: string) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proyectosEdit)
+
+  if (!access.success) {
+    return access
+  }
 
   if (!proyectoId) {
     return { success: false, error: 'No se recibió el proyecto a eliminar.' }

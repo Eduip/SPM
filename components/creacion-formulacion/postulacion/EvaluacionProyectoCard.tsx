@@ -32,7 +32,7 @@ export default function EvaluacionProyectoCard({
       >
         <div>
           <h3 style={{ margin: 0 }}>Evaluación del Proyecto</h3>
-          <div style={{ fontSize: 14, color: '#6b7280' }}>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
             Calificación basada en criterios técnicos
           </div>
         </div>
@@ -47,7 +47,7 @@ export default function EvaluacionProyectoCard({
         </div>
       </div>
 
-      <Bar value={porcentaje} color="#22c55e" />
+      <Bar value={porcentaje} color="var(--success)" />
 
       <ScoreItem title="Diagnóstico" value={puntajeDiagnostico} max={5} />
 
@@ -111,7 +111,7 @@ function ScoreInput({
 
 function Bar({ value, color }: { value: number; color: string }) {
   return (
-    <div style={{ height: 8, background: '#e5e7eb', marginTop: 10 }}>
+    <div style={{ height: 8, background: 'var(--border)', marginTop: 10 }}>
       <div style={{ width: `${value}%`, height: '100%', background: color }} />
     </div>
   )

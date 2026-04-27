@@ -9,13 +9,16 @@ import CarteraTable from './CarteraTable'
 
 export default function CarteraContainer({
   proyectos,
+  initialSearch = '',
 }: {
   proyectos: ProyectoCartera[]
+  initialSearch?: string
 }) {
   const [estado, setEstado] = useState('Todos')
   const [unidad, setUnidad] = useState('Todas')
   const [fuente, setFuente] = useState('Todas')
   const [anio, setAnio] = useState('Todos')
+  const [search] = useState(initialSearch)
 
   const unidades = useMemo(() => {
     return Array.from(
@@ -48,6 +51,8 @@ export default function CarteraContainer({
   }, [proyectos])
 
   const proyectosFiltrados = useMemo(() => {
+    const normalizedSearch = normalizeText(search)
+
     return proyectos.filter((p) => {
       const matchEstado =
         estado === 'Todos' ||
@@ -62,9 +67,21 @@ export default function CarteraContainer({
       const matchAnio =
         anio === 'Todos' || String(p.anio_inicio ?? '') === anio
 
-      return matchEstado && matchUnidad && matchFuente && matchAnio
+      const matchSearch =
+        normalizedSearch.length === 0 ||
+        [
+          p.nombre,
+          p.codigo_interno,
+          p.unidad?.nombre,
+          p.fuente?.nombre,
+          p.responsable?.nombre_completo,
+        ]
+          .map((value) => normalizeText(value))
+          .some((value) => value.includes(normalizedSearch))
+
+      return matchEstado && matchUnidad && matchFuente && matchAnio && matchSearch
     })
-  }, [proyectos, estado, unidad, fuente, anio])
+  }, [proyectos, estado, unidad, fuente, anio, search])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -93,4 +110,11 @@ function normalizarEstado(p: ProyectoCartera) {
   if ((p.porcentaje_formulacion ?? 0) < 100) return 'En Formulación'
   if ((p.avance_fisico_actual ?? 0) > 0) return 'En Ejecución'
   return 'Pendiente'
+}
+
+function normalizeText(value?: string | null) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }

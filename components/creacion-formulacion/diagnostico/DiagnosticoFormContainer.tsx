@@ -6,6 +6,7 @@ import DiagnosticoHeader from './DiagnosticoHeader'
 import ProblemaCentralCard from './ProblemaCentralCard'
 import AnalysisListCard from './AnalysisListCard'
 import JustificacionCard from './JustificacionCard'
+import DiagnosticoAIPanel from './DiagnosticoAIPanel'
 import AlertasActivasPanel from './AlertasActivasPanel'
 import FiltrosDiagnosticoPanel from './FiltrosDiagnosticoPanel'
 import UltimosDocumentosPanel from './UltimosDocumentosPanel'
@@ -105,7 +106,7 @@ export default function DiagnosticoFormContainer({
       id: crypto.randomUUID(),
       title: '',
       description: '',
-      color: type === 'causas' ? '#dbeafe' : '#fef3c7',
+      color: type === 'causas' ? 'var(--primary-soft)' : '#fef3c7',
       iconColor: type === 'causas' ? '#3b82f6' : '#eab308',
     }
 
@@ -148,6 +149,20 @@ export default function DiagnosticoFormContainer({
     router.refresh()
   }
 
+  const applyGeneratedDraft = (draft: {
+    problemaCentral: string
+    justificacion: string
+    causas: DiagnosticoItem[]
+    consecuencias: DiagnosticoItem[]
+  }) => {
+    setProblemaCentral(draft.problemaCentral)
+    setJustificacion(draft.justificacion)
+    setCausas(draft.causas)
+    setConsecuencias(draft.consecuencias)
+    setSaveSuccess('Borrador IA aplicado al formulario. Revisa el contenido antes de guardar.')
+    setSaveError('')
+  }
+
   return (
     <>
       <DiagnosticoHeader
@@ -181,6 +196,15 @@ export default function DiagnosticoFormContainer({
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <DiagnosticoAIPanel
+            proyectoId={proyectoId}
+            problemaCentral={problemaCentral}
+            justificacion={justificacion}
+            onApplyProblema={setProblemaCentral}
+            onApplyJustificacion={setJustificacion}
+            onApplyDraft={applyGeneratedDraft}
+          />
+
           <ProblemaCentralCard
             value={problemaCentral}
             onChange={setProblemaCentral}
@@ -253,7 +277,7 @@ function buildInitialItems(
     id: item.id,
     title: item.titulo ?? '',
     description: item.descripcion ?? '',
-    color: type === 'causas' ? '#dbeafe' : '#fef3c7',
+    color: type === 'causas' ? 'var(--primary-soft)' : '#fef3c7',
     iconColor: type === 'causas' ? '#3b82f6' : '#eab308',
   }))
 }

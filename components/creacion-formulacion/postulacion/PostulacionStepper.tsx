@@ -40,10 +40,10 @@ export default function PostulacionStepper() {
     return (
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--surface)',
           borderRadius: 18,
           padding: '26px 24px',
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -74,12 +74,12 @@ export default function PostulacionStepper() {
                   height: 40,
                   borderRadius: 999,
                   background: step.completed
-                    ? '#22c55e'
+                    ? 'var(--success)'
                     : step.active
-                    ? '#2563eb'
-                    : '#e5e7eb',
+                    ? 'var(--primary)'
+                    : 'var(--border)',
                   color:
-                    step.completed || step.active ? '#ffffff' : '#6b7280',
+                    step.completed || step.active ? 'var(--surface)' : 'var(--text-muted)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -97,10 +97,10 @@ export default function PostulacionStepper() {
                     fontWeight: step.active || step.completed ? 700 : 600,
                     color:
                       step.completed
-                        ? '#16a34a'
+                        ? 'var(--success)'
                         : step.active
-                        ? '#2563eb'
-                        : '#6b7280',
+                        ? 'var(--primary)'
+                        : 'var(--text-muted)',
                     fontSize: 15,
                     whiteSpace: 'pre-line',
                   }}
@@ -111,7 +111,7 @@ export default function PostulacionStepper() {
                   style={{
                     marginTop: 4,
                     fontSize: 13,
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                   }}
                 >
                   {step.status}
@@ -124,7 +124,7 @@ export default function PostulacionStepper() {
                 style={{
                   height: 4,
                   flex: 1,
-                  background: step.completed ? '#86efac' : '#e5e7eb',
+                  background: step.completed ? 'var(--success-soft)' : 'var(--border)',
                   borderRadius: 999,
                   margin: '0 14px',
                 }}

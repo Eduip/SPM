@@ -36,7 +36,7 @@ export default function EvaluacionResumidaCard({
             width: '100%',
             height: 8,
             borderRadius: 999,
-            background: '#d1d5db',
+            background: 'var(--border-strong)',
             overflow: 'hidden',
           }}
         >
@@ -44,13 +44,13 @@ export default function EvaluacionResumidaCard({
             style={{
               width: `${porcentaje}%`,
               height: '100%',
-              background: '#22c55e',
+              background: 'var(--success)',
             }}
           />
         </div>
       </div>
 
-      <Criterion label="Diagnóstico" value="5 / 5" color="#22c55e" width={100} />
+      <Criterion label="Diagnóstico" value="5 / 5" color="var(--success)" width={100} />
       <Criterion label="Pertinencia" value="11 / 15" color="#3b82f6" width={73} />
       <Criterion label="Rentabilidad Social" value="11 / 15" color="#3b82f6" width={73} />
     </div>
@@ -77,7 +77,7 @@ function Criterion({
           marginBottom: 6,
           fontSize: 14,
           fontWeight: 700,
-          color: '#374151',
+          color: 'var(--text)',
         }}
       >
         <span>{label}</span>
@@ -89,7 +89,7 @@ function Criterion({
           width: '100%',
           height: 8,
           borderRadius: 999,
-          background: '#e5e7eb',
+          background: 'var(--border)',
           overflow: 'hidden',
         }}
       >

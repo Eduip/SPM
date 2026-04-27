@@ -36,6 +36,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
+  const isPasswordRecovery = request.nextUrl.searchParams.get('reset') === '1'
 
   const isAuthPage = pathname === '/login'
   const isProtectedRoute =
@@ -70,7 +71,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && isActiveUser && isAuthPage) {
+  if (user && isActiveUser && isAuthPage && !isPasswordRecovery) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

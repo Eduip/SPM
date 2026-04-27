@@ -50,7 +50,7 @@ export default function ComentariosAprobacionCard() {
               border: '1px dashed #cbd5e1',
               background: '#f9fafb',
               padding: 16,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               fontSize: 14,
               fontWeight: 600,
             }}
@@ -64,9 +64,9 @@ export default function ComentariosAprobacionCard() {
             key={comment.name + comment.date}
             style={{
               borderRadius: 16,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               padding: 16,
-              background: '#ffffff',
+              background: 'var(--surface)',
             }}
           >
             <div style={{ display: 'flex', gap: 12 }}>
@@ -75,8 +75,8 @@ export default function ComentariosAprobacionCard() {
                   width: 40,
                   height: 40,
                   borderRadius: 999,
-                  background: '#dbeafe',
-                  color: '#2563eb',
+                  background: 'var(--primary-soft)',
+                  color: 'var(--primary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -96,10 +96,10 @@ export default function ComentariosAprobacionCard() {
                     marginBottom: 8,
                   }}
                 >
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)' }}>
                     {comment.name}
                   </div>
-                  <div style={{ fontSize: 13, color: '#6b7280' }}>{comment.date}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{comment.date}</div>
                 </div>
 
                 <div style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
@@ -121,7 +121,7 @@ export default function ComentariosAprobacionCard() {
             width: '100%',
             minHeight: 90,
             borderRadius: 14,
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--border-strong)',
             padding: 14,
             fontSize: 14,
             fontFamily: 'inherit',
@@ -164,8 +164,8 @@ const primaryButtonStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
-  color: '#ffffff',
+  background: 'var(--primary)',
+  color: 'var(--primary-contrast)',
   fontWeight: 700,
   cursor: 'pointer',
 }
@@ -174,9 +174,9 @@ const secondaryButtonStyle: React.CSSProperties = {
   width: 120,
   height: 42,
   borderRadius: 12,
-  border: '1px solid #d1d5db',
-  background: '#ffffff',
-  color: '#374151',
+  border: '1px solid var(--border-strong)',
+  background: 'var(--surface)',
+  color: 'var(--text)',
   fontWeight: 700,
   cursor: 'pointer',
 }

@@ -26,9 +26,9 @@ export default function FiltrosDiagnosticoPanel() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: filter.active ? '#eff6ff' : '#ffffff',
-              border: filter.active ? '1px solid #bfdbfe' : '1px solid transparent',
-              color: filter.active ? '#2563eb' : '#374151',
+              background: filter.active ? 'var(--primary-tint)' : 'var(--surface)',
+              border: filter.active ? '1px solid var(--primary-soft)' : '1px solid transparent',
+              color: filter.active ? 'var(--primary)' : 'var(--text)',
               fontWeight: filter.active ? 700 : 600,
             }}
           >
@@ -39,8 +39,8 @@ export default function FiltrosDiagnosticoPanel() {
                 minWidth: 24,
                 height: 24,
                 borderRadius: 999,
-                background: filter.active ? '#2563eb' : '#e5e7eb',
-                color: filter.active ? '#ffffff' : '#6b7280',
+                background: filter.active ? 'var(--primary)' : 'var(--border)',
+                color: filter.active ? 'var(--surface)' : 'var(--text-muted)',
                 fontSize: 12,
                 fontWeight: 700,
                 display: 'flex',

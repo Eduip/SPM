@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 async function uploadProveedorDocumento({
   supabase,
@@ -41,6 +42,7 @@ async function uploadProveedorDocumento({
 
 export async function crearProveedorProyecto(formData: FormData) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proveedoresEdit)
 
   const proyectoId = String(formData.get('proyecto_id') || '')
   const tipoProveedor = String(formData.get('tipo_proveedor') || '')
@@ -88,13 +90,8 @@ export async function crearProveedorProyecto(formData: FormData) {
     return { success: false, error: 'Completa todos los campos obligatorios.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   let documentoContratacionMeta = null
@@ -146,7 +143,7 @@ export async function crearProveedorProyecto(formData: FormData) {
 
   const { error } = await supabase.from('proyecto_bitacora').insert({
     proyecto_id: proyectoId,
-    usuario_id: user.id,
+    usuario_id: access.userId,
     tipo: 'proveedor',
     titulo: razonSocial,
     descripcion: descripcionServicio,
@@ -162,7 +159,7 @@ export async function crearProveedorProyecto(formData: FormData) {
     entidad_id: proyectoId,
     accion: 'proveedor_creado',
     descripcion: `Proveedor agregado: ${razonSocial}`,
-    usuario_id: user.id,
+    usuario_id: access.userId,
     metadata,
   })
 
@@ -171,6 +168,7 @@ export async function crearProveedorProyecto(formData: FormData) {
 
 export async function actualizarProveedorProyecto(formData: FormData) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proveedoresEdit)
 
   const proveedorId = String(formData.get('proveedor_id') || '')
   const proyectoId = String(formData.get('proyecto_id') || '')
@@ -208,13 +206,8 @@ export async function actualizarProveedorProyecto(formData: FormData) {
     return { success: false, error: 'Completa todos los campos obligatorios.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { data: proveedorActual, error: proveedorError } = await supabase
@@ -327,7 +320,7 @@ export async function actualizarProveedorProyecto(formData: FormData) {
     entidad_id: proyectoId,
     accion: 'proveedor_actualizado',
     descripcion: `Proveedor actualizado: ${razonSocial}`,
-    usuario_id: user.id,
+    usuario_id: access.userId,
     metadata,
   })
 
@@ -342,18 +335,14 @@ export async function eliminarProveedorProyecto({
   proyectoId: string
 }) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proveedoresEdit)
 
   if (!proveedorId || !proyectoId) {
     return { success: false, error: 'No se recibió el proveedor a eliminar.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { data: proveedor, error: proveedorError } = await supabase
@@ -386,7 +375,7 @@ export async function eliminarProveedorProyecto({
     entidad_id: proyectoId,
     accion: 'proveedor_eliminado',
     descripcion: `Proveedor eliminado: ${proveedor.titulo || 'Sin nombre'}`,
-    usuario_id: user.id,
+    usuario_id: access.userId,
     metadata: proveedor.metadata,
   })
 

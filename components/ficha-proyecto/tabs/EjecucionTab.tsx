@@ -188,14 +188,14 @@ export default function EjecucionTab({
                 <div key={ep.id}>
                   <div style={rowStyle}>
                     <div>
-                      <div style={{ fontWeight: 700, color: '#111827' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-strong)' }}>
                         Estado de Pago N°{ep.numero}
                       </div>
                       <div style={subStyle}>
                         {ep.fecha ? formatDate(ep.fecha) : '-'}
                       </div>
                       {pagoProveedor?.fecha_transferencia && (
-                        <div style={{ ...subStyle, marginTop: 4, color: '#16a34a' }}>
+                        <div style={{ ...subStyle, marginTop: 4, color: 'var(--success)' }}>
                           Pago: {formatDate(pagoProveedor.fecha_transferencia)}
                         </div>
                       )}
@@ -625,7 +625,7 @@ const titleStyle: React.CSSProperties = {
   marginBottom: 18,
   fontSize: 20,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -633,7 +633,7 @@ const primaryButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -669,7 +669,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0 12px',
   fontSize: 14,
   background: '#ffffff',
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -682,7 +682,7 @@ const submitStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -827,7 +827,7 @@ const modalTitleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 22,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const modalSubtitleStyle: React.CSSProperties = {

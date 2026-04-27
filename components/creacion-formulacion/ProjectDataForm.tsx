@@ -48,10 +48,10 @@ export default function ProjectDataForm({
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--surface)',
         borderRadius: 20,
         padding: 28,
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border)',
         boxShadow: '0 8px 18px rgba(0,0,0,0.04)',
       }}
     >
@@ -75,7 +75,7 @@ export default function ProjectDataForm({
                 ...inputStyle,
                 ...disabledInputStyle,
                 background: '#f9fafb',
-                color: '#6b7280',
+                color: 'var(--text-muted)',
                 cursor: 'not-allowed',
               }}
             />
@@ -176,8 +176,8 @@ export default function ProjectDataForm({
             style={{
               height: 62,
               borderRadius: 18,
-              border: '1.5px solid #d1d5db',
-              background: '#ffffff',
+              border: '1.5px solid var(--border-strong)',
+              background: 'var(--surface)',
               padding: '0 16px',
               display: 'flex',
               alignItems: 'center',
@@ -191,8 +191,8 @@ export default function ProjectDataForm({
                   width: 40,
                   height: 40,
                   borderRadius: 999,
-                  background: '#dbeafe',
-                  color: '#2563eb',
+                  background: 'var(--primary-soft)',
+                  color: 'var(--primary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -209,7 +209,7 @@ export default function ProjectDataForm({
                   style={{
                     fontSize: 16,
                     fontWeight: 600,
-                    color: '#111827',
+                    color: 'var(--text-strong)',
                   }}
                 >
                   {selectedResponsible?.nombre_completo ?? 'Sin responsable'}
@@ -217,7 +217,7 @@ export default function ProjectDataForm({
                 <div
                   style={{
                     fontSize: 14,
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                     marginTop: 2,
                   }}
                 >
@@ -267,7 +267,7 @@ export default function ProjectDataForm({
 
 const disabledFieldStyle: React.CSSProperties = {
   background: '#f9fafb',
-  color: '#6b7280',
+  color: 'var(--text-muted)',
   cursor: 'not-allowed',
 }
 

@@ -36,10 +36,10 @@ export default function PerfilProyectoCard({
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--surface)',
         borderRadius: 18,
         padding: 22,
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border)',
       }}
     >
       <h3
@@ -48,7 +48,7 @@ export default function PerfilProyectoCard({
           marginBottom: 18,
           fontSize: 20,
           fontWeight: 700,
-          color: '#111827',
+          color: 'var(--text-strong)',
         }}
       >
         Perfil del Proyecto
@@ -70,7 +70,7 @@ export default function PerfilProyectoCard({
             style={{
               ...inputStyle,
               background: '#f3f4f6',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
             }}
           />
         </Field>
@@ -89,7 +89,7 @@ export default function PerfilProyectoCard({
             onChange={(e) => setMontoTotal(e.target.value)}
             style={inputStyle}
           />
-          <div style={{ marginTop: 6, fontSize: 13, color: '#6b7280' }}>
+          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-muted)' }}>
             Ingresa el monto total en pesos chilenos.
           </div>
         </Field>

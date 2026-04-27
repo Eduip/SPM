@@ -7,9 +7,9 @@ type Props = {
     return (
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--surface)',
           borderRadius: 18,
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--border)',
           padding: 20,
         }}
       >
@@ -26,13 +26,13 @@ type Props = {
               margin: 0,
               fontSize: 18,
               fontWeight: 700,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Problema Central
           </h3>
   
-          <div style={{ color: '#2563eb', fontSize: 18 }}>✎</div>
+          <div style={{ color: 'var(--primary)', fontSize: 18 }}>✎</div>
         </div>
   
         <textarea
@@ -43,10 +43,10 @@ type Props = {
             minHeight: 200,
             borderRadius: 16,
             background: '#f9fafb',
-            border: '1px solid #e5e7eb',
+            border: '1px solid var(--border)',
             padding: 20,
             fontSize: 15,
-            color: '#374151',
+            color: 'var(--text)',
             lineHeight: 1.7,
             resize: 'vertical',
             boxSizing: 'border-box',

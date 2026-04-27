@@ -44,7 +44,7 @@ export default function AlertasActivasPanel() {
             height: 24,
             borderRadius: 999,
             background: '#fee2e2',
-            color: '#ef4444',
+            color: 'var(--danger)',
             fontSize: 12,
             fontWeight: 700,
             display: 'flex',
@@ -71,16 +71,16 @@ export default function AlertasActivasPanel() {
               style={{
                 fontSize: 15,
                 fontWeight: 700,
-                color: '#111827',
+                color: 'var(--text-strong)',
                 marginBottom: 6,
               }}
             >
               {alert.title}
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
               {alert.subtitle}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
               {alert.date}
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function AlertasActivasPanel() {
           marginTop: 16,
           border: 'none',
           background: 'transparent',
-          color: '#2563eb',
+          color: 'var(--primary)',
           fontWeight: 600,
           cursor: 'pointer',
           padding: 0,

@@ -557,7 +557,7 @@ function ProveedorItem({
   return (
     <div style={providerRow}>
       <div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-strong)' }}>
           {datosEmpresa?.razon_social || proveedor.titulo || 'Proveedor sin nombre'}
         </div>
         <div style={{ marginTop: 4, fontSize: 14, color: '#6b7280' }}>
@@ -718,7 +718,7 @@ function Info({
       <div style={{ fontSize: 12, fontWeight: 800, color: '#6b7280', marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: 14, color: '#111827', fontWeight: 600 }}>
+      <div style={{ fontSize: 14, color: 'var(--text-strong)', fontWeight: 600 }}>
         {value || '-'}
       </div>
     </div>
@@ -774,7 +774,7 @@ const title: React.CSSProperties = {
   margin: 0,
   fontSize: 26,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const subtitle: React.CSSProperties = {
@@ -795,7 +795,7 @@ const sectionTitleStyle: React.CSSProperties = {
   margin: '0 0 16px',
   fontSize: 18,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const twoCols: React.CSSProperties = {
@@ -818,7 +818,7 @@ const input: React.CSSProperties = {
   background: '#ffffff',
   padding: '0 12px',
   fontSize: 14,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
   fontFamily: 'inherit',
 }
@@ -834,7 +834,7 @@ const submitButton: React.CSSProperties = {
   height: 46,
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 800,
 }

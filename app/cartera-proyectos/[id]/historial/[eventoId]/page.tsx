@@ -1,6 +1,8 @@
 import AppShell from '../../../../../components/AppShell'
+import AccessDenied from '../../../../../components/AccessDenied'
 import { createClient } from '../../../../../lib/supabase-server'
 import DetalleEventoPage from '../../../../../components/ficha-proyecto/historial/DetalleEventoPage'
+import { PERMISSIONS, requirePermission } from '../../../../../lib/auth-guards'
 
 export default async function EventoDetailPage({
   params,
@@ -9,6 +11,18 @@ export default async function EventoDetailPage({
 }) {
   const resolvedParams = await params
   const supabase = await createClient()
+  const access = await requirePermission(supabase, [
+    PERMISSIONS.historialView,
+    PERMISSIONS.proyectosView,
+  ])
+
+  if (!access.success) {
+    return (
+      <AppShell title="Detalle del Evento" currentModule="cartera-proyectos">
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const [proyectoRes, eventoRes] = await Promise.all([
     supabase

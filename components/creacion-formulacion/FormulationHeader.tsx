@@ -12,7 +12,7 @@ export default function FormulationHeader() {
             margin: 0,
             fontSize: 32,
             fontWeight: 800,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           Creación y Formulación de Proyectos
@@ -24,9 +24,9 @@ export default function FormulationHeader() {
               height: 44,
               padding: '0 20px',
               borderRadius: 14,
-              border: '1px solid #d1d5db',
-              background: '#ffffff',
-              color: '#374151',
+              border: '1px solid var(--border-strong)',
+              background: 'var(--surface)',
+              color: 'var(--text)',
               fontWeight: 500,
               cursor: 'pointer',
             }}
@@ -40,11 +40,11 @@ export default function FormulationHeader() {
               padding: '0 20px',
               borderRadius: 14,
               border: 'none',
-              background: '#2563eb',
-              color: '#ffffff',
+              background: 'var(--primary)',
+              color: 'var(--primary-contrast)',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 10px 18px rgba(37, 99, 235, 0.18)',
+              boxShadow: '0 10px 18px var(--focus-ring)',
             }}
           >
             💾&nbsp;&nbsp;Guardar

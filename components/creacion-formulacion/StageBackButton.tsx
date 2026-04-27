@@ -13,9 +13,9 @@ export default function StageBackButton({ href }: { href: string }) {
         height: 44,
         padding: '0 18px',
         borderRadius: 14,
-        border: '1px solid #d1d5db',
-        background: '#ffffff',
-        color: '#374151',
+        border: '1px solid var(--border-strong)',
+        background: 'var(--surface)',
+        color: 'var(--text)',
         fontWeight: 600,
         cursor: 'pointer',
       }}

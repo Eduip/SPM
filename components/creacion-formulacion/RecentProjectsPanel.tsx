@@ -10,10 +10,10 @@ import {
     {
       title: 'Construcción Gimnasio Municipal',
       status: 'En Ejecución',
-      color: '#dbeafe',
-      textColor: '#2563eb',
-      iconBg: '#dbeafe',
-      iconColor: '#2563eb',
+      color: 'var(--primary-soft)',
+      textColor: 'var(--primary)',
+      iconBg: 'var(--primary-soft)',
+      iconColor: 'var(--primary)',
       time: 'Hace 2 días',
       icon: PlayCircle,
     },
@@ -21,9 +21,9 @@ import {
       title: 'Mejoramiento Plaza de Armas',
       status: 'Finalizado',
       color: '#dcfce7',
-      textColor: '#16a34a',
+      textColor: 'var(--success)',
       iconBg: '#dcfce7',
-      iconColor: '#16a34a',
+      iconColor: 'var(--success)',
       time: 'Hace 5 días',
       icon: CheckCircle2,
     },
@@ -58,7 +58,7 @@ import {
             marginBottom: 20,
             fontSize: 18,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           Últimos Proyectos
@@ -97,7 +97,7 @@ import {
                     style={{
                       fontSize: 15,
                       fontWeight: 700,
-                      color: '#111827',
+                      color: 'var(--text-strong)',
                       marginBottom: 6,
                     }}
                   >
@@ -124,7 +124,7 @@ import {
                 <div
                   style={{
                     fontSize: 14,
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                     whiteSpace: 'nowrap',
                   }}
                 >

@@ -335,7 +335,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div style={detailItemStyle}>
       <span style={fieldLabelStyle}>{label}</span>
-      <strong style={{ color: '#111827', fontSize: 14 }}>{value}</strong>
+      <strong style={{ color: 'var(--text-strong)', fontSize: 14 }}>{value}</strong>
     </div>
   )
 }
@@ -514,7 +514,7 @@ const avatar: React.CSSProperties = {
   width: 36,
   height: 36,
   borderRadius: 999,
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#fff',
   display: 'flex',
   alignItems: 'center',
@@ -561,7 +561,7 @@ const smallIconButtonStyle: React.CSSProperties = {
 
 const dangerIconButtonStyle: React.CSSProperties = {
   ...smallIconButtonStyle,
-  color: '#dc2626',
+  color: 'var(--danger)',
   borderColor: '#fecaca',
 }
 
@@ -569,7 +569,7 @@ const primaryButton: React.CSSProperties = {
   height: 40,
   padding: '0 14px',
   borderRadius: 10,
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#fff',
   border: 'none',
   fontWeight: 700,
@@ -585,7 +585,7 @@ const input: React.CSSProperties = {
   borderRadius: 10,
   border: '1px solid #d1d5db',
   background: '#ffffff',
-  color: '#111827',
+  color: 'var(--text-strong)',
   fontSize: 14,
   boxSizing: 'border-box',
 }
@@ -597,7 +597,7 @@ const fileInputStyle: React.CSSProperties = {
 
 const submit: React.CSSProperties = {
   height: 42,
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#fff',
   border: 'none',
   borderRadius: 10,
@@ -703,7 +703,7 @@ const modalTitleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 22,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const modalSubtitleStyle: React.CSSProperties = {

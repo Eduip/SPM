@@ -182,7 +182,7 @@ export default function UsuariosPage({
               margin: 0,
               fontSize: 34,
               fontWeight: 800,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Creación de Usuarios
@@ -327,7 +327,7 @@ export default function UsuariosPage({
                     style={{
                       fontSize: 15,
                       fontWeight: 800,
-                      color: '#111827',
+                      color: 'var(--text-strong)',
                       marginBottom: 4,
                       textAlign: 'left',
                     }}
@@ -614,7 +614,7 @@ function MiniMetric({
         padding: 14,
       }}
     >
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{value}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-strong)' }}>{value}</div>
       <div style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginTop: 6 }}>
         {title}
       </div>
@@ -650,7 +650,7 @@ const panelCardStyle: React.CSSProperties = {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -676,7 +676,7 @@ const topNewFormStyle: React.CSSProperties = {
 const panelHeaderStyle: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
   marginBottom: 14,
 }
 
@@ -711,7 +711,7 @@ const inputStyle: React.CSSProperties = {
   background: '#f9fafb',
   padding: '0 12px',
   fontSize: 13,
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -750,7 +750,7 @@ const darkButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#111827',
+  background: 'var(--text-strong)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -761,7 +761,7 @@ const saveButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',

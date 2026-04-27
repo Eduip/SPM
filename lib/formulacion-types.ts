@@ -16,6 +16,7 @@ export type CampoPostulacion = {
   obligatorio: boolean
   visible: boolean
   orden: number
+  ai_mode?: 'blocked' | 'suggest' | 'improve_only'
 }
 
 export type RespuestaPostulacion = {

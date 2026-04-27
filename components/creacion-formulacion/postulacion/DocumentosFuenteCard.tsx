@@ -31,15 +31,15 @@ export default function DocumentosFuenteCard({
               key={documento.id}
               style={{
                 borderRadius: 14,
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border)',
                 background: '#f9fafb',
                 padding: '12px 14px',
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
                 {documento.nombre}
               </div>
-              <div style={{ marginTop: 4, fontSize: 13, color: '#6b7280' }}>
+              <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-muted)' }}>
                 {documento.obligatorio ? 'Obligatorio' : 'Opcional'}
               </div>
             </div>
@@ -58,7 +58,7 @@ function EmptyState({ text }: { text: string }) {
         border: '1px dashed #cbd5e1',
         background: '#f9fafb',
         padding: '14px 16px',
-        color: '#6b7280',
+        color: 'var(--text-muted)',
         fontSize: 14,
         fontWeight: 500,
       }}

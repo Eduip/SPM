@@ -713,7 +713,7 @@ const titleStyle: React.CSSProperties = {
   marginBottom: 18,
   fontSize: 20,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const cellStyle: React.CSSProperties = {
@@ -729,7 +729,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0 12px',
   fontSize: 14,
   background: '#ffffff',
-  color: '#111827',
+  color: 'var(--text-strong)',
   boxSizing: 'border-box',
 }
 
@@ -742,7 +742,7 @@ const submitStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 10,
   border: 'none',
-  background: '#16a34a',
+  background: 'var(--success)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -754,7 +754,7 @@ const primaryButtonStyle: React.CSSProperties = {
   padding: '0 14px',
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -833,7 +833,7 @@ const smallIconButtonStyle: React.CSSProperties = {
 
 const dangerIconButtonStyle: React.CSSProperties = {
   ...smallIconButtonStyle,
-  color: '#dc2626',
+  color: 'var(--danger)',
   borderColor: '#fecaca',
 }
 
@@ -871,7 +871,7 @@ const modalTitleStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 22,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const modalSubtitleStyle: React.CSSProperties = {

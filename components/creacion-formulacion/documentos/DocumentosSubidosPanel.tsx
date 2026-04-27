@@ -16,12 +16,12 @@ export default function DocumentosSubidosPanel({
             margin: 0,
             fontSize: 20,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-strong)',
           }}
         >
           Documentos Subidos
         </h3>
-        <div style={{ marginTop: 4, fontSize: 14, color: '#6b7280' }}>
+        <div style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>
           {documentos.length} archivos cargados
         </div>
       </div>
@@ -32,9 +32,9 @@ export default function DocumentosSubidosPanel({
             key={doc.id}
             style={{
               borderRadius: 16,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               padding: 16,
-              background: '#ffffff',
+              background: 'var(--surface)',
             }}
           >
             <div
@@ -50,7 +50,7 @@ export default function DocumentosSubidosPanel({
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: '#111827',
+                    color: 'var(--text-strong)',
                     marginBottom: 4,
                   }}
                 >
@@ -60,7 +60,7 @@ export default function DocumentosSubidosPanel({
                 <div
                   style={{
                     fontSize: 13,
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                   }}
                 >
                   {doc.profile?.[0]?.nombre_completo ?? 'Usuario'} • {formatDate(doc.fecha_subida)}
@@ -75,7 +75,7 @@ export default function DocumentosSubidosPanel({
             <div
               style={{
                 fontSize: 13,
-                color: '#6b7280',
+                color: 'var(--text-muted)',
                 marginBottom: 8,
               }}
             >
@@ -87,7 +87,7 @@ export default function DocumentosSubidosPanel({
                 width: '100%',
                 height: 6,
                 borderRadius: 999,
-                background: '#e5e7eb',
+                background: 'var(--border)',
                 overflow: 'hidden',
               }}
             >
@@ -109,12 +109,12 @@ export default function DocumentosSubidosPanel({
 function EstadoRevisionBadge({ estado }: { estado: string }) {
   const config =
     estado === 'validado'
-      ? { bg: '#dcfce7', color: '#16a34a', label: 'Validado' }
+      ? { bg: '#dcfce7', color: 'var(--success)', label: 'Validado' }
       : estado === 'pendiente_revision'
       ? { bg: '#fef3c7', color: '#ca8a04', label: 'En revisión' }
       : estado === 'rechazado'
-      ? { bg: '#fee2e2', color: '#dc2626', label: 'Rechazado' }
-      : { bg: '#dbeafe', color: '#2563eb', label: 'Subido' }
+      ? { bg: '#fee2e2', color: 'var(--danger)', label: 'Rechazado' }
+      : { bg: 'var(--primary-soft)', color: 'var(--primary)', label: 'Subido' }
 
   return (
     <span
@@ -144,10 +144,10 @@ function getValidationText(estado: string) {
 }
 
 function getValidationColor(estado: string) {
-  if (estado === 'validado') return '#22c55e'
+  if (estado === 'validado') return 'var(--success)'
   if (estado === 'pendiente_revision') return '#eab308'
   if (estado === 'rechazado') return '#ef4444'
-  return '#2563eb'
+  return 'var(--primary)'
 }
 
 function formatDate(dateString: string) {

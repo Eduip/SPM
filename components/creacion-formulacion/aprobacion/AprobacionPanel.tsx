@@ -55,8 +55,8 @@ export default function AprobacionPanel({
           height: 52,
           borderRadius: 14,
           border: 'none',
-          background: yaAprobado ? '#2563eb' : puedeAprobar ? '#16a34a' : '#86efac',
-          color: '#ffffff',
+          background: yaAprobado ? 'var(--primary)' : puedeAprobar ? 'var(--success)' : 'var(--success-soft)',
+          color: 'var(--primary-contrast)',
           fontWeight: 700,
           cursor: saving || (!puedeAprobar && !yaAprobado) ? 'not-allowed' : 'pointer',
         }}
@@ -68,7 +68,7 @@ export default function AprobacionPanel({
         style={{
           marginTop: 16,
           fontSize: 13,
-          color: '#6b7280',
+          color: 'var(--text-muted)',
           textAlign: 'center',
         }}
       >
@@ -108,7 +108,7 @@ export default function AprobacionPanel({
           }}
         >
           <span>Progreso de formulación</span>
-          <span style={{ color: '#16a34a' }}>100%</span>
+          <span style={{ color: 'var(--success)' }}>100%</span>
         </div>
 
         <div
@@ -116,7 +116,7 @@ export default function AprobacionPanel({
             width: '100%',
             height: 8,
             borderRadius: 999,
-            background: '#e5e7eb',
+            background: 'var(--border)',
             overflow: 'hidden',
             marginBottom: 10,
           }}
@@ -125,7 +125,7 @@ export default function AprobacionPanel({
             style={{
               width: '100%',
               height: '100%',
-              background: '#16a34a',
+              background: 'var(--success)',
             }}
           />
         </div>
@@ -133,7 +133,7 @@ export default function AprobacionPanel({
         <div
           style={{
             fontSize: 13,
-            color: '#6b7280',
+            color: 'var(--text-muted)',
           }}
         >
           5 de 5 secciones completadas

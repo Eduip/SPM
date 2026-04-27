@@ -1,22 +1,24 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 export async function marcarDocumentosCompletados(proyectoId: string) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proyectosEdit)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  if (!access.success) {
+    return access
+  }
 
-  if (!user || !proyectoId) {
-    return { success: false }
+  if (!proyectoId) {
+    return { success: false, error: 'No se recibió el proyecto.' }
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('id', user.id)
+    .eq('id', access.userId)
     .maybeSingle()
 
   if (!profile) {

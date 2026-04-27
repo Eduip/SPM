@@ -11,15 +11,15 @@ export default function ResumenEjecutivo({
       title: 'Beneficiarios',
       value: '320',
       subtitle: 'vecinos',
-      bg: '#eff6ff',
-      color: '#2563eb',
+      bg: 'var(--primary-tint)',
+      color: 'var(--primary)',
     },
     {
       title: 'Avance Formulación',
       value: `${proyecto?.porcentaje_formulacion ?? 0}%`,
       subtitle: 'completado',
       bg: '#ecfdf5',
-      color: '#16a34a',
+      color: 'var(--success)',
     },
     {
       title: 'Longitud Total',
@@ -57,14 +57,14 @@ export default function ResumenEjecutivo({
               borderRadius: 16,
               padding: 20,
               background: card.bg,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border)',
               textAlign: 'center',
             }}
           >
             <div
               style={{
                 fontSize: 14,
-                color: '#6b7280',
+                color: 'var(--text-muted)',
                 marginBottom: 10,
                 fontWeight: 600,
               }}
@@ -86,7 +86,7 @@ export default function ResumenEjecutivo({
               style={{
                 marginTop: 6,
                 fontSize: 13,
-                color: '#6b7280',
+                color: 'var(--text-muted)',
               }}
             >
               {card.subtitle}

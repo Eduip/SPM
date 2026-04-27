@@ -82,7 +82,7 @@ export default function DetalleEventoPage({
               margin: 0,
               fontSize: 40,
               fontWeight: 800,
-              color: '#111827',
+              color: 'var(--text-strong)',
             }}
           >
             Detalle del Evento
@@ -195,7 +195,7 @@ export default function DetalleEventoPage({
                   <div key={idx} style={tableRowStyle}>
                     <div style={cellStyleStrong}>{cambio.campo}</div>
                     <div style={cellStyle}>{cambio.anterior}</div>
-                    <div style={{ ...cellStyle, color: '#16a34a', fontWeight: 700 }}>
+                    <div style={{ ...cellStyle, color: 'var(--success)', fontWeight: 700 }}>
                       {cambio.nuevo}
                     </div>
                   </div>
@@ -216,7 +216,7 @@ export default function DetalleEventoPage({
                 {documentos.map((doc, idx) => (
                   <div key={idx} style={documentRowStyle}>
                     <div>
-                      <div style={{ fontWeight: 700, color: '#111827' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-strong)' }}>
                         {doc.nombre}
                       </div>
                       <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
@@ -372,7 +372,7 @@ function InfoItem({
             padding: '0 12px',
             borderRadius: 999,
             background: '#dcfce7',
-            color: '#16a34a',
+            color: 'var(--success)',
             fontSize: 13,
             fontWeight: 700,
           }}
@@ -380,7 +380,7 @@ function InfoItem({
           {value ?? '-'}
         </span>
       ) : (
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-strong)' }}>
           {value ?? '-'}
         </div>
       )}
@@ -412,7 +412,7 @@ function SummaryItem({
             padding: '0 12px',
             borderRadius: 999,
             background: '#dbeafe',
-            color: '#2563eb',
+            color: 'var(--primary)',
             fontSize: 13,
             fontWeight: 700,
           }}
@@ -420,7 +420,7 @@ function SummaryItem({
           {value ?? '-'}
         </span>
       ) : (
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)' }}>
           {value ?? '-'}
         </div>
       )}
@@ -450,13 +450,13 @@ function TimelineItem({
           width: 10,
           height: 10,
           borderRadius: 999,
-          background: '#2563eb',
+          background: 'var(--primary)',
           position: 'absolute',
           left: -6,
           top: 4,
         }}
       />
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-strong)' }}>
         {title}
       </div>
       <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
@@ -608,7 +608,7 @@ const titleStyle: React.CSSProperties = {
   marginBottom: 18,
   fontSize: 20,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const paragraphStyle: React.CSSProperties = {
@@ -652,7 +652,7 @@ const cellStyle: React.CSSProperties = {
 const cellStyleStrong: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 700,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const documentRowStyle: React.CSSProperties = {
@@ -670,7 +670,7 @@ const primaryButtonStyle: React.CSSProperties = {
   height: 42,
   borderRadius: 12,
   border: 'none',
-  background: '#2563eb',
+  background: 'var(--primary)',
   color: '#ffffff',
   fontWeight: 700,
   cursor: 'pointer',
@@ -705,7 +705,7 @@ const dangerButtonStyle: React.CSSProperties = {
   borderRadius: 12,
   border: '1px solid #fca5a5',
   background: '#ffffff',
-  color: '#dc2626',
+  color: 'var(--danger)',
   fontWeight: 700,
   cursor: 'pointer',
   padding: '0 14px',
@@ -720,7 +720,7 @@ const disabledDangerButtonStyle: React.CSSProperties = {
 const linkButtonStyle: React.CSSProperties = {
   border: 'none',
   background: 'transparent',
-  color: '#2563eb',
+  color: 'var(--primary)',
   fontWeight: 700,
   cursor: 'pointer',
 }

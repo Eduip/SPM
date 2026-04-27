@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 type SavePostulacionPayload = {
   proyectoId: string
@@ -15,17 +16,10 @@ type SavePostulacionPayload = {
 
 export async function savePostulacionData(payload: SavePostulacionPayload) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proyectosEdit)
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return {
-      success: false,
-      error: 'No se pudo identificar al usuario autenticado.',
-    }
+  if (!access.success) {
+    return access
   }
 
   if (!payload.proyectoId) {
@@ -45,7 +39,7 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('id', user.id)
+    .eq('id', access.userId)
     .maybeSingle()
 
   if (!profile) {
@@ -192,6 +186,7 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
   const { error: updateProyectoError } = await supabase
     .from('proyectos')
     .update({
+      fuente_financiamiento_id: fuenteCatalogo.id,
       etapa_formulacion_actual: 3,
       porcentaje_formulacion: 60,
       updated_by: profile.id,

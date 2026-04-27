@@ -91,13 +91,13 @@ function InfoBox({ label, value }: { label: string; value: string }) {
     <div
       style={{
         borderRadius: 14,
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border)',
         background: '#f9fafb',
         padding: 16,
       }}
     >
-      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{value}</div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-strong)' }}>{value}</div>
     </div>
   )
 }

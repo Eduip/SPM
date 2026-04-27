@@ -21,7 +21,7 @@ export default function EstadoDocumentacionPanel({
         Estado de Documentación
       </h3>
 
-      <StateRow label="Subidos" value={`${subidosPct}%`} count={`${subidos} de ${total}`} color="#22c55e" />
+      <StateRow label="Subidos" value={`${subidosPct}%`} count={`${subidos} de ${total}`} color="var(--success)" />
       <StateRow label="Pendientes" value={`${pendientesPct}%`} count={`${pendientes} de ${total}`} color="#eab308" />
       <StateRow label="Faltantes" value={`${faltantesPct}%`} count={`${faltantes} de ${total}`} color="#ef4444" />
 
@@ -69,21 +69,21 @@ function StateRow({
           marginBottom: 6,
           fontSize: 14,
           fontWeight: 700,
-          color: '#374151',
+          color: 'var(--text)',
         }}
       >
         <span>{label}</span>
         <span>{value}</span>
       </div>
 
-      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>{count}</div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{count}</div>
 
       <div
         style={{
           width: '100%',
           height: 8,
           borderRadius: 999,
-          background: '#e5e7eb',
+          background: 'var(--border)',
           overflow: 'hidden',
         }}
       >

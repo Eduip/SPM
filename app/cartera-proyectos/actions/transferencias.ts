@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 async function subirCartolaTransferencia({
   supabase,
@@ -67,6 +68,7 @@ async function subirCartolaTransferencia({
 
 export async function crearTransferencia(formData: FormData) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.financiamientoEdit)
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const concepto = String(formData.get('concepto') || '').trim()
@@ -78,13 +80,8 @@ export async function crearTransferencia(formData: FormData) {
     return { success: false, error: 'Faltan datos obligatorios' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { data, error } = await supabase
@@ -109,7 +106,7 @@ export async function crearTransferencia(formData: FormData) {
       proyectoId: proyecto_id,
       transferenciaId: data.id,
       file: cartola,
-      userId: user.id,
+      userId: access.userId,
     })
   } catch (uploadError) {
     return {
@@ -126,7 +123,7 @@ export async function crearTransferencia(formData: FormData) {
     entidad_id: proyecto_id,
     accion: 'registrar_transferencia',
     descripcion: `Transferencia registrada por ${concepto}.`,
-    usuario_id: user.id,
+    usuario_id: access.userId,
     metadata: {
       transferencia_id: data.id,
       fecha,
@@ -142,6 +139,7 @@ export async function crearTransferencia(formData: FormData) {
 
 export async function actualizarTransferencia(formData: FormData) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.financiamientoEdit)
 
   const proyectoId = String(formData.get('proyecto_id') || '')
   const transferenciaId = String(formData.get('transferencia_id') || '')
@@ -154,13 +152,8 @@ export async function actualizarTransferencia(formData: FormData) {
     return { success: false, error: 'Faltan datos obligatorios' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { error } = await supabase
@@ -183,7 +176,7 @@ export async function actualizarTransferencia(formData: FormData) {
       proyectoId,
       transferenciaId,
       file: cartola,
-      userId: user.id,
+      userId: access.userId,
     })
   } catch (uploadError) {
     return {
@@ -200,7 +193,7 @@ export async function actualizarTransferencia(formData: FormData) {
     entidad_id: proyectoId,
     accion: 'actualizar_transferencia',
     descripcion: `Transferencia actualizada por ${concepto}.`,
-    usuario_id: user.id,
+    usuario_id: access.userId,
     metadata: {
       transferencia_id: transferenciaId,
       fecha,
@@ -216,6 +209,7 @@ export async function actualizarTransferencia(formData: FormData) {
 
 export async function eliminarTransferencia(formData: FormData) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.financiamientoEdit)
 
   const proyectoId = String(formData.get('proyecto_id') || '')
   const transferenciaId = String(formData.get('transferencia_id') || '')
@@ -224,13 +218,8 @@ export async function eliminarTransferencia(formData: FormData) {
     return { success: false, error: 'No se recibió la transferencia.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!access.success) {
+    return access
   }
 
   const { data: documentos, error: documentosError } = await supabase
@@ -277,7 +266,7 @@ export async function eliminarTransferencia(formData: FormData) {
     entidad_id: proyectoId,
     accion: 'eliminar_transferencia',
     descripcion: 'Transferencia eliminada.',
-    usuario_id: user.id,
+    usuario_id: access.userId,
     metadata: {
       transferencia_id: transferenciaId,
     },

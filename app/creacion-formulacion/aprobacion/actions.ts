@@ -1,22 +1,16 @@
 'use server'
 
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 const ESTADOS_DOCUMENTO_VALIDOS = ['subido', 'validado', 'pendiente_revision']
 
 export async function aprobarProyecto(proyectoId: string) {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.proyectosApprove)
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return {
-      success: false,
-      error: 'No se pudo identificar al usuario autenticado.',
-    }
+  if (!access.success) {
+    return access
   }
 
   if (!proyectoId) {
@@ -29,7 +23,7 @@ export async function aprobarProyecto(proyectoId: string) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('id', user.id)
+    .eq('id', access.userId)
     .maybeSingle()
 
   if (!profile) {

@@ -1,8 +1,10 @@
 import AppShell from '../../../components/AppShell'
+import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import DocumentosHeader from '../../../components/creacion-formulacion/documentos/DocumentosHeader'
 import DocumentosStepper from '../../../components/creacion-formulacion/documentos/DocumentosStepper'
 import DocumentosContainer from '../../../components/creacion-formulacion/documentos/DocumentosContainer'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 type PageProps = {
   searchParams: Promise<{
@@ -42,6 +44,18 @@ export default async function DocumentosPage({ searchParams }: PageProps) {
   const proyectoId = params?.proyectoId ?? ''
 
   const supabase = await createClient()
+  const access = await requirePermission(supabase, [PERMISSIONS.proyectosView, PERMISSIONS.proyectosCreate, PERMISSIONS.proyectosEdit, PERMISSIONS.proyectosApprove])
+
+  if (!access.success) {
+    return (
+      <AppShell
+        title="Creación y Formulación de Proyectos"
+        currentModule="creacion-formulacion"
+      >
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const { data: fuenteProyecto } = proyectoId
     ? await supabase

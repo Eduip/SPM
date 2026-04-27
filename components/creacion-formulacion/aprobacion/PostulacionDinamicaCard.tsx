@@ -75,7 +75,7 @@ function ResponseSection({
     <section style={sectionStyle}>
       <h4 style={sectionTitleStyle}>{title}</h4>
       {campos.length === 0 ? (
-        <div style={{ color: '#6b7280', fontSize: 14 }}>{emptyText}</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>{emptyText}</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           {campos.map((campo) => (
@@ -113,13 +113,13 @@ function InfoBox({
       style={{
         gridColumn: full ? '1 / -1' : 'auto',
         borderRadius: 14,
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border)',
         background: '#f9fafb',
         padding: 16,
       }}
     >
-      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'pre-wrap' }}>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', whiteSpace: 'pre-wrap' }}>
         {value || '-'}
       </div>
     </div>
@@ -154,7 +154,7 @@ function sumRespuestas(
 
 const sectionStyle: React.CSSProperties = {
   borderRadius: 16,
-  border: '1px solid #e5e7eb',
+  border: '1px solid var(--border)',
   background: '#f9fafb',
   padding: 16,
 }
@@ -163,15 +163,15 @@ const sectionTitleStyle: React.CSSProperties = {
   margin: '0 0 14px',
   fontSize: 17,
   fontWeight: 800,
-  color: '#111827',
+  color: 'var(--text-strong)',
 }
 
 const totalStyle: React.CSSProperties = {
   marginTop: 14,
   borderRadius: 14,
-  border: '1px solid #bfdbfe',
-  background: '#eff6ff',
-  color: '#1d4ed8',
+  border: '1px solid var(--primary-soft)',
+  background: 'var(--primary-tint)',
+  color: 'var(--primary-dark)',
   padding: '14px 16px',
   display: 'flex',
   justifyContent: 'space-between',

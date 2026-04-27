@@ -1,9 +1,20 @@
 import AppShell from '../../../components/AppShell'
+import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import UsuariosPage from '../../../components/administracion/usuarios/UsuariosPage'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 export default async function Page() {
   const supabase = await createClient()
+  const access = await requirePermission(supabase, PERMISSIONS.administracionManage)
+
+  if (!access.success) {
+    return (
+      <AppShell title="Creación de Usuarios" currentModule="administracion">
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const [usuariosRes, rolesRes, unidadesRes] = await Promise.all([
     supabase

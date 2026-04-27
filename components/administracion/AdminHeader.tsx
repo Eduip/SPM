@@ -17,7 +17,7 @@ export default function AdminHeader() {
             margin: 0,
             fontSize: 54,
             fontWeight: 800,
-            color: '#111827',
+            color: 'var(--text-strong)',
             lineHeight: 1.1,
           }}
         >

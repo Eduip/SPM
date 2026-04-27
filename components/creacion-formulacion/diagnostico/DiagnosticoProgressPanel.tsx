@@ -15,8 +15,8 @@ export default function DiagnosticoProgressPanel({
       <div
         style={{
           borderRadius: 18,
-          background: '#eff6ff',
-          border: '1px solid #dbeafe',
+          background: 'var(--primary-tint)',
+          border: '1px solid var(--primary-soft)',
           padding: 18,
           marginBottom: 18,
         }}
@@ -55,11 +55,11 @@ export default function DiagnosticoProgressPanel({
             height: 50,
             borderRadius: 14,
             border: 'none',
-            background: '#2563eb',
-            color: '#ffffff',
+            background: 'var(--primary)',
+            color: 'var(--primary-contrast)',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 10px 18px rgba(37,99,235,0.20)',
+            boxShadow: '0 10px 18px var(--focus-ring)',
           }}
         >
           Continuar a Postulación →
@@ -78,7 +78,7 @@ export default function DiagnosticoProgressPanel({
           }}
         >
           <span>Progreso de formulación</span>
-          <span style={{ color: '#2563eb' }}>40%</span>
+          <span style={{ color: 'var(--primary)' }}>40%</span>
         </div>
 
         <div
@@ -86,7 +86,7 @@ export default function DiagnosticoProgressPanel({
             width: '100%',
             height: 8,
             borderRadius: 999,
-            background: '#e5e7eb',
+            background: 'var(--border)',
             overflow: 'hidden',
             marginBottom: 10,
           }}
@@ -95,7 +95,7 @@ export default function DiagnosticoProgressPanel({
             style={{
               width: '40%',
               height: '100%',
-              background: '#2563eb',
+              background: 'var(--primary)',
             }}
           />
         </div>
@@ -103,7 +103,7 @@ export default function DiagnosticoProgressPanel({
         <div
           style={{
             fontSize: 13,
-            color: '#6b7280',
+            color: 'var(--text-muted)',
           }}
         >
           2 de 5 secciones completadas

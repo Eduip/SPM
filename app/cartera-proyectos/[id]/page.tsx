@@ -1,8 +1,12 @@
 import AppShell from '../../../components/AppShell'
+import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import ProyectoHeader from '../../../components/ficha-proyecto/ProyectoHeader'
 import ProyectoTabs from '../../../components/ficha-proyecto/ProyectoTabs'
+import ProjectAIAssistant from '../../../components/ficha-proyecto/ProjectAIAssistant'
+import { getProjectVisualization } from '../../../lib/ai/project-visualizations'
 import { buildProjectBudgetMap } from '../../../lib/project-budget'
+import { PERMISSIONS, hasPermission, requirePermission } from '../../../lib/auth-guards'
 import type { DocumentoEstadoPago, PagoProveedorEstadoPago } from '../../../lib/project-types'
 
 export default async function ProyectoPage({
@@ -16,6 +20,24 @@ export default async function ProyectoPage({
   const resolvedSearchParams = await searchParams
 
   const supabase = await createClient()
+  const access = await requirePermission(supabase, [
+    PERMISSIONS.proyectosView,
+    PERMISSIONS.ejecucionView,
+    PERMISSIONS.financiamientoView,
+    PERMISSIONS.rendicionesView,
+    PERMISSIONS.garantiasView,
+    PERMISSIONS.proveedoresView,
+    PERMISSIONS.bitacoraView,
+    PERMISSIONS.historialView,
+  ])
+
+  if (!access.success) {
+    return (
+      <AppShell title="Ficha del Proyecto" currentModule="cartera-proyectos">
+        <AccessDenied message={access.error} />
+      </AppShell>
+    )
+  }
 
   const { data, error } = await supabase
     .from('proyectos')
@@ -40,7 +62,16 @@ export default async function ProyectoPage({
     .eq('id', resolvedParams.id)
     .maybeSingle()
 
-    const { data: transferenciasData } = await supabase
+  const [{ data: datosGenerales }, visualization] = await Promise.all([
+    supabase
+      .from('proyecto_datos_generales')
+      .select('descripcion')
+      .eq('proyecto_id', resolvedParams.id)
+      .maybeSingle(),
+    getProjectVisualization(resolvedParams.id),
+  ])
+
+  const { data: transferenciasData } = await supabase
   .from('proyecto_transferencias')
   .select('*')
   .eq('proyecto_id', resolvedParams.id)
@@ -151,8 +182,16 @@ export default async function ProyectoPage({
 
   const presupuestoTotal = presupuestoPorProyecto.get(resolvedParams.id) ?? null
   const avanceFisicoCalculado = calcularAvanceFisico(estadosPagoData ?? [])
-  const avanceFinancieroCalculado = calcularAvanceFinanciero({
+  const montoEjecutadoActual = calcularMontoEjecutadoActual({
     estadosPago: estadosPagoData ?? [],
+    transferencias: transferenciasData ?? [],
+    rendiciones: rendicionesData ?? [],
+  })
+  const avanceFinancieroCalculado = calcularAvanceFinanciero({
+    montoEjecutadoActual,
+    estadosPago: estadosPagoData ?? [],
+    transferencias: transferenciasData ?? [],
+    rendiciones: rendicionesData ?? [],
     presupuestoTotal: Number(presupuestoTotal ?? data?.monto_estimado ?? 0),
   })
 
@@ -160,6 +199,7 @@ export default async function ProyectoPage({
     ? {
         ...data,
         presupuesto_total: presupuestoTotal,
+        monto_ejecutado_actual: montoEjecutadoActual,
         avance_fisico_actual: avanceFisicoCalculado,
         avance_financiero_actual: avanceFinancieroCalculado,
         unidad: Array.isArray(data.unidad) ? data.unidad[0] ?? null : data.unidad,
@@ -189,7 +229,20 @@ export default async function ProyectoPage({
     )
   }
 
-  const tab = resolvedSearchParams.tab ?? 'general'
+  const tabPermissions = {
+    general: hasPermission(access, PERMISSIONS.proyectosView),
+    proveedores: hasPermission(access, PERMISSIONS.proveedoresView),
+    ejecucion: hasPermission(access, PERMISSIONS.ejecucionView),
+    financiamiento: hasPermission(access, PERMISSIONS.financiamientoView),
+    rendicion: hasPermission(access, PERMISSIONS.rendicionesView),
+    garantias: hasPermission(access, PERMISSIONS.garantiasView),
+    bitacora: hasPermission(access, PERMISSIONS.bitacoraView),
+    historial: hasPermission(access, [PERMISSIONS.historialView, PERMISSIONS.proyectosView]),
+  }
+  const requestedTab = resolvedSearchParams.tab ?? 'general'
+  const tab = tabPermissions[requestedTab as keyof typeof tabPermissions]
+    ? requestedTab
+    : Object.entries(tabPermissions).find(([, allowed]) => allowed)?.[0] ?? 'general'
   const documentosPorEstadoPago = new Map<string, typeof documentosEjecucionData>()
   const pagoProveedorPorEstadoPago = new Map<string, PagoProveedorEstadoPago>()
   const cartolasPorTransferencia = new Map<string, DocumentoEstadoPago>()
@@ -285,17 +338,46 @@ export default async function ProyectoPage({
     <AppShell title="Ficha del Proyecto" currentModule="cartera-proyectos">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <ProyectoHeader proyecto={proyecto} tab={tab} />
-        <ProyectoTabs
-  proyecto={proyecto}
-  tab={tab}
-  transferencias={transferencias}
-  garantias={garantias}
-  estadosPago={estadosPago}
-  rendiciones={rendiciones}
-  historial={historialData ?? []}
-  bitacora={bitacora}
-
-/>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) 360px',
+            gap: 20,
+            alignItems: 'start',
+          }}
+        >
+          <ProyectoTabs
+            proyecto={proyecto}
+            tab={tab}
+            descripcionProyecto={datosGenerales?.descripcion ?? null}
+            visualization={
+              visualization
+                ? {
+                    referenceUrl: `/api/project-visualizations/${proyecto.id}/reference`,
+                    generatedUrls: visualization.generatedImages.map(
+                      (_image, index) =>
+                        `/api/project-visualizations/${proyecto.id}/generated?idx=${index}`
+                    ),
+                    referencePrompt: visualization.referencePrompt,
+                    userInstructions: visualization.userInstructions,
+                    generatedAt: visualization.generatedAt,
+                  }
+                : null
+            }
+            tabPermissions={tabPermissions}
+            transferencias={transferencias}
+            garantias={garantias}
+            estadosPago={estadosPago}
+            rendiciones={rendiciones}
+            historial={historialData ?? []}
+            bitacora={bitacora}
+          />
+          <ProjectAIAssistant
+            key={`${access.userId}:${proyecto.id}`}
+            projectId={proyecto.id}
+            userId={access.userId}
+          />
+        </div>
       </div>
     </AppShell>
   )
@@ -366,19 +448,51 @@ function calcularAvanceFisico(
 }
 
 function calcularAvanceFinanciero({
+  montoEjecutadoActual,
   estadosPago,
+  transferencias,
+  rendiciones,
   presupuestoTotal,
 }: {
+  montoEjecutadoActual?: number
   estadosPago: Array<{ monto?: number | string | null; estado?: string | null }>
+  transferencias: Array<{ monto?: number | string | null }>
+  rendiciones: Array<{ monto_rendido?: number | string | null }>
   presupuestoTotal: number
 }) {
   if (!presupuestoTotal || presupuestoTotal <= 0) return 0
+  const montoBase =
+    typeof montoEjecutadoActual === 'number'
+      ? montoEjecutadoActual
+      : calcularMontoEjecutadoActual({ estadosPago, transferencias, rendiciones })
 
+  return clampPercentage(Math.round((montoBase / presupuestoTotal) * 100))
+}
+
+function calcularMontoEjecutadoActual({
+  estadosPago,
+  transferencias,
+  rendiciones,
+}: {
+  estadosPago: Array<{ monto?: number | string | null; estado?: string | null }>
+  transferencias: Array<{ monto?: number | string | null }>
+  rendiciones: Array<{ monto_rendido?: number | string | null }>
+}) {
   const totalPagado = estadosPago
     .filter((estadoPago) => estadoPago.estado === 'pagado')
     .reduce((total, estadoPago) => total + Number(estadoPago.monto ?? 0), 0)
 
-  return clampPercentage(Math.round((totalPagado / presupuestoTotal) * 100))
+  const totalTransferido = transferencias.reduce(
+    (total, transferencia) => total + Number(transferencia.monto ?? 0),
+    0
+  )
+
+  const totalRendido = rendiciones.reduce(
+    (total, rendicion) => total + Number(rendicion.monto_rendido ?? 0),
+    0
+  )
+
+  return Math.max(totalPagado, totalTransferido, totalRendido)
 }
 
 function clampPercentage(value: number) {

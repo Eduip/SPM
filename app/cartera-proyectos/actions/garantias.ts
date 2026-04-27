@@ -2,9 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../../../lib/supabase-server'
+import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 
 export async function crearGarantia(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.garantiasEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const tipo = String(formData.get('tipo') || '')
@@ -44,6 +50,11 @@ export async function crearGarantia(formData: FormData) {
 
 export async function actualizarGarantia(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.garantiasEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const garantia_id = String(formData.get('garantia_id') || '')
@@ -85,6 +96,11 @@ export async function actualizarGarantia(formData: FormData) {
 
 export async function eliminarGarantia(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.garantiasEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const garantia_id = String(formData.get('garantia_id') || '')
@@ -139,6 +155,7 @@ export async function eliminarGarantia(formData: FormData) {
 
 export async function adjuntarDocumentoGarantia(formData: FormData) {
   const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.garantiasEdit)
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const garantia_id = String(formData.get('garantia_id') || '')
@@ -153,13 +170,8 @@ export async function adjuntarDocumentoGarantia(formData: FormData) {
     return { success: false, error: 'Completa el nombre y adjunta un documento.' }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { success: false, error: 'No se pudo identificar al usuario autenticado.' }
+  if (!authGuard.success) {
+    return authGuard
   }
 
   const safeFileName = archivo.name.replace(/\s+/g, '-')
@@ -189,7 +201,7 @@ export async function adjuntarDocumentoGarantia(formData: FormData) {
     extension: archivo.name.split('.').pop() || null,
     tamano_bytes: archivo.size,
     mime_type: archivo.type || null,
-    subido_por: user.id,
+    subido_por: authGuard.userId,
     fecha_subida: new Date().toISOString(),
     obligatorio: false,
     estado_revision: 'subido',
