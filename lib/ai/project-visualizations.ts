@@ -1,5 +1,9 @@
-import { mkdir, readFile, rm, writeFile } from 'fs/promises'
-import path from 'path'
+import {
+  loadRuntimeJson,
+  removeRuntimeFile,
+  saveRuntimeJson,
+  uploadRuntimeFile,
+} from '../runtime-storage'
 
 export type ProjectVisualization = {
   projectId: string
@@ -21,9 +25,8 @@ type ProjectVisualizationsStore = {
   visualizations: ProjectVisualization[]
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data')
-const VISUALIZATIONS_DIR = path.join(DATA_DIR, 'project-visualizations')
-const STORE_FILE = path.join(DATA_DIR, 'project-visualizations.json')
+const STORE_FILE = 'config/project-visualizations.json'
+const LOCAL_STORE_FILE = 'data/project-visualizations.json'
 
 const DEFAULT_STORE: ProjectVisualizationsStore = {
   version: 1,
@@ -31,31 +34,29 @@ const DEFAULT_STORE: ProjectVisualizationsStore = {
 }
 
 export async function loadProjectVisualizationsStore() {
-  try {
-    const content = await readFile(STORE_FILE, 'utf8')
-    const parsed = JSON.parse(content) as Partial<ProjectVisualizationsStore>
+  const parsed = await loadRuntimeJson<Partial<ProjectVisualizationsStore>>(
+    STORE_FILE,
+    DEFAULT_STORE,
+    LOCAL_STORE_FILE
+  )
 
-    return {
-      version: 1,
-      visualizations: Array.isArray(parsed.visualizations)
-        ? parsed.visualizations.map((item) =>
-            normalizeVisualization(
-              item as ProjectVisualization & {
-                generatedImagePath?: string
-                generatedImageMimeType?: string
-              }
-            )
+  return {
+    version: 1,
+    visualizations: Array.isArray(parsed.visualizations)
+      ? parsed.visualizations.map((item) =>
+          normalizeVisualization(
+            item as ProjectVisualization & {
+              generatedImagePath?: string
+              generatedImageMimeType?: string
+            }
           )
-        : [],
-    }
-  } catch {
-    return DEFAULT_STORE
+        )
+      : [],
   }
 }
 
 export async function saveProjectVisualizationsStore(store: ProjectVisualizationsStore) {
-  await mkdir(DATA_DIR, { recursive: true })
-  await writeFile(STORE_FILE, JSON.stringify(store, null, 2), 'utf8')
+  await saveRuntimeJson(STORE_FILE, store)
   return store
 }
 
@@ -82,25 +83,26 @@ export async function writeProjectVisualizationFile({
   projectId,
   fileName,
   buffer,
+  mimeType,
 }: {
   projectId: string
   fileName: string
   buffer: Buffer
+  mimeType: string
 }) {
-  const projectDir = path.join(VISUALIZATIONS_DIR, projectId)
-  await mkdir(projectDir, { recursive: true })
-  const filePath = path.join(projectDir, fileName)
-  await writeFile(filePath, buffer)
+  const filePath = `project-visualizations/${projectId}/${fileName}`
+  await uploadRuntimeFile({
+    path: filePath,
+    buffer,
+    contentType: mimeType,
+  })
   return filePath
 }
 
 export async function deleteProjectVisualizationFile(filePath?: string | null) {
   if (!filePath) return
 
-  try {
-    await rm(filePath, { force: true })
-  } catch {
-  }
+  await removeRuntimeFile(filePath).catch(() => undefined)
 }
 
 function normalizeVisualization(

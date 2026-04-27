@@ -1,5 +1,9 @@
-import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
-import path from 'path'
+import {
+  loadRuntimeJson,
+  removeRuntimeFile,
+  saveRuntimeJson,
+  uploadRuntimeFile,
+} from '../runtime-storage'
 
 export type StrategicDocumentChunk = {
   id: string
@@ -29,9 +33,8 @@ type StrategicDocumentsStore = {
   documents: StrategicDocument[]
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data')
-const DOCS_DIR = path.join(DATA_DIR, 'ai-documents')
-const STORE_FILE = path.join(DATA_DIR, 'strategic-ai-documents.json')
+const STORE_FILE = 'config/strategic-ai-documents.json'
+const LOCAL_STORE_FILE = 'data/strategic-ai-documents.json'
 
 const DEFAULT_STORE: StrategicDocumentsStore = {
   version: 1,
@@ -39,21 +42,19 @@ const DEFAULT_STORE: StrategicDocumentsStore = {
 }
 
 export async function loadStrategicDocumentsStore() {
-  try {
-    const content = await readFile(STORE_FILE, 'utf8')
-    const parsed = JSON.parse(content) as Partial<StrategicDocumentsStore>
-    return {
-      version: 1,
-      documents: Array.isArray(parsed.documents) ? parsed.documents : [],
-    }
-  } catch {
-    return DEFAULT_STORE
+  const parsed = await loadRuntimeJson<Partial<StrategicDocumentsStore>>(
+    STORE_FILE,
+    DEFAULT_STORE,
+    LOCAL_STORE_FILE
+  )
+  return {
+    version: 1,
+    documents: Array.isArray(parsed.documents) ? parsed.documents : [],
   }
 }
 
 export async function saveStrategicDocumentsStore(store: StrategicDocumentsStore) {
-  await mkdir(DATA_DIR, { recursive: true })
-  await writeFile(STORE_FILE, JSON.stringify(store, null, 2), 'utf8')
+  await saveRuntimeJson(STORE_FILE, store)
   return store
 }
 
@@ -80,10 +81,7 @@ export async function removeStrategicDocument(documentId: string) {
     return { success: false, error: 'No se encontró el documento estratégico.' }
   }
 
-  try {
-    await unlink(existing.filePath)
-  } catch {
-  }
+  await removeRuntimeFile(existing.filePath).catch(() => undefined)
 
   const nextStore = {
     ...store,
@@ -101,9 +99,12 @@ export async function writeStrategicDocumentFile({
   fileName: string
   buffer: Buffer
 }) {
-  await mkdir(DOCS_DIR, { recursive: true })
-  const filePath = path.join(DOCS_DIR, fileName)
-  await writeFile(filePath, buffer)
+  const filePath = `ai-documents/${fileName}`
+  await uploadRuntimeFile({
+    path: filePath,
+    buffer,
+    contentType: 'application/pdf',
+  })
   return filePath
 }
 

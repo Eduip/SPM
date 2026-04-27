@@ -1,5 +1,4 @@
-import { mkdir, readFile, writeFile } from 'fs/promises'
-import path from 'path'
+import { loadRuntimeJson, saveRuntimeJson } from '../runtime-storage'
 
 export type MunicipalAISettings = {
   version: number
@@ -26,11 +25,8 @@ export type MunicipalAISettings = {
   }
 }
 
-const SETTINGS_FILE = path.join(
-  process.cwd(),
-  'data',
-  'municipal-ai-settings.json'
-)
+const SETTINGS_FILE = 'config/municipal-ai-settings.json'
+const LOCAL_SETTINGS_FILE = 'data/municipal-ai-settings.json'
 
 export const defaultMunicipalAISettings: MunicipalAISettings = {
   version: 1,
@@ -58,13 +54,12 @@ export const defaultMunicipalAISettings: MunicipalAISettings = {
 }
 
 export async function loadMunicipalAISettings() {
-  try {
-    const content = await readFile(SETTINGS_FILE, 'utf8')
-    const parsed = JSON.parse(content) as Partial<MunicipalAISettings>
-    return normalizeSettings(parsed)
-  } catch {
-    return defaultMunicipalAISettings
-  }
+  const parsed = await loadRuntimeJson<Partial<MunicipalAISettings>>(
+    SETTINGS_FILE,
+    defaultMunicipalAISettings,
+    LOCAL_SETTINGS_FILE
+  )
+  return normalizeSettings(parsed)
 }
 
 export async function saveMunicipalAISettings(
@@ -81,8 +76,7 @@ export async function saveMunicipalAISettings(
     updatedAt: new Date().toISOString(),
   })
 
-  await mkdir(path.dirname(SETTINGS_FILE), { recursive: true })
-  await writeFile(SETTINGS_FILE, JSON.stringify(next, null, 2), 'utf8')
+  await saveRuntimeJson(SETTINGS_FILE, next)
 
   return next
 }

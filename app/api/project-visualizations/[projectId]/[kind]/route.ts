@@ -1,8 +1,7 @@
-import { readFile } from 'fs/promises'
-import path from 'path'
 import { NextResponse } from 'next/server'
 import { PERMISSIONS, requirePermission } from '../../../../../lib/auth-guards'
 import { getProjectVisualization } from '../../../../../lib/ai/project-visualizations'
+import { downloadRuntimeFile } from '../../../../../lib/runtime-storage'
 import { createClient } from '../../../../../lib/supabase-server'
 
 export async function GET(
@@ -47,15 +46,8 @@ export async function GET(
     return NextResponse.json({ error: 'No existe la imagen solicitada.' }, { status: 404 })
   }
 
-  const normalizedBase = path.join(process.cwd(), 'data', 'project-visualizations')
-  const normalizedTarget = path.normalize(targetPath)
-
-  if (!normalizedTarget.startsWith(normalizedBase)) {
-    return NextResponse.json({ error: 'Ruta de imagen no válida.' }, { status: 400 })
-  }
-
   try {
-    const buffer = await readFile(normalizedTarget)
+    const buffer = await downloadRuntimeFile(targetPath)
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': mimeType,

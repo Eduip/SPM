@@ -1,5 +1,4 @@
-import { mkdir, readFile, writeFile } from 'fs/promises'
-import path from 'path'
+import { loadRuntimeJson, saveRuntimeJson } from '../runtime-storage'
 
 export type FieldAIMode = 'blocked' | 'suggest' | 'improve_only'
 
@@ -13,7 +12,8 @@ type FieldAIConfigStore = {
   fields: FieldAIConfigItem[]
 }
 
-const STORE_FILE = path.join(process.cwd(), 'data', 'field-ai-config.json')
+const STORE_FILE = 'config/field-ai-config.json'
+const LOCAL_STORE_FILE = 'data/field-ai-config.json'
 
 const DEFAULT_STORE: FieldAIConfigStore = {
   version: 1,
@@ -21,21 +21,19 @@ const DEFAULT_STORE: FieldAIConfigStore = {
 }
 
 export async function loadFieldAIConfigStore() {
-  try {
-    const content = await readFile(STORE_FILE, 'utf8')
-    const parsed = JSON.parse(content) as Partial<FieldAIConfigStore>
-    return {
-      version: 1,
-      fields: Array.isArray(parsed.fields) ? parsed.fields : [],
-    }
-  } catch {
-    return DEFAULT_STORE
+  const parsed = await loadRuntimeJson<Partial<FieldAIConfigStore>>(
+    STORE_FILE,
+    DEFAULT_STORE,
+    LOCAL_STORE_FILE
+  )
+  return {
+    version: 1,
+    fields: Array.isArray(parsed.fields) ? parsed.fields : [],
   }
 }
 
 export async function saveFieldAIConfigStore(store: FieldAIConfigStore) {
-  await mkdir(path.dirname(STORE_FILE), { recursive: true })
-  await writeFile(STORE_FILE, JSON.stringify(store, null, 2), 'utf8')
+  await saveRuntimeJson(STORE_FILE, store)
   return store
 }
 

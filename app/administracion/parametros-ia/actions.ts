@@ -1,6 +1,9 @@
 'use server'
 
 import { execFile } from 'node:child_process'
+import { rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { promisify } from 'node:util'
 import { requireAdmin } from '../../../lib/auth-guards'
 import { loadMunicipalAISettings, saveMunicipalAISettings } from '../../../lib/ai/municipal-ai-settings'
@@ -113,13 +116,12 @@ export async function subirDocumentoEstrategicoIA(formData: FormData) {
   const timestamp = Date.now()
   const storedName = `${timestamp}-${safeOriginalName}`
   const buffer = Buffer.from(await file.arrayBuffer())
-  const filePath = await writeStrategicDocumentFile({
-    fileName: storedName,
-    buffer,
-  })
+  const tempFilePath = path.join(os.tmpdir(), storedName)
 
   try {
-    const { stdout } = await execFileAsync(PYTHON_BIN, [PDF_EXTRACTOR, filePath], {
+    await writeFile(tempFilePath, buffer)
+
+    const { stdout } = await execFileAsync(PYTHON_BIN, [PDF_EXTRACTOR, tempFilePath], {
       maxBuffer: 1024 * 1024 * 20,
     })
 
@@ -141,6 +143,11 @@ export async function subirDocumentoEstrategicoIA(formData: FormData) {
         error: 'No se pudo extraer contenido legible desde el PDF seleccionado.',
       }
     }
+
+    const filePath = await writeStrategicDocumentFile({
+      fileName: storedName,
+      buffer,
+    })
 
     const document: StrategicDocument = {
       id: `doc-${timestamp}`,
@@ -170,6 +177,8 @@ export async function subirDocumentoEstrategicoIA(formData: FormData) {
           ? `No se pudo procesar el PDF: ${error.message}`
           : 'No se pudo procesar el PDF.',
     }
+  } finally {
+    await rm(tempFilePath, { force: true }).catch(() => undefined)
   }
 }
 

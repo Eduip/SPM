@@ -1,7 +1,5 @@
 'use server'
 
-import { readFile } from 'fs/promises'
-import path from 'path'
 import { revalidatePath } from 'next/cache'
 import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 import {
@@ -10,6 +8,7 @@ import {
   upsertProjectVisualization,
   writeProjectVisualizationFile,
 } from '../../../lib/ai/project-visualizations'
+import { downloadRuntimeFile } from '../../../lib/runtime-storage'
 import { createClient } from '../../../lib/supabase-server'
 
 type GenerateVisualizationPayload = {
@@ -100,6 +99,7 @@ export async function generarVisualizacionProyecto(payload: GenerateVisualizatio
           projectId: payload.projectId,
           fileName: `reference-${timestamp}${guessExtension(imageSource.mimeType)}`,
           buffer: imageSource.buffer,
+          mimeType: imageSource.mimeType,
         })
       : existingVisualization?.referenceImagePath ?? ''
 
@@ -109,6 +109,7 @@ export async function generarVisualizacionProyecto(payload: GenerateVisualizatio
           projectId: payload.projectId,
           fileName: `generated-${timestamp}-${index + 1}.png`,
           buffer: generatedImage.buffer,
+          mimeType: generatedImage.mimeType,
         }),
         mimeType: generatedImage.mimeType,
       }))
@@ -175,9 +176,9 @@ async function resolveImageSource(
   if (existingVisualization?.referenceImagePath) {
     return {
       success: true as const,
-      buffer: await readFile(existingVisualization.referenceImagePath),
+      buffer: await downloadRuntimeFile(existingVisualization.referenceImagePath),
       mimeType: existingVisualization.referenceImageMimeType,
-      fileName: path.basename(existingVisualization.referenceImagePath),
+      fileName: existingVisualization.referenceImagePath.split('/').pop() || 'referencia.png',
     }
   }
 
