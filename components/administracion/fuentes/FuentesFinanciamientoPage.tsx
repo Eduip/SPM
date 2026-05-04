@@ -114,7 +114,7 @@ export default function FuentesFinanciamientoPage({
   const [deletingFuente, setDeletingFuente] = useState(false)
 
   const selectedFuente = useMemo(
-    () => fuentes.find((f) => f.id === selectedId) ?? fuentes[0] ?? null,
+    () => (selectedId ? fuentes.find((f) => f.id === selectedId) ?? null : null),
     [fuentes, selectedId]
   )
 
@@ -128,9 +128,19 @@ export default function FuentesFinanciamientoPage({
 
   const [form, setForm] = useState<FormState>(() => toFormState(selectedFuente))
 
+  const handleStartNewFuente = () => {
+    setSelectedId(null)
+    setForm(emptyForm)
+    setShowNewForm(true)
+    setShowNewFieldForm(false)
+    setShowNewDocumentForm(false)
+    setShowNewRuleForm(false)
+  }
+
   const handleSelect = (fuente: Fuente) => {
     setSelectedId(fuente.id)
     setForm(toFormState(fuente))
+    setShowNewForm(false)
     setShowNewFieldForm(false)
     setShowNewDocumentForm(false)
     setShowNewRuleForm(false)
@@ -257,7 +267,7 @@ export default function FuentesFinanciamientoPage({
             Duplicar Configuración
           </button>
           <button
-            onClick={() => setShowNewForm((v) => !v)}
+            onClick={handleStartNewFuente}
             style={darkButtonStyle}
           >
             + Nueva Fuente
@@ -281,6 +291,9 @@ export default function FuentesFinanciamientoPage({
             }
 
             setShowNewForm(false)
+            if (res.success) {
+              setForm(emptyForm)
+            }
             router.refresh()
           }}
           style={topNewFormStyle}
@@ -403,7 +416,7 @@ export default function FuentesFinanciamientoPage({
             })}
 
             <button
-              onClick={() => setShowNewForm(true)}
+              onClick={handleStartNewFuente}
               style={ghostAddButtonStyle}
             >
               + Crear Fuente
