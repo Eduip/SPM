@@ -46,6 +46,7 @@ export default function GeneralTab({
           projectId={proyecto.id}
           projectName={proyecto.nombre ?? 'Proyecto'}
           initialVisualization={visualization ?? null}
+          editable={false}
         />
 
         <div

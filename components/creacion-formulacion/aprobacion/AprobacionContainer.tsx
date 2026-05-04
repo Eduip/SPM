@@ -11,6 +11,7 @@ import PostulacionDinamicaCard from './PostulacionDinamicaCard'
 import DocumentosRevisionCard from './DocumentosRevisionCard'
 import AlertasActivasPanel from '../diagnostico/AlertasActivasPanel'
 import UltimosDocumentosPanel from '../diagnostico/UltimosDocumentosPanel'
+import ProjectVisualizationCard from '../../ficha-proyecto/ProjectVisualizationCard'
 import type {
   DiagnosticoProyecto,
   CatalogoDocumentoFormulacion,
@@ -32,6 +33,7 @@ export default function AprobacionContainer({
   respuestasPostulacion,
   documentos,
   catalogoDocumentos,
+  visualization,
 }: {
   proyectoId: string
   proyecto: ProyectoAprobacion | null
@@ -46,6 +48,13 @@ export default function AprobacionContainer({
   respuestasPostulacion: RespuestaPostulacion[]
   documentos: DocumentoAprobacion[]
   catalogoDocumentos: CatalogoDocumentoFormulacion[]
+  visualization?: {
+    referenceUrl: string
+    generatedUrls: string[]
+    referencePrompt: string
+    userInstructions: string
+    generatedAt: string
+  } | null
 }) {
   const documentosObligatorios = catalogoDocumentos.filter((d) => d.obligatorio)
   const documentosPorCatalogo = new Map(documentos.map((d) => [getRequirementId(d), d]))
@@ -99,6 +108,11 @@ export default function AprobacionContainer({
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <ProjectVisualizationCard
+            projectId={proyectoId}
+            projectName={proyecto?.nombre ?? 'Proyecto'}
+            initialVisualization={visualization ?? null}
+          />
           <ResumenProyectoCard
             proyecto={proyecto}
             postulacion={postulacion}

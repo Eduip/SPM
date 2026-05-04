@@ -3,6 +3,7 @@ import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
 import AprobacionContainer from '../../../components/creacion-formulacion/aprobacion/AprobacionContainer'
 import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
+import { getProjectVisualization } from '../../../lib/ai/project-visualizations'
 
 type PageProps = {
   searchParams: Promise<{
@@ -37,6 +38,7 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
     camposRes,
     respuestasRes,
     documentosRes,
+    visualization,
   ] =
     await Promise.all([
       supabase
@@ -96,6 +98,7 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
         .from('documentos_proyecto')
         .select('*')
         .eq('proyecto_id', proyectoId),
+      getProjectVisualization(proyectoId),
     ])
 
   const proyecto = proyectoRes.data
@@ -136,6 +139,20 @@ export default async function AprobacionPage({ searchParams }: PageProps) {
         respuestasPostulacion={respuestasPostulacion}
         documentos={documentos}
         catalogoDocumentos={catalogoDocumentos}
+        visualization={
+          visualization
+            ? {
+                referenceUrl: `/api/project-visualizations/${proyectoId}/reference`,
+                generatedUrls: visualization.generatedImages.map(
+                  (_image, index) =>
+                    `/api/project-visualizations/${proyectoId}/generated?idx=${index}`
+                ),
+                referencePrompt: visualization.referencePrompt,
+                userInstructions: visualization.userInstructions,
+                generatedAt: visualization.generatedAt,
+              }
+            : null
+        }
       />
     </AppShell>
   )

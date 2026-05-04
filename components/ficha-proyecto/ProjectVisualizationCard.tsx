@@ -16,10 +16,12 @@ export default function ProjectVisualizationCard({
   projectId,
   projectName,
   initialVisualization,
+  editable = true,
 }: {
   projectId: string
   projectName: string
   initialVisualization: VisualizationData | null
+  editable?: boolean
 }) {
   const [instructions, setInstructions] = useState(
     initialVisualization?.userInstructions ?? ''
@@ -153,8 +155,9 @@ export default function ProjectVisualizationCard({
               maxWidth: 760,
             }}
           >
-            Sube una imagen actual del lugar y genera una propuesta visual conceptual
-            del proyecto. Esta vista es referencial y está pensada para presentación.
+            {editable
+              ? 'Sube una imagen actual del lugar y genera una propuesta visual conceptual del proyecto. Esta vista es referencial y está pensada para presentación.'
+              : 'Visualización referencial del proyecto para consulta y presentación.'}
           </p>
         </div>
 
@@ -179,7 +182,9 @@ export default function ProjectVisualizationCard({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.3fr) minmax(320px, 0.9fr)',
+          gridTemplateColumns: editable
+            ? 'minmax(0, 1.3fr) minmax(320px, 0.9fr)'
+            : '1fr',
           gap: 20,
           alignItems: 'start',
         }}
@@ -233,17 +238,18 @@ export default function ProjectVisualizationCard({
           </div>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-            borderRadius: 18,
-            border: '1px solid var(--border)',
-            background: 'var(--surface-muted)',
-            padding: 16,
-          }}
-        >
+        {editable ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              borderRadius: 18,
+              border: '1px solid var(--border)',
+              background: 'var(--surface-muted)',
+              padding: 16,
+            }}
+          >
           <label
             style={{
               fontSize: 13,
@@ -372,7 +378,8 @@ export default function ProjectVisualizationCard({
             </div>
           ) : null}
 
-        </div>
+          </div>
+        ) : null}
       </div>
       {selectedViewerImage ? (
         <div
