@@ -4,7 +4,6 @@ import path from 'node:path'
 import { createAdminClient } from './supabase-admin'
 
 const BUCKET = 'runtime-data'
-const JSON_CACHE = new Map<string, unknown>()
 
 type UploadPayload = {
   path: string
@@ -86,22 +85,14 @@ export async function loadRuntimeJson<T>(
   fallback: T,
   localFallbackPath?: string
 ) {
-  if (JSON_CACHE.has(targetPath)) {
-    return JSON_CACHE.get(targetPath) as T
-  }
-
   try {
     const content = await downloadRuntimeFile(targetPath)
-    const parsed = JSON.parse(content.toString('utf8')) as T
-    JSON_CACHE.set(targetPath, parsed)
-    return parsed
+    return JSON.parse(content.toString('utf8')) as T
   } catch {
     if (localFallbackPath) {
       try {
         const content = await readFile(path.resolve(localFallbackPath), 'utf8')
-        const parsed = JSON.parse(content) as T
-        JSON_CACHE.set(targetPath, parsed)
-        return parsed
+        return JSON.parse(content) as T
       } catch {
       }
     }
@@ -116,15 +107,9 @@ export async function saveRuntimeJson<T>(targetPath: string, payload: T) {
     buffer: Buffer.from(JSON.stringify(payload, null, 2), 'utf8'),
     contentType: 'application/json; charset=utf-8',
   })
-  JSON_CACHE.set(targetPath, payload)
   return payload
 }
 
 export function clearRuntimeJsonCache(path?: string) {
-  if (path) {
-    JSON_CACHE.delete(path)
-    return
-  }
-
-  JSON_CACHE.clear()
+  return path
 }
