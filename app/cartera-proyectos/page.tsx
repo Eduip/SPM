@@ -96,7 +96,14 @@ export default async function CarteraProyectosPage({
 
   const rawProjects = (data ?? []) as ProyectoCarteraRaw[]
   const projectIds = rawProjects.map((proyecto) => proyecto.id)
-  const [fuentesProyectoRes, camposPresupuestoRes, respuestasPresupuestoRes] =
+  const [
+    fuentesProyectoRes,
+    camposPresupuestoRes,
+    respuestasPresupuestoRes,
+    estadosPagoRes,
+    transferenciasRes,
+    rendicionesRes,
+  ] =
     projectIds.length
       ? await Promise.all([
           supabase
@@ -112,8 +119,23 @@ export default async function CarteraProyectosPage({
             .from('proyecto_postulacion_respuestas')
             .select('proyecto_id, campo_id, valor_texto, valor_numero, valor_json')
             .in('proyecto_id', projectIds),
+          supabase
+            .from('proyecto_estados_pago')
+            .select('proyecto_id, monto, avance_fisico, estado')
+            .in('proyecto_id', projectIds),
+          supabase
+            .from('proyecto_transferencias')
+            .select('proyecto_id, monto')
+            .in('proyecto_id', projectIds),
+          supabase
+            .from('proyecto_rendiciones')
+            .select('proyecto_id, monto_rendido')
+            .in('proyecto_id', projectIds),
         ])
       : [
+          { data: [] },
+          { data: [] },
+          { data: [] },
           { data: [] },
           { data: [] },
           { data: [] },
@@ -126,9 +148,22 @@ export default async function CarteraProyectosPage({
     responses: respuestasPresupuestoRes.data ?? [],
   })
 
+  const estadosPagoPorProyecto = groupByProjectId(estadosPagoRes.data ?? [])
+  const transferenciasPorProyecto = groupByProjectId(transferenciasRes.data ?? [])
+  const rendicionesPorProyecto = groupByProjectId(rendicionesRes.data ?? [])
+
   const proyectos: ProyectoCartera[] = rawProjects.map((p) => ({
     ...p,
     presupuesto_total: presupuestoPorProyecto.get(p.id) ?? null,
+    avance_fisico_actual: calcularAvanceFisico(estadosPagoPorProyecto.get(p.id) ?? []),
+    avance_financiero_actual: calcularAvanceFinanciero({
+      estadosPago: estadosPagoPorProyecto.get(p.id) ?? [],
+      transferencias: transferenciasPorProyecto.get(p.id) ?? [],
+      rendiciones: rendicionesPorProyecto.get(p.id) ?? [],
+      presupuestoTotal: Number(
+        presupuestoPorProyecto.get(p.id) ?? p.monto_estimado ?? 0
+      ),
+    }),
     unidad: Array.isArray(p.unidad) ? p.unidad[0] ?? null : p.unidad,
     fuente: Array.isArray(p.fuente) ? p.fuente[0] ?? null : p.fuente,
     responsable: Array.isArray(p.responsable)
@@ -145,4 +180,75 @@ export default async function CarteraProyectosPage({
       />
     </AppShell>
   )
+}
+
+function groupByProjectId<
+  T extends {
+    proyecto_id?: string | null
+  },
+>(rows: T[]) {
+  const grouped = new Map<string, T[]>()
+
+  for (const row of rows) {
+    const projectId = row.proyecto_id
+    if (!projectId) continue
+
+    const current = grouped.get(projectId) ?? []
+    current.push(row)
+    grouped.set(projectId, current)
+  }
+
+  return grouped
+}
+
+function calcularAvanceFisico(
+  estadosPago: Array<{ avance_fisico?: number | string | null }>
+) {
+  const avances = estadosPago
+    .map((estadoPago) => Number(estadoPago.avance_fisico ?? 0))
+    .filter((avance) => Number.isFinite(avance))
+
+  if (avances.length === 0) return 0
+
+  return clampPercentage(Math.max(...avances))
+}
+
+function calcularAvanceFinanciero({
+  estadosPago,
+  transferencias,
+  rendiciones,
+  presupuestoTotal,
+}: {
+  estadosPago: Array<{ monto?: number | string | null; estado?: string | null }>
+  transferencias: Array<{ monto?: number | string | null }>
+  rendiciones: Array<{ monto_rendido?: number | string | null }>
+  presupuestoTotal: number
+}) {
+  if (!presupuestoTotal || presupuestoTotal <= 0) return 0
+
+  const totalPagado = estadosPago
+    .filter((estadoPago) => estadoPago.estado === 'pagado')
+    .reduce((total, estadoPago) => total + Number(estadoPago.monto ?? 0), 0)
+
+  const totalTransferido = transferencias.reduce(
+    (total, transferencia) => total + Number(transferencia.monto ?? 0),
+    0
+  )
+
+  const totalRendido = rendiciones.reduce(
+    (total, rendicion) => total + Number(rendicion.monto_rendido ?? 0),
+    0
+  )
+
+  const montoEjecutadoActual = Math.max(totalPagado, totalTransferido, totalRendido)
+
+  return clampPercentage(Math.round((montoEjecutadoActual / presupuestoTotal) * 100))
+}
+
+function clampPercentage(value: number) {
+  if (!Number.isFinite(value)) return 0
+
+  if (value < 0) return 0
+  if (value > 100) return 100
+  return value
 }
