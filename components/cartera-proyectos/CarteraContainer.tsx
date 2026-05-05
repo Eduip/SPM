@@ -10,9 +10,11 @@ import CarteraTable from './CarteraTable'
 export default function CarteraContainer({
   proyectos,
   initialSearch = '',
+  canDeleteProjects = false,
 }: {
   proyectos: ProyectoCartera[]
   initialSearch?: string
+  canDeleteProjects?: boolean
 }) {
   const [estado, setEstado] = useState('Todos')
   const [unidad, setUnidad] = useState('Todas')
@@ -100,7 +102,7 @@ export default function CarteraContainer({
         anios={anios}
       />
       <CarteraStats proyectos={proyectosFiltrados} />
-      <CarteraTable proyectos={proyectosFiltrados} />
+      <CarteraTable proyectos={proyectosFiltrados} canDeleteProjects={canDeleteProjects} />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import AccessDenied from '../../components/AccessDenied'
 import { createClient } from '../../lib/supabase-server'
 import CarteraContainer from '../../components/cartera-proyectos/CarteraContainer'
 import { buildProjectBudgetMap } from '../../lib/project-budget'
-import { PERMISSIONS, requirePermission } from '../../lib/auth-guards'
+import { hasPermission, PERMISSIONS, requirePermission } from '../../lib/auth-guards'
 
 export type ProyectoCartera = {
   id: string
@@ -141,6 +141,7 @@ export default async function CarteraProyectosPage({
       <CarteraContainer
         proyectos={proyectos}
         initialSearch={resolvedSearchParams?.search ?? ''}
+        canDeleteProjects={access.isAdmin || hasPermission(access, PERMISSIONS.administracionManage)}
       />
     </AppShell>
   )
