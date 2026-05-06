@@ -1,11 +1,7 @@
 'use server'
 
-import { execFile } from 'node:child_process'
-import { rm, writeFile } from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
-import { promisify } from 'node:util'
 import { requireAdmin } from '../../../lib/auth-guards'
+import { extractStrategicPdf } from '../../../lib/ai/extract-strategic-pdf'
 import { loadMunicipalAISettings, saveMunicipalAISettings } from '../../../lib/ai/municipal-ai-settings'
 import {
   addStrategicDocument,
@@ -38,11 +34,6 @@ type SaveAIParametersPayload = {
     avoidTerms: boolean
   }
 }
-
-const execFileAsync = promisify(execFile)
-const PYTHON_BIN =
-  '/Users/edu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3'
-const PDF_EXTRACTOR = `${process.cwd()}/scripts/extract_strategic_pdf.py`
 
 export async function guardarParametrosIA(payload: SaveAIParametersPayload) {
   const supabase = await createClient()
@@ -116,26 +107,13 @@ export async function subirDocumentoEstrategicoIA(formData: FormData) {
   const timestamp = Date.now()
   const storedName = `${timestamp}-${safeOriginalName}`
   const buffer = Buffer.from(await file.arrayBuffer())
-  const tempFilePath = path.join(os.tmpdir(), storedName)
 
   try {
-    await writeFile(tempFilePath, buffer)
+    const parsed = await extractStrategicPdf(buffer)
 
-    const { stdout } = await execFileAsync(PYTHON_BIN, [PDF_EXTRACTOR, tempFilePath], {
-      maxBuffer: 1024 * 1024 * 20,
-    })
-
-    const parsed = JSON.parse(stdout) as {
-      pageCount?: number
-      chunks?: StrategicDocument['chunks']
-      error?: string
-    }
-
-    if (parsed.error) {
-      return { success: false, error: 'No se pudo extraer el contenido del PDF.' }
-    }
-
-    const chunks = Array.isArray(parsed.chunks) ? parsed.chunks.filter((chunk) => chunk.content?.trim()) : []
+    const chunks = Array.isArray(parsed.chunks)
+      ? parsed.chunks.filter((chunk) => chunk.content?.trim())
+      : []
 
     if (chunks.length === 0) {
       return {
@@ -177,8 +155,6 @@ export async function subirDocumentoEstrategicoIA(formData: FormData) {
           ? `No se pudo procesar el PDF: ${error.message}`
           : 'No se pudo procesar el PDF.',
     }
-  } finally {
-    await rm(tempFilePath, { force: true }).catch(() => undefined)
   }
 }
 
