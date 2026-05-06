@@ -104,8 +104,8 @@ export async function removeStrategicDocument(documentId: string) {
 export function toStrategicDocumentSummary(
   document: StrategicDocument
 ): StrategicDocumentSummary {
-  const summary = { ...document }
-  delete (summary as StrategicDocument).chunks
+  const { chunks, ...summary } = document
+  void chunks
   return summary
 }
 

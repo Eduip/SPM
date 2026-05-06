@@ -67,28 +67,22 @@ export async function extractStrategicPdf(buffer: Buffer): Promise<ExtractedStra
 }
 
 async function extractPages(buffer: Buffer) {
-  const pages: Array<{ pageNumber: number; text: string }> = []
   const parser = new PDFParse({ data: buffer })
 
   try {
-    const info = await parser.getInfo()
+    const result = await parser.getText({ pageJoiner: '' })
+    const extractedPages = Array.isArray(result.pages) ? result.pages : []
 
-    for (let pageNumber = 1; pageNumber <= info.total; pageNumber += 1) {
-      const result = await parser.getText({
-        partial: [pageNumber],
-        pageJoiner: '',
-      })
-
-      pages.push({
-        pageNumber,
-        text: result.text ?? '',
-      })
-    }
+    return extractedPages.map((page, index) => ({
+      pageNumber:
+        typeof page?.num === 'number' && Number.isFinite(page.num)
+          ? page.num
+          : index + 1,
+      text: typeof page?.text === 'string' ? page.text : '',
+    }))
   } finally {
     await parser.destroy()
   }
-
-  return pages
 }
 
 function normalizeSpaces(text: string) {
