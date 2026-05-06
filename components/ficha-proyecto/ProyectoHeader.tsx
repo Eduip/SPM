@@ -107,7 +107,7 @@ export default function ProyectoHeader({
       />
       <InfoItem
         label="Término contractual"
-        value="15 Dic 2024"
+        value={proyecto?.termino_contractual ? formatDate(proyecto.termino_contractual) : '-'}
       />
     </div>
   </div>

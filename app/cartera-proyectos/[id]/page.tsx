@@ -182,6 +182,7 @@ export default async function ProyectoPage({
 
   const presupuestoTotal = presupuestoPorProyecto.get(resolvedParams.id) ?? null
   const avanceFisicoCalculado = calcularAvanceFisico(estadosPagoData ?? [])
+  const terminoContractual = calcularTerminoContractual(bitacoraData ?? [])
   const montoEjecutadoActual = calcularMontoEjecutadoActual({
     estadosPago: estadosPagoData ?? [],
     transferencias: transferenciasData ?? [],
@@ -200,6 +201,7 @@ export default async function ProyectoPage({
         ...data,
         presupuesto_total: presupuestoTotal,
         monto_ejecutado_actual: montoEjecutadoActual,
+        termino_contractual: terminoContractual,
         avance_fisico_actual: avanceFisicoCalculado,
         avance_financiero_actual: avanceFinancieroCalculado,
         unidad: Array.isArray(data.unidad) ? data.unidad[0] ?? null : data.unidad,
@@ -445,6 +447,37 @@ function calcularAvanceFisico(
   if (avances.length === 0) return 0
 
   return clampPercentage(Math.max(...avances))
+}
+
+function calcularTerminoContractual(
+  bitacora: Array<{ tipo?: string | null; metadata?: Record<string, unknown> | null }>
+) {
+  const fechas = bitacora
+    .filter((item) => item.tipo === 'proveedor')
+    .map((item) => {
+      const metadata = item.metadata as
+        | {
+            modulo?: string
+            servicio?: {
+              plazo_hasta?: string
+            }
+          }
+        | null
+
+      if (metadata?.modulo !== 'proveedores') return null
+      return metadata.servicio?.plazo_hasta ?? null
+    })
+    .filter((value): value is string => Boolean(value))
+    .map((value) => new Date(value))
+    .filter((value) => !Number.isNaN(value.getTime()))
+
+  if (fechas.length === 0) return null
+
+  const latest = fechas.reduce((current, candidate) =>
+    candidate.getTime() > current.getTime() ? candidate : current
+  )
+
+  return latest.toISOString()
 }
 
 function calcularAvanceFinanciero({
