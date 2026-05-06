@@ -28,6 +28,10 @@ export type StrategicDocument = {
   chunks: StrategicDocumentChunk[]
 }
 
+export type StrategicDocumentSummary = Omit<StrategicDocument, 'chunks'> & {
+  chunks?: never
+}
+
 type StrategicDocumentsStore = {
   version: number
   documents: StrategicDocument[]
@@ -63,6 +67,11 @@ export async function listStrategicDocuments() {
   return store.documents
 }
 
+export async function listStrategicDocumentSummaries(): Promise<StrategicDocumentSummary[]> {
+  const documents = await listStrategicDocuments()
+  return documents.map(toStrategicDocumentSummary)
+}
+
 export async function addStrategicDocument(document: StrategicDocument) {
   const store = await loadStrategicDocumentsStore()
   const nextStore = {
@@ -90,6 +99,14 @@ export async function removeStrategicDocument(documentId: string) {
 
   await saveStrategicDocumentsStore(nextStore)
   return { success: true }
+}
+
+export function toStrategicDocumentSummary(
+  document: StrategicDocument
+): StrategicDocumentSummary {
+  const summary = { ...document }
+  delete (summary as StrategicDocument).chunks
+  return summary
 }
 
 export async function writeStrategicDocumentFile({

@@ -5,8 +5,9 @@ import { extractStrategicPdf } from '../../../lib/ai/extract-strategic-pdf'
 import { loadMunicipalAISettings, saveMunicipalAISettings } from '../../../lib/ai/municipal-ai-settings'
 import {
   addStrategicDocument,
-  listStrategicDocuments,
+  listStrategicDocumentSummaries,
   removeStrategicDocument,
+  toStrategicDocumentSummary,
   writeStrategicDocumentFile,
   type StrategicDocument,
 } from '../../../lib/ai/strategic-documents'
@@ -75,7 +76,7 @@ export async function listarDocumentosEstrategicosIA() {
 
   return {
     success: true,
-    documents: await listStrategicDocuments(),
+    documents: await listStrategicDocumentSummaries(),
   }
 }
 
@@ -145,7 +146,7 @@ export async function subirDocumentoEstrategicoIA(formData: FormData) {
 
     return {
       success: true,
-      document,
+      document: toStrategicDocumentSummary(document),
     }
   } catch (error) {
     return {

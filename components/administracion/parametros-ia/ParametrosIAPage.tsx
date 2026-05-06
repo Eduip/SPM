@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { MunicipalAISettings } from '../../../lib/ai/municipal-ai-settings'
-import type { StrategicDocument } from '../../../lib/ai/strategic-documents'
+import type { StrategicDocumentSummary } from '../../../lib/ai/strategic-documents'
 import {
   eliminarDocumentoEstrategicoIA,
   guardarParametrosIA,
@@ -15,7 +15,7 @@ export default function ParametrosIAPage({
   strategicDocuments,
 }: {
   initialSettings: MunicipalAISettings
-  strategicDocuments: StrategicDocument[]
+  strategicDocuments: StrategicDocumentSummary[]
 }) {
   const router = useRouter()
   const [form, setForm] = useState(initialSettings)

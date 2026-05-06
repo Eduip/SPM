@@ -3,7 +3,7 @@ import AccessDenied from '../../../components/AccessDenied'
 import ParametrosIAPage from '../../../components/administracion/parametros-ia/ParametrosIAPage'
 import { requirePermission, PERMISSIONS } from '../../../lib/auth-guards'
 import { loadMunicipalAISettings } from '../../../lib/ai/municipal-ai-settings'
-import { listStrategicDocuments } from '../../../lib/ai/strategic-documents'
+import { listStrategicDocumentSummaries } from '../../../lib/ai/strategic-documents'
 import { createClient } from '../../../lib/supabase-server'
 
 export default async function ParametrosIAPageRoute() {
@@ -20,7 +20,7 @@ export default async function ParametrosIAPageRoute() {
 
   const [settings, strategicDocuments] = await Promise.all([
     loadMunicipalAISettings(),
-    listStrategicDocuments(),
+    listStrategicDocumentSummaries(),
   ])
 
   return (
