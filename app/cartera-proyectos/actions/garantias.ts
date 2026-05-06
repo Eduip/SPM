@@ -94,6 +94,139 @@ export async function actualizarGarantia(formData: FormData) {
   return { success: true }
 }
 
+export async function registrarEndosoGarantia(formData: FormData) {
+  const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.garantiasEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
+
+  const proyecto_id = String(formData.get('proyecto_id') || '')
+  const garantia_id = String(formData.get('garantia_id') || '')
+  const motivo = String(formData.get('motivo') || '').trim()
+  const nueva_glosa = String(formData.get('nueva_glosa') || '').trim()
+  const nueva_fecha_vencimiento = String(formData.get('nueva_fecha_vencimiento') || '').trim()
+  const documento_nombre = String(formData.get('documento_nombre') || '').trim()
+  const documento_archivo = formData.get('documento_archivo') as File | null
+
+  if (!proyecto_id || !garantia_id) {
+    return { success: false, error: 'No se recibió la garantía a endosar.' }
+  }
+
+  if (!motivo && !nueva_glosa && !nueva_fecha_vencimiento && !documento_archivo) {
+    return {
+      success: false,
+      error: 'Debes indicar al menos un cambio de glosa, vigencia o adjuntar un documento de endoso.',
+    }
+  }
+
+  const { data: garantiaActual, error: garantiaError } = await supabase
+    .from('proyecto_garantias')
+    .select('id, observacion, fecha_vencimiento, numero_documento, tipo')
+    .eq('id', garantia_id)
+    .eq('proyecto_id', proyecto_id)
+    .maybeSingle()
+
+  if (garantiaError || !garantiaActual) {
+    return {
+      success: false,
+      error: garantiaError?.message || 'No se pudo cargar la garantía seleccionada.',
+    }
+  }
+
+  const payload: Record<string, string | null> = {}
+
+  if (nueva_glosa) {
+    payload.observacion = nueva_glosa
+  }
+
+  if (nueva_fecha_vencimiento) {
+    payload.fecha_vencimiento = nueva_fecha_vencimiento
+    payload.estado = getEstadoGarantia(nueva_fecha_vencimiento)
+  }
+
+  if (Object.keys(payload).length > 0) {
+    const { error: updateError } = await supabase
+      .from('proyecto_garantias')
+      .update(payload)
+      .eq('id', garantia_id)
+      .eq('proyecto_id', proyecto_id)
+
+    if (updateError) {
+      return { success: false, error: updateError.message }
+    }
+  }
+
+  if (documento_archivo && documento_archivo.size > 0) {
+    const safeFileName = documento_archivo.name.replace(/\s+/g, '-')
+    const path = `${proyecto_id}/garantias/${garantia_id}/endoso-${Date.now()}-${safeFileName}`
+    const buffer = Buffer.from(await documento_archivo.arrayBuffer())
+
+    const { error: uploadError } = await supabase.storage
+      .from('documentos-proyectos')
+      .upload(path, buffer, {
+        contentType: documento_archivo.type || 'application/octet-stream',
+        upsert: false,
+      })
+
+    if (uploadError) {
+      return {
+        success: false,
+        error: uploadError.message || 'No se pudo subir el documento de endoso.',
+      }
+    }
+
+    const { error: insertError } = await supabase.from('documentos_proyecto').insert({
+      proyecto_id,
+      catalogo_documento_id: null,
+      nombre: documento_nombre || `Endoso ${garantiaActual.numero_documento || garantiaActual.tipo || ''}`.trim(),
+      nombre_archivo: documento_archivo.name,
+      ruta_storage: path,
+      bucket: 'documentos-proyectos',
+      tipo_documento: 'Endoso de garantía',
+      etapa: 'garantias',
+      extension: documento_archivo.name.split('.').pop() || null,
+      tamano_bytes: documento_archivo.size,
+      mime_type: documento_archivo.type || null,
+      subido_por: authGuard.userId,
+      fecha_subida: new Date().toISOString(),
+      obligatorio: false,
+      estado_revision: 'subido',
+      porcentaje_validacion: 100,
+      observacion: `garantia_id:${garantia_id}`,
+    })
+
+    if (insertError) {
+      return {
+        success: false,
+        error: insertError.message || 'No se pudo registrar el documento de endoso.',
+      }
+    }
+  }
+
+  await supabase.from('historial_eventos').insert({
+    entidad: 'proyecto',
+    entidad_id: proyecto_id,
+    accion: 'registrar_endoso_garantia',
+    descripcion: `Se registró un endoso para la garantía ${garantiaActual.numero_documento || garantiaActual.tipo}.`,
+    usuario_id: authGuard.userId,
+    metadata: {
+      garantia_id,
+      motivo: motivo || null,
+      glosa_anterior: garantiaActual.observacion || null,
+      nueva_glosa: nueva_glosa || null,
+      fecha_vencimiento_anterior: garantiaActual.fecha_vencimiento || null,
+      nueva_fecha_vencimiento: nueva_fecha_vencimiento || null,
+      adjunto_endoso: Boolean(documento_archivo && documento_archivo.size > 0),
+    },
+  })
+
+  revalidatePath(`/cartera-proyectos/${proyecto_id}`)
+
+  return { success: true }
+}
+
 export async function eliminarGarantia(formData: FormData) {
   const supabase = await createClient()
   const authGuard = await requirePermission(supabase, PERMISSIONS.garantiasEdit)

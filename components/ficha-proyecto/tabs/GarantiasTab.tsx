@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, Eye, FilePlus2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Download, Eye, FilePenLine, FilePlus2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import {
   actualizarGarantia,
   adjuntarDocumentoGarantia,
   crearGarantia,
   eliminarGarantia,
   obtenerUrlDocumentoGarantia,
+  registrarEndosoGarantia,
 } from '../../../app/cartera-proyectos/actions/garantias'
 import type {
   DocumentoEstadoPago,
@@ -26,6 +27,7 @@ export default function GarantiasTab({
   const [showForm, setShowForm] = useState(false)
   const [editingGarantia, setEditingGarantia] = useState<GarantiaProyecto | null>(null)
   const [documentForGarantia, setDocumentForGarantia] = useState<GarantiaProyecto | null>(null)
+  const [endorsementForGarantia, setEndorsementForGarantia] = useState<GarantiaProyecto | null>(null)
   const [message, setMessage] = useState('')
   const router = useRouter()
 
@@ -167,6 +169,7 @@ export default function GarantiasTab({
                   onViewDocumento={(documento) => void handleDocumentoAction(documento, false)}
                   onDownloadDocumento={(documento) => void handleDocumentoAction(documento, true)}
                   onAttach={() => setDocumentForGarantia(g)}
+                  onEndorse={() => setEndorsementForGarantia(g)}
                   onEdit={() => {
                     setEditingGarantia(g)
                     setShowForm(true)
@@ -478,6 +481,112 @@ export default function GarantiasTab({
         </form>
       </div>
     )}
+    {endorsementForGarantia && (
+      <div
+        style={modalOverlayStyle}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="endoso-garantia-modal-title"
+      >
+        <form
+          action={async (formData) => {
+            setMessage('')
+            formData.append('proyecto_id', proyecto.id)
+            formData.append('garantia_id', endorsementForGarantia.id)
+
+            const result = await registrarEndosoGarantia(formData)
+
+            if (!result.success) {
+              setMessage(result.error || 'No se pudo registrar el endoso.')
+              return
+            }
+
+            setMessage('Endoso registrado correctamente.')
+            setEndorsementForGarantia(null)
+            router.refresh()
+          }}
+          style={modalCardStyle}
+        >
+          <div style={modalHeaderStyle}>
+            <div>
+              <h3 id="endoso-garantia-modal-title" style={modalTitleStyle}>
+                Registrar endoso
+              </h3>
+              <p style={modalSubtitleStyle}>
+                Garantía {endorsementForGarantia.numero_documento || endorsementForGarantia.tipo}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEndorsementForGarantia(null)}
+              style={modalCloseButtonStyle}
+              aria-label="Cerrar formulario de endoso"
+              title="Cerrar"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div style={modalGridStyle}>
+            <label style={{ ...fieldStyle, gridColumn: '1 / -1' }}>
+              <span style={fieldLabelStyle}>Motivo del endoso</span>
+              <input
+                name="motivo"
+                placeholder="Ej: ampliar vigencia, corregir glosa, subsanar observación"
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={fieldStyle}>
+              <span style={fieldLabelStyle}>Nueva fecha de vencimiento</span>
+              <input
+                name="nueva_fecha_vencimiento"
+                type="date"
+                defaultValue={endorsementForGarantia.fecha_vencimiento ?? ''}
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={fieldStyle}>
+              <span style={fieldLabelStyle}>Nombre documento endoso</span>
+              <input
+                name="documento_nombre"
+                placeholder="Ej: Endoso de boleta"
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ ...fieldStyle, gridColumn: '1 / -1' }}>
+              <span style={fieldLabelStyle}>Nueva glosa / observación</span>
+              <input
+                name="nueva_glosa"
+                placeholder="Si el endoso corrige la glosa, indícalo aquí"
+                defaultValue={endorsementForGarantia.observacion ?? ''}
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ ...fieldStyle, gridColumn: '1 / -1' }}>
+              <span style={fieldLabelStyle}>Documento de respaldo del endoso</span>
+              <input name="documento_archivo" type="file" style={fileInputStyle} />
+            </label>
+          </div>
+
+          <div style={modalFooterStyle}>
+            <button
+              type="button"
+              onClick={() => setEndorsementForGarantia(null)}
+              style={cancelButtonStyle}
+            >
+              Cancelar
+            </button>
+            <button type="submit" style={submitStyle}>
+              Guardar endoso
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
     </>
   )
 }
@@ -487,6 +596,7 @@ function GarantiaRow({
   onViewDocumento,
   onDownloadDocumento,
   onAttach,
+  onEndorse,
   onEdit,
   onDelete,
 }: {
@@ -494,6 +604,7 @@ function GarantiaRow({
   onViewDocumento: (documento: DocumentoEstadoPago) => void
   onDownloadDocumento: (documento: DocumentoEstadoPago) => void
   onAttach: () => void
+  onEndorse: () => void
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -557,6 +668,15 @@ function GarantiaRow({
           aria-label="Adjuntar documento"
         >
           <FilePlus2 size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={onEndorse}
+          style={smallIconButtonStyle}
+          title="Registrar endoso"
+          aria-label="Registrar endoso"
+        >
+          <FilePenLine size={15} />
         </button>
         <button
           type="button"

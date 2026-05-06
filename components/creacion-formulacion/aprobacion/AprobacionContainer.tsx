@@ -77,6 +77,15 @@ export default function AprobacionContainer({
 
   const puedeAprobar =
     !yaAprobado && documentosOk && diagnosticoOk && postulacionOk && datosProyectoOk
+  const suggestedVisualizationInstructions = buildVisualizationSuggestion({
+    projectName: proyecto?.nombre ?? '',
+    description: datosGenerales?.descripcion ?? '',
+    problem: diagnostico?.problema_central ?? '',
+    justification: diagnostico?.justificacion ?? '',
+    location:
+      typeof proyecto?.localizacion === 'string' ? proyecto.localizacion : '',
+    fundingSource: fuenteNombre,
+  })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -112,6 +121,7 @@ export default function AprobacionContainer({
             projectId={proyectoId}
             projectName={proyecto?.nombre ?? 'Proyecto'}
             initialVisualization={visualization ?? null}
+            suggestedInstructions={suggestedVisualizationInstructions}
           />
           <ResumenProyectoCard
             proyecto={proyecto}
@@ -151,6 +161,45 @@ export default function AprobacionContainer({
       </div>
     </div>
   )
+}
+
+function buildVisualizationSuggestion({
+  projectName,
+  description,
+  problem,
+  justification,
+  location,
+  fundingSource,
+}: {
+  projectName: string
+  description: string
+  problem: string
+  justification: string
+  location: string
+  fundingSource: string
+}) {
+  const snippets = [
+    description.trim(),
+    problem.trim(),
+    justification.trim(),
+  ].filter(Boolean)
+
+  const context = snippets.join(' ').replace(/\s+/g, ' ').trim()
+
+  return [
+    `Representar el proyecto "${projectName || 'municipal'}" como una intervención ejecutada y realista sobre la imagen base.`,
+    context
+      ? `Basarse en esta descripción del proyecto: ${context}`
+      : '',
+    location ? `Considerar el contexto del lugar: ${location}.` : '',
+    fundingSource
+      ? `Mantener coherencia con la fuente de financiamiento ${fundingSource}.`
+      : '',
+    'Mostrar de forma clara las obras, equipamiento, mejoras urbanas, accesibilidad, áreas verdes o infraestructura que se desprendan de la descripción del proyecto, sin inventar elementos ajenos.',
+    'Priorizar una propuesta realista, plausible y ordenada, manteniendo la perspectiva y las proporciones del lugar original.',
+  ]
+    .filter(Boolean)
+    .join(' ')
 }
 
 function getRequirementId(doc: DocumentoAprobacion) {

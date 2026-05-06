@@ -16,15 +16,17 @@ export default function ProjectVisualizationCard({
   projectId,
   projectName,
   initialVisualization,
+  suggestedInstructions = '',
   editable = true,
 }: {
   projectId: string
   projectName: string
   initialVisualization: VisualizationData | null
+  suggestedInstructions?: string
   editable?: boolean
 }) {
   const [instructions, setInstructions] = useState(
-    initialVisualization?.userInstructions ?? ''
+    getInitialInstructions(initialVisualization?.userInstructions, suggestedInstructions)
   )
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -295,7 +297,7 @@ export default function ProjectVisualizationCard({
             <textarea
               value={instructions}
               onChange={(event) => setInstructions(event.target.value)}
-              placeholder="Ejemplo: incorporar una plaza dura con áreas verdes, accesibilidad universal, luminarias LED y zonas de descanso."
+              placeholder="El sistema sugerirá un prompt según la descripción del proyecto, y luego puedes ajustarlo si quieres."
               style={{
                 width: '100%',
                 minHeight: 130,
@@ -309,6 +311,38 @@ export default function ProjectVisualizationCard({
                 background: '#fff',
               }}
             />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                La sugerencia toma como base la descripción y el contexto del proyecto.
+              </div>
+              {suggestedInstructions.trim() ? (
+                <button
+                  type="button"
+                  onClick={() => setInstructions(suggestedInstructions)}
+                  style={{
+                    height: 34,
+                    padding: '0 12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--border-strong)',
+                    background: '#fff',
+                    color: 'var(--text-strong)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Restaurar sugerencia
+                </button>
+              ) : null}
+            </div>
           </label>
 
           <div
@@ -465,6 +499,14 @@ export default function ProjectVisualizationCard({
       ) : null}
     </section>
   )
+}
+
+function getInitialInstructions(
+  savedInstructions?: string | null,
+  suggestedInstructions?: string | null
+) {
+  if (savedInstructions?.trim()) return savedInstructions
+  return suggestedInstructions?.trim() ?? ''
 }
 
 function ImagePanel({
