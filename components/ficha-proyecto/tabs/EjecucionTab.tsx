@@ -135,54 +135,73 @@ export default function EjecucionTab({
             }}
             style={formStyle}
           >
-            <input
-              name="numero"
-              type="number"
-              placeholder="N° Estado de Pago"
-              required
-              style={inputStyle}
-            />
+            <div style={formFieldsGridStyle}>
+              <input
+                name="numero"
+                type="number"
+                placeholder="N° Estado de Pago"
+                required
+                style={inputStyle}
+              />
 
-            <input
-              type="date"
-              name="fecha"
-              required
-              style={inputStyle}
-            />
+              <input
+                type="date"
+                name="fecha"
+                required
+                style={inputStyle}
+              />
 
-            <input
-              name="monto"
-              type="number"
-              placeholder="Monto"
-              required
-              style={inputStyle}
-            />
+              <input
+                name="monto"
+                type="number"
+                placeholder="Monto"
+                required
+                style={inputStyle}
+              />
 
-            <input
-              name="avance_fisico"
-              type="number"
-              placeholder="% avance físico"
-              style={inputStyle}
-            />
+              <input
+                name="avance_fisico"
+                type="number"
+                placeholder="% avance físico"
+                style={inputStyle}
+              />
+            </div>
 
             {documentosRequeridos.length > 0 && (
               <div style={requiredDocsCardStyle}>
-                <div style={requiredDocsTitleStyle}>Documentos del estado de pago</div>
+                <div style={requiredDocsHeaderStyle}>
+                  <div style={requiredDocsTitleStyle}>Documentos del estado de pago</div>
+                  <div style={requiredDocsBadgeStyle}>
+                    {documentosRequeridos.length}{' '}
+                    {documentosRequeridos.length === 1 ? 'archivo' : 'archivos'}
+                  </div>
+                </div>
                 <div style={requiredDocsSubtitleStyle}>
-                  Esta fuente exige adjuntar estos documentos al momento de crear el estado de pago.
+                  Adjunta aquí la documentación definida para esta fuente de financiamiento.
                 </div>
                 <div style={requiredDocsGridStyle}>
                   {documentosRequeridos.map((documento) => (
-                    <label key={documento.id} style={fieldStyle}>
-                      <span style={labelStyle}>
-                        {documento.nombre}
-                        {documento.obligatorio ? ' *' : ''}
-                      </span>
+                    <label key={documento.id} style={requiredDocItemStyle}>
+                      <div style={requiredDocLabelRowStyle}>
+                        <span style={labelStyle}>
+                          {documento.nombre}
+                          {documento.obligatorio ? ' *' : ''}
+                        </span>
+                        <span
+                          style={
+                            documento.obligatorio
+                              ? requiredDocMandatoryBadgeStyle
+                              : requiredDocOptionalBadgeStyle
+                          }
+                        >
+                          {documento.obligatorio ? 'Obligatorio' : 'Opcional'}
+                        </span>
+                      </div>
                       <input
                         name={`documento_requerido_${documento.id}`}
                         type="file"
                         required={documento.obligatorio}
-                        style={fileInputStyle}
+                        style={requiredFileInputStyle}
                       />
                     </label>
                   ))}
@@ -190,9 +209,11 @@ export default function EjecucionTab({
               </div>
             )}
 
-            <button type="submit" style={submitStyle}>
-              Guardar
-            </button>
+            <div style={formActionsStyle}>
+              <button type="submit" style={submitStyle}>
+                Guardar
+              </button>
+            </div>
           </form>
         )}
 
@@ -691,13 +712,19 @@ const iconButtonStyle: React.CSSProperties = {
 }
 
 const formStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr 1fr 1fr auto',
-  gap: 12,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
   padding: 16,
   borderRadius: 16,
   background: '#f9fafb',
   border: '1px solid #e5e7eb',
+}
+
+const formFieldsGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+  gap: 12,
 }
 
 const inputStyle: React.CSSProperties = {
@@ -719,17 +746,37 @@ const fileInputStyle: React.CSSProperties = {
 const requiredDocsCardStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: 10,
-  padding: 14,
+  gap: 12,
+  padding: 18,
   borderRadius: 16,
-  border: '1px solid #dbeafe',
-  background: '#f8fbff',
+  border: '1px solid #e5e7eb',
+  background: '#ffffff',
+}
+
+const requiredDocsHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  flexWrap: 'wrap',
 }
 
 const requiredDocsTitleStyle: React.CSSProperties = {
-  fontSize: 14,
+  fontSize: 16,
   fontWeight: 800,
   color: 'var(--text-strong)',
+}
+
+const requiredDocsBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '0 10px',
+  height: 28,
+  borderRadius: 999,
+  background: '#eff6ff',
+  color: '#1d4ed8',
+  fontSize: 12,
+  fontWeight: 800,
 }
 
 const requiredDocsSubtitleStyle: React.CSSProperties = {
@@ -740,8 +787,69 @@ const requiredDocsSubtitleStyle: React.CSSProperties = {
 
 const requiredDocsGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 12,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+  gap: 14,
+}
+
+const requiredDocItemStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+  padding: 14,
+  borderRadius: 14,
+  border: '1px solid #e5e7eb',
+  background: '#f8fafc',
+}
+
+const requiredDocLabelRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 10,
+}
+
+const requiredDocMandatoryBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 24,
+  padding: '0 8px',
+  borderRadius: 999,
+  background: '#fee2e2',
+  color: '#b91c1c',
+  fontSize: 11,
+  fontWeight: 800,
+  flexShrink: 0,
+}
+
+const requiredDocOptionalBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 24,
+  padding: '0 8px',
+  borderRadius: 999,
+  background: '#e5e7eb',
+  color: '#4b5563',
+  fontSize: 11,
+  fontWeight: 800,
+  flexShrink: 0,
+}
+
+const requiredFileInputStyle: React.CSSProperties = {
+  width: '100%',
+  borderRadius: 12,
+  border: '1px solid #d1d5db',
+  padding: 10,
+  fontSize: 13,
+  background: '#ffffff',
+  color: '#374151',
+  boxSizing: 'border-box',
+}
+
+const formActionsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-start',
 }
 
 const submitStyle: React.CSSProperties = {
