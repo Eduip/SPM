@@ -71,6 +71,14 @@ export type DocumentoEstadoPago = {
   bucket?: string | null
 }
 
+export type DocumentoRequeridoEstadoPago = {
+  id: string
+  fuenteId: string
+  nombre: string
+  obligatorio: boolean
+  orden: number
+}
+
 export type PagoProveedorEstadoPago = {
   fecha_transferencia?: string | null
   numero_cartola?: string | null

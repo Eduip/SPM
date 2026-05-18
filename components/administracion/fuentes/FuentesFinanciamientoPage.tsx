@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import {
   actualizarCampoFuente,
   crearCampoFuente,
+  crearDocumentoEstadoPagoFuente,
   crearDocumentoFuente,
   crearFuenteFinanciamiento,
   crearReglaFuente,
   eliminarCampoFuente,
+  eliminarDocumentoEstadoPagoFuente,
   eliminarDocumentoFuente,
   eliminarFuenteFinanciamiento,
   guardarConfiguracionFuente,
@@ -20,6 +22,7 @@ import type {
   ReglaFuente,
 } from '../../../lib/formulacion-types'
 import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
+import type { EstadoPagoDocumentoConfig } from '../../../lib/estado-pago-document-config'
 
 type FieldFormMode = 'descripcion' | 'plazo' | 'presupuesto'
 
@@ -93,12 +96,14 @@ function toFormState(fuente: Fuente | null): FormState {
 export default function FuentesFinanciamientoPage({
     fuentes,
     documentos,
+    documentosEstadoPago,
     campos,
     reglas,
     error,
   }: {
     fuentes: Fuente[]
     documentos: DocumentoFuente[]
+    documentosEstadoPago: EstadoPagoDocumentoConfig[]
     campos: CampoPostulacion[]
     reglas: ReglaFuente[]
     error: string | null
@@ -108,6 +113,7 @@ export default function FuentesFinanciamientoPage({
   const [showNewFieldForm, setShowNewFieldForm] = useState(false)
   const [fieldFormMode, setFieldFormMode] = useState<FieldFormMode>('descripcion')
   const [showNewDocumentForm, setShowNewDocumentForm] = useState(false)
+  const [showNewPaymentDocumentForm, setShowNewPaymentDocumentForm] = useState(false)
   const [showNewRuleForm, setShowNewRuleForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(fuentes[0]?.id ?? null)
   const [saving, setSaving] = useState(false)
@@ -119,6 +125,9 @@ export default function FuentesFinanciamientoPage({
   )
 
   const docsFuente = documentos.filter((d) => d.fuente_id === selectedFuente?.id)
+  const docsEstadoPagoFuente = documentosEstadoPago
+    .filter((d) => d.fuenteId === selectedFuente?.id)
+    .sort((a, b) => a.orden - b.orden)
   
   const camposFuente = campos
     .filter((c) => c.fuente_id === selectedFuente?.id && c.visible)
@@ -134,6 +143,7 @@ export default function FuentesFinanciamientoPage({
     setShowNewForm(true)
     setShowNewFieldForm(false)
     setShowNewDocumentForm(false)
+    setShowNewPaymentDocumentForm(false)
     setShowNewRuleForm(false)
   }
 
@@ -143,6 +153,7 @@ export default function FuentesFinanciamientoPage({
     setShowNewForm(false)
     setShowNewFieldForm(false)
     setShowNewDocumentForm(false)
+    setShowNewPaymentDocumentForm(false)
     setShowNewRuleForm(false)
   }
 
@@ -559,7 +570,82 @@ export default function FuentesFinanciamientoPage({
         onDeleted={() => router.refresh()}
       />
     ))
-  )}
+              )}
+            </div>
+          </div>
+
+          <div style={panelCardStyle}>
+            <div
+              style={{
+                ...panelHeaderStyle,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>💳 Documentos para Estados de Pago</span>
+              <button
+                type="button"
+                onClick={() => setShowNewPaymentDocumentForm((v) => !v)}
+                disabled={!selectedFuente}
+                style={!selectedFuente ? disabledMiniButtonStyle : miniDarkButtonStyle}
+              >
+                + Añadir documento
+              </button>
+            </div>
+
+            {showNewPaymentDocumentForm && selectedFuente && (
+              <form
+                action={async (formData) => {
+                  const nombre = String(formData.get('nombre') || '').trim()
+                  const obligatorio = formData.get('obligatorio') === 'on'
+
+                  const res = await crearDocumentoEstadoPagoFuente({
+                    fuente_id: selectedFuente.id,
+                    nombre,
+                    obligatorio,
+                  })
+
+                  if (!res.success) {
+                    alert(res.error)
+                    return
+                  }
+
+                  setShowNewPaymentDocumentForm(false)
+                  router.refresh()
+                }}
+                style={inlineFormStyle}
+              >
+                <input
+                  name="nombre"
+                  placeholder="Nombre del documento para el estado de pago"
+                  required
+                  style={inputStyle}
+                />
+                <label style={inlineCheckboxStyle}>
+                  <input type="checkbox" name="obligatorio" defaultChecked />
+                  Obligatorio
+                </label>
+                <button type="submit" style={saveButtonStyle}>
+                  Guardar documento
+                </button>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {docsEstadoPagoFuente.length === 0 ? (
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  No hay documentos configurados para estados de pago en esta fuente.
+                </div>
+              ) : (
+                docsEstadoPagoFuente.map((doc) => (
+                  <PaymentDocumentRow
+                    key={doc.id}
+                    doc={doc}
+                    onDeleted={() => router.refresh()}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -918,6 +1004,51 @@ function DocumentRow({
 
     setDeleting(true)
     const res = await eliminarDocumentoFuente(doc.id)
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    onDeleted()
+  }
+
+  return (
+    <div style={simpleRowStyle}>
+      <span style={{ fontSize: 13, color: '#374151' }}>{doc.nombre}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={requiredBadgeStyle}>
+          {doc.obligatorio ? 'Obligatorio' : 'Opcional'}
+        </span>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          style={miniDangerButtonStyle}
+        >
+          {deleting ? 'Eliminando...' : 'Eliminar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PaymentDocumentRow({
+  doc,
+  onDeleted,
+}: {
+  doc: EstadoPagoDocumentoConfig
+  onDeleted: () => void
+}) {
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`¿Eliminar el documento ${doc.nombre}?`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    const res = await eliminarDocumentoEstadoPagoFuente(doc.id)
     setDeleting(false)
 
     if (!res.success) {

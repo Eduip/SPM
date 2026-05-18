@@ -13,7 +13,9 @@ export async function crearGarantia(formData: FormData) {
   }
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
-  const tipo = String(formData.get('tipo') || '')
+  const tipo_garantia = String(formData.get('tipo_garantia') || '').trim()
+  const instrumento = String(formData.get('tipo') || '').trim()
+  const tipo = composeGarantiaType(tipo_garantia, instrumento)
   const numero_documento = String(formData.get('numero_documento') || '')
   const emisor = String(formData.get('emisor') || '')
   const monto = Number(formData.get('monto'))
@@ -21,7 +23,7 @@ export async function crearGarantia(formData: FormData) {
   const fecha_vencimiento = String(formData.get('fecha_vencimiento') || '')
   const observacion = String(formData.get('observacion') || '')
 
-  if (!proyecto_id || !tipo || !numero_documento || !monto || !fecha_vencimiento) {
+  if (!proyecto_id || !tipo_garantia || !instrumento || !numero_documento || !monto || !fecha_vencimiento) {
     return { success: false, error: 'Faltan campos obligatorios de la garantía.' }
   }
 
@@ -58,7 +60,9 @@ export async function actualizarGarantia(formData: FormData) {
 
   const proyecto_id = String(formData.get('proyecto_id') || '')
   const garantia_id = String(formData.get('garantia_id') || '')
-  const tipo = String(formData.get('tipo') || '')
+  const tipo_garantia = String(formData.get('tipo_garantia') || '').trim()
+  const instrumento = String(formData.get('tipo') || '').trim()
+  const tipo = composeGarantiaType(tipo_garantia, instrumento)
   const numero_documento = String(formData.get('numero_documento') || '')
   const emisor = String(formData.get('emisor') || '')
   const monto = Number(formData.get('monto'))
@@ -66,7 +70,15 @@ export async function actualizarGarantia(formData: FormData) {
   const fecha_vencimiento = String(formData.get('fecha_vencimiento') || '')
   const observacion = String(formData.get('observacion') || '')
 
-  if (!proyecto_id || !garantia_id || !tipo || !numero_documento || !monto || !fecha_vencimiento) {
+  if (
+    !proyecto_id ||
+    !garantia_id ||
+    !tipo_garantia ||
+    !instrumento ||
+    !numero_documento ||
+    !monto ||
+    !fecha_vencimiento
+  ) {
     return { success: false, error: 'Faltan campos obligatorios de la garantía.' }
   }
 
@@ -414,4 +426,14 @@ function diasParaVencer(fecha?: string | null) {
   const diff = vencimiento.getTime() - hoy.getTime()
 
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+function composeGarantiaType(tipoGarantia: string, instrumento: string) {
+  const tipo = tipoGarantia.trim()
+  const instrument = instrumento.trim()
+
+  if (!tipo) return instrument
+  if (!instrument) return tipo
+
+  return `${tipo} :: ${instrument}`
 }

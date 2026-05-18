@@ -17,6 +17,13 @@ import type {
   ProyectoFicha,
 } from '../../../lib/project-types'
 
+const TIPO_GARANTIA_OPTIONS = [
+  'Seriedad de la Oferta',
+  'Fiel Cumplimiento',
+  'Buen Uso de Anticipo',
+  'Correcta Ejecución / Mantenimiento',
+] as const
+
 export default function GarantiasTab({
   proyecto,
   garantias,
@@ -126,10 +133,10 @@ export default function GarantiasTab({
               overflow: 'hidden',
             }}
           >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 0.9fr 0.9fr 0.9fr 0.95fr 0.9fr 1.25fr 1.1fr',
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 0.9fr 0.9fr 0.9fr 0.95fr 0.9fr 1.25fr 1.1fr',
                 gap: 12,
                 padding: '14px 16px',
                 background: '#f9fafb',
@@ -140,7 +147,7 @@ export default function GarantiasTab({
                 letterSpacing: '0.06em',
               }}
             >
-              <div>Tipo</div>
+              <div>Tipo de garantía</div>
               <div>Número</div>
               <div>Emisor</div>
               <div>Monto</div>
@@ -309,12 +316,29 @@ export default function GarantiasTab({
 
           <div style={modalGridStyle}>
             <label style={fieldStyle}>
-              <span style={fieldLabelStyle}>Tipo</span>
+              <span style={fieldLabelStyle}>Tipo de garantía</span>
+              <select
+                name="tipo_garantia"
+                required
+                defaultValue={getGarantiaTypeParts(editingGarantia?.tipo).tipoGarantia}
+                style={inputStyle}
+              >
+                <option value="">Seleccione tipo de garantía</option>
+                {TIPO_GARANTIA_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label style={fieldStyle}>
+              <span style={fieldLabelStyle}>Instrumento de garantía</span>
               <input
                 name="tipo"
                 placeholder="Ej: Boleta de garantía"
                 required
-                defaultValue={editingGarantia?.tipo ?? ''}
+                defaultValue={getGarantiaTypeParts(editingGarantia?.tipo).instrumento}
                 style={inputStyle}
               />
             </label>
@@ -609,6 +633,7 @@ function GarantiaRow({
   onDelete: () => void
 }) {
   const estado = getEstadoGarantia(garantia.fecha_vencimiento)
+  const tipoGarantia = getGarantiaTypeParts(garantia.tipo)
 
   return (
     <div
@@ -621,7 +646,16 @@ function GarantiaRow({
         alignItems: 'center',
       }}
     >
-      <div style={cellStyle}>{garantia.tipo}</div>
+      <div style={cellStyle}>
+        <div style={{ fontWeight: 700, color: 'var(--text-strong)' }}>
+          {tipoGarantia.tipoGarantia || '-'}
+        </div>
+        {tipoGarantia.instrumento && (
+          <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
+            {tipoGarantia.instrumento}
+          </div>
+        )}
+      </div>
       <div style={cellStyle}>{garantia.numero_documento}</div>
       <div style={cellStyle}>{garantia.emisor || '-'}</div>
       <div style={cellStyle}>CLP {formatCurrency(Number(garantia.monto ?? 0))}</div>
@@ -699,6 +733,26 @@ function GarantiaRow({
       </div>
     </div>
   )
+}
+
+function getGarantiaTypeParts(rawValue?: string | null) {
+  const value = String(rawValue || '').trim()
+  const separator = ' :: '
+
+  if (!value) {
+    return { tipoGarantia: '', instrumento: '' }
+  }
+
+  if (!value.includes(separator)) {
+    return { tipoGarantia: '', instrumento: value }
+  }
+
+  const [tipoGarantia, ...rest] = value.split(separator)
+
+  return {
+    tipoGarantia: tipoGarantia.trim(),
+    instrumento: rest.join(separator).trim(),
+  }
 }
 
 function DocumentoRow({

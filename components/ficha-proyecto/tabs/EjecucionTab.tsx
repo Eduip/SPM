@@ -11,6 +11,7 @@ import {
   subirDocumentoEstadoPago,
 } from '../../../app/cartera-proyectos/actions/estados-pago'
 import type {
+  DocumentoRequeridoEstadoPago,
   DocumentoEstadoPago,
   EstadoPagoProyecto,
   ProyectoFicha,
@@ -19,9 +20,11 @@ import type {
 export default function EjecucionTab({
   proyecto,
   estadosPago,
+  documentosRequeridos,
 }: {
   proyecto: ProyectoFicha | null
   estadosPago: EstadoPagoProyecto[]
+  documentosRequeridos: DocumentoRequeridoEstadoPago[]
 }) {
   const [showForm, setShowForm] = useState(false)
   const [uploadingForId, setUploadingForId] = useState('')
@@ -110,6 +113,16 @@ export default function EjecucionTab({
           <form
             action={async (formData) => {
               formData.append('proyecto_id', proyecto.id)
+              formData.append(
+                'documentos_requeridos',
+                JSON.stringify(
+                  documentosRequeridos.map((documento) => ({
+                    id: documento.id,
+                    nombre: documento.nombre,
+                    obligatorio: documento.obligatorio,
+                  }))
+                )
+              )
 
               const res = await crearEstadoPago(formData)
               if (!res.success) {
@@ -151,6 +164,31 @@ export default function EjecucionTab({
               placeholder="% avance físico"
               style={inputStyle}
             />
+
+            {documentosRequeridos.length > 0 && (
+              <div style={requiredDocsCardStyle}>
+                <div style={requiredDocsTitleStyle}>Documentos del estado de pago</div>
+                <div style={requiredDocsSubtitleStyle}>
+                  Esta fuente exige adjuntar estos documentos al momento de crear el estado de pago.
+                </div>
+                <div style={requiredDocsGridStyle}>
+                  {documentosRequeridos.map((documento) => (
+                    <label key={documento.id} style={fieldStyle}>
+                      <span style={labelStyle}>
+                        {documento.nombre}
+                        {documento.obligatorio ? ' *' : ''}
+                      </span>
+                      <input
+                        name={`documento_requerido_${documento.id}`}
+                        type="file"
+                        required={documento.obligatorio}
+                        style={fileInputStyle}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button type="submit" style={submitStyle}>
               Guardar
@@ -676,6 +714,34 @@ const inputStyle: React.CSSProperties = {
 const fileInputStyle: React.CSSProperties = {
   ...inputStyle,
   padding: '9px 12px',
+}
+
+const requiredDocsCardStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+  padding: 14,
+  borderRadius: 16,
+  border: '1px solid #dbeafe',
+  background: '#f8fbff',
+}
+
+const requiredDocsTitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 800,
+  color: 'var(--text-strong)',
+}
+
+const requiredDocsSubtitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.5,
+  color: '#6b7280',
+}
+
+const requiredDocsGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: 12,
 }
 
 const submitStyle: React.CSSProperties = {

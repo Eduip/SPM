@@ -11,6 +11,7 @@ import HistorialTab from './tabs/HistorialTab'
 import BitacoraTab from './tabs/BitacoraTab'
 import type {
   BitacoraProyecto,
+  DocumentoRequeridoEstadoPago,
   EstadoPagoProyecto,
   GarantiaProyecto,
   HistorialEvento,
@@ -35,6 +36,7 @@ type TabPermissions = Record<TabKey, boolean>
 
 export default function ProyectoTabs({
   proyecto,
+  documentosRequeridosEstadoPago,
   tab,
   descripcionProyecto,
   visualization,
@@ -47,6 +49,7 @@ export default function ProyectoTabs({
   tabPermissions,
 }: {
   proyecto: ProyectoFicha
+  documentosRequeridosEstadoPago: DocumentoRequeridoEstadoPago[]
   tab: string
   descripcionProyecto?: string | null
   visualization?: {
@@ -125,8 +128,9 @@ export default function ProyectoTabs({
       </div>
 
       {/* Contenido del tab */}
-      <RenderTab
+  <RenderTab
   proyecto={proyecto}
+  documentosRequeridosEstadoPago={documentosRequeridosEstadoPago}
   tab={tab}
   descripcionProyecto={descripcionProyecto}
   visualization={visualization}
@@ -144,6 +148,7 @@ export default function ProyectoTabs({
 
 function RenderTab({
   proyecto,
+  documentosRequeridosEstadoPago,
   tab,
   descripcionProyecto,
   visualization,
@@ -156,6 +161,7 @@ function RenderTab({
   tabPermissions,
 }: {
   proyecto: ProyectoFicha
+  documentosRequeridosEstadoPago: DocumentoRequeridoEstadoPago[]
   tab: string
   descripcionProyecto?: string | null
   visualization?: {
@@ -219,6 +225,7 @@ function RenderTab({
           <EjecucionTab
             proyecto={proyecto}
             estadosPago={estadosPago}
+            documentosRequeridos={documentosRequeridosEstadoPago}
           />
         )
       }

@@ -7,6 +7,7 @@ import ProjectAIAssistant from '../../../components/ficha-proyecto/ProjectAIAssi
 import { getProjectVisualization } from '../../../lib/ai/project-visualizations'
 import { buildProjectBudgetMap } from '../../../lib/project-budget'
 import { PERMISSIONS, hasPermission, requirePermission } from '../../../lib/auth-guards'
+import { listEstadoPagoDocumentConfigsByFuente } from '../../../lib/estado-pago-document-config'
 import type { DocumentoEstadoPago, PagoProveedorEstadoPago } from '../../../lib/project-types'
 
 export default async function ProyectoPage({
@@ -212,6 +213,10 @@ export default async function ProyectoPage({
       }
     : null
 
+  const documentosRequeridosEstadoPago = await listEstadoPagoDocumentConfigsByFuente(
+    proyecto?.fuente_financiamiento_id
+  )
+
   if (error || !proyecto) {
     return (
       <AppShell title="Ficha del Proyecto" currentModule="cartera-proyectos">
@@ -350,6 +355,7 @@ export default async function ProyectoPage({
         >
           <ProyectoTabs
             proyecto={proyecto}
+            documentosRequeridosEstadoPago={documentosRequeridosEstadoPago}
             tab={tab}
             descripcionProyecto={datosGenerales?.descripcion ?? null}
             visualization={

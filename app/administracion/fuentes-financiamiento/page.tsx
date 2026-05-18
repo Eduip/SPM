@@ -4,6 +4,7 @@ import { createClient } from '../../../lib/supabase-server'
 import FuentesFinanciamientoPage from '../../../components/administracion/fuentes/FuentesFinanciamientoPage'
 import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 import { listFieldAIConfigs } from '../../../lib/ai/field-ai-config'
+import { listEstadoPagoDocumentConfigs } from '../../../lib/estado-pago-document-config'
 
 export default async function Page() {
     const supabase = await createClient()
@@ -28,13 +29,14 @@ export default async function Page() {
     .select('*')
     .order('orden', { ascending: true })
 
-    const [camposRes, fieldAIConfigs] = await Promise.all([
+    const [camposRes, fieldAIConfigs, documentosEstadoPago] = await Promise.all([
       supabase
         .from('campos_formulario_fuente')
         .select('*')
         .eq('visible', true)
         .order('orden', { ascending: true }),
       listFieldAIConfigs(),
+      listEstadoPagoDocumentConfigs(),
     ])
 
     const aiModeMap = new Map(fieldAIConfigs.map((item) => [item.fieldId, item.mode]))
@@ -52,6 +54,7 @@ export default async function Page() {
 <FuentesFinanciamientoPage
   fuentes={fuentes ?? []}
   documentos={documentos ?? []}
+  documentosEstadoPago={documentosEstadoPago}
   campos={campos}
   reglas={reglas ?? []}
   error={error?.message ?? null}

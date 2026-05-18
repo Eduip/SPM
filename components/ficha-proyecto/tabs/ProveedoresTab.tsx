@@ -296,6 +296,9 @@ function ProveedorNaturalFields({
               style={input}
             >
               <option value="">Seleccione tipo</option>
+              <option value="Contrato a honorarios">Contrato a honorarios</option>
+              <option value="Contrato plazo fijo">Contrato plazo fijo</option>
+              <option value="Código del trabajo">Código del trabajo</option>
               <option value="Licitación">Licitación</option>
               <option value="Trato directo">Trato directo</option>
               <option value="Contrato de suministro">Contrato de suministro</option>

@@ -69,12 +69,49 @@ export async function crearEstadoPago(formData: FormData) {
   const fecha = String(formData.get('fecha'))
   const monto = Number(formData.get('monto'))
   const avance_fisico = Number(formData.get('avance_fisico'))
+  const documentosRequeridosRaw = String(formData.get('documentos_requeridos') || '[]')
+
+  let documentosRequeridos: Array<{
+    id: string
+    nombre: string
+    obligatorio: boolean
+  }> = []
+
+  try {
+    const parsed = JSON.parse(documentosRequeridosRaw)
+    documentosRequeridos = Array.isArray(parsed)
+      ? parsed
+          .map((item) => ({
+            id: String(item?.id || '').trim(),
+            nombre: String(item?.nombre || '').trim(),
+            obligatorio: Boolean(item?.obligatorio),
+          }))
+          .filter((item) => item.id && item.nombre)
+      : []
+  } catch {
+    documentosRequeridos = []
+  }
 
   if (!proyecto_id || !numero || !fecha || !monto) {
     return { success: false, error: 'Faltan datos del estado de pago' }
   }
 
-  const { error } = await supabase
+  const faltantes = documentosRequeridos.filter((documento) => {
+    if (!documento.obligatorio) return false
+    const file = formData.get(`documento_requerido_${documento.id}`) as File | null
+    return !file || file.size === 0
+  })
+
+  if (faltantes.length > 0) {
+    return {
+      success: false,
+      error: `Faltan documentos obligatorios: ${faltantes
+        .map((documento) => documento.nombre)
+        .join(', ')}.`,
+    }
+  }
+
+  const { data: estadoPagoCreado, error } = await supabase
     .from('proyecto_estados_pago')
     .insert({
       proyecto_id,
@@ -84,8 +121,65 @@ export async function crearEstadoPago(formData: FormData) {
       avance_fisico,
       estado: 'pendiente_pago',
     })
+    .select('id')
+    .single()
 
   if (error) return { success: false, error: error.message }
+
+  for (const documento of documentosRequeridos) {
+    const file = formData.get(`documento_requerido_${documento.id}`) as File | null
+
+    if (!file || file.size === 0) continue
+
+    let documentoMeta: EstadoPagoDocumentoMeta | null = null
+
+    try {
+      documentoMeta = await uploadDocumento({
+        supabase,
+        proyectoId: proyecto_id,
+        estadoPagoId: estadoPagoCreado.id,
+        file,
+        tipo: `requerido-${documento.id}`,
+      })
+    } catch (uploadError) {
+      return {
+        success: false,
+        error:
+          uploadError instanceof Error
+            ? uploadError.message
+            : `No se pudo subir el documento ${documento.nombre}.`,
+      }
+    }
+
+    const { error: documentoError } = await supabase.from('documentos_proyecto').insert({
+      proyecto_id,
+      catalogo_documento_id: null,
+      nombre: documento.nombre,
+      nombre_archivo: documentoMeta?.nombre_archivo ?? file.name,
+      ruta_storage: documentoMeta?.ruta_storage,
+      bucket: documentoMeta?.bucket,
+      tipo_documento: 'Documento estado de pago',
+      etapa: 'ejecucion',
+      extension: file.name.split('.').pop() || null,
+      tamano_bytes: documentoMeta?.tamano_bytes,
+      mime_type: documentoMeta?.mime_type,
+      subido_por: authGuard.userId,
+      fecha_subida: new Date().toISOString(),
+      obligatorio: documento.obligatorio,
+      estado_revision: 'subido',
+      porcentaje_validacion: 100,
+      observacion: `estado_pago_id:${estadoPagoCreado.id}`,
+    })
+
+    if (documentoError) {
+      return {
+        success: false,
+        error: documentoError.message || `No se pudo registrar ${documento.nombre}.`,
+      }
+    }
+  }
+
+  revalidatePath(`/cartera-proyectos/${proyecto_id}`)
 
   return { success: true }
 }

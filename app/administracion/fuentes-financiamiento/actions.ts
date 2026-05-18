@@ -3,6 +3,10 @@
 import { createClient } from '../../../lib/supabase-server'
 import { requireAdmin } from '../../../lib/auth-guards'
 import { saveFieldAIConfig, type FieldAIMode } from '../../../lib/ai/field-ai-config'
+import {
+  createEstadoPagoDocumentConfig,
+  deleteEstadoPagoDocumentConfig,
+} from '../../../lib/estado-pago-document-config'
 
 export async function crearFuenteFinanciamiento(formData: FormData) {
   const supabase = await createClient()
@@ -368,6 +372,40 @@ export async function eliminarDocumentoFuente(id: string) {
   if (error) return { success: false, error: error.message }
 
   return { success: true }
+}
+
+export async function crearDocumentoEstadoPagoFuente({
+  fuente_id,
+  nombre,
+  obligatorio,
+}: {
+  fuente_id: string
+  nombre: string
+  obligatorio: boolean
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  return createEstadoPagoDocumentConfig({
+    fuenteId: fuente_id,
+    nombre,
+    obligatorio,
+  })
+}
+
+export async function eliminarDocumentoEstadoPagoFuente(id: string) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  return deleteEstadoPagoDocumentConfig(id)
 }
 
   export async function crearReglaFuente({
