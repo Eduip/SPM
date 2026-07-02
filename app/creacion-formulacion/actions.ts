@@ -223,7 +223,7 @@ export async function saveProjectData(payload: SaveProjectPayload) {
           estado: estadoInicial,
           estado_proyecto_id: estadoFormulacionLegacy?.id ?? null,
           etapa_formulacion_actual: 1,
-          porcentaje_formulacion: 20,
+          porcentaje_formulacion: 25,
           avance_fisico_actual: 0,
           avance_financiero_actual: 0,
           activo: true,

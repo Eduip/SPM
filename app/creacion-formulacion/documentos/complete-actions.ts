@@ -87,7 +87,7 @@ export async function marcarDocumentosCompletados(proyectoId: string) {
     .from('proyectos')
     .update({
       etapa_formulacion_actual: 4,
-      porcentaje_formulacion: 80,
+      porcentaje_formulacion: 75,
       updated_by: profile.id,
     })
     .eq('id', proyectoId)
@@ -104,7 +104,7 @@ export async function marcarDocumentosCompletados(proyectoId: string) {
     p_usuario_id: profile.id,
     p_metadata: {
       etapa: 'documentos',
-      porcentaje_formulacion: 80,
+      porcentaje_formulacion: 75,
     },
   })
 

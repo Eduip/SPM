@@ -188,7 +188,7 @@ export async function savePostulacionData(payload: SavePostulacionPayload) {
     .update({
       fuente_financiamiento_id: fuenteCatalogo.id,
       etapa_formulacion_actual: 3,
-      porcentaje_formulacion: 60,
+      porcentaje_formulacion: 50,
       updated_by: profile.id,
     })
     .eq('id', payload.proyectoId)

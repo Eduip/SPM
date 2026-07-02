@@ -19,7 +19,9 @@ export default function DocumentosProgressPanel({
   const completo = total === 0 || faltantes === 0
   const completados = total - faltantes
   const progresoDocumental = total > 0 ? Math.round((completados / total) * 100) : 100
-  const progresoFormulacion = completo ? 80 : 60
+  const progresoFormulacion = completo ? 75 : 50
+  const seccionesCompletadas = completo ? 3 : 2
+  const totalSecciones = 4
 
   const handleContinuar = async () => {
     if (!completo) return
@@ -145,7 +147,7 @@ export default function DocumentosProgressPanel({
             color: 'var(--text-muted)',
           }}
         >
-          {completo ? '4 de 5 secciones completadas' : '3 de 5 secciones completadas'}
+          {seccionesCompletadas} de {totalSecciones} secciones completadas
         </div>
       </div>
 

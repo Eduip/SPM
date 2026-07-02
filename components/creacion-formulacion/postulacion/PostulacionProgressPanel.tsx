@@ -9,6 +9,9 @@ export default function PostulacionProgressPanel({
   proyectoId: string
 }) {
   const router = useRouter()
+  const progress = 50
+  const completedSections = 2
+  const totalSections = 4
 
   return (
     <div style={cardStyle}>
@@ -93,7 +96,7 @@ export default function PostulacionProgressPanel({
           }}
         >
           <span>Progreso de formulación</span>
-          <span style={{ color: 'var(--primary)' }}>60%</span>
+          <span style={{ color: 'var(--primary)' }}>{progress}%</span>
         </div>
 
         <div
@@ -108,7 +111,7 @@ export default function PostulacionProgressPanel({
         >
           <div
             style={{
-              width: '60%',
+              width: `${progress}%`,
               height: '100%',
               background: 'var(--primary)',
             }}
@@ -121,7 +124,7 @@ export default function PostulacionProgressPanel({
             color: 'var(--text-muted)',
           }}
         >
-          3 de 5 secciones completadas
+          {completedSections} de {totalSections} secciones completadas
         </div>
       </div>
     </div>

@@ -136,7 +136,7 @@ export default function AprobacionPanel({
             color: 'var(--text-muted)',
           }}
         >
-          5 de 5 secciones completadas
+          4 de 4 secciones completadas
         </div>
       </div>
     </div>
