@@ -35,8 +35,8 @@ export async function crearFuenteFinanciamiento(formData: FormData) {
 
   const { data: existingFuente, error: existingFuenteError } = await supabase
     .from('fuentes_financiamiento')
-    .select('id, activo')
-    .eq('codigo', codigoBase)
+    .select('id, activo, codigo')
+    .eq('nombre', nombre)
     .maybeSingle()
 
   if (existingFuenteError) {
@@ -53,9 +53,40 @@ export async function crearFuenteFinanciamiento(formData: FormData) {
       .update({
         nombre,
         activo,
-        codigo: codigoBase || null,
+        codigo: codigoBase || existingFuente.codigo || null,
       })
       .eq('id', existingFuente.id)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  }
+
+  const { data: existingFuenteByCode, error: existingFuenteByCodeError } = await supabase
+    .from('fuentes_financiamiento')
+    .select('id, activo')
+    .eq('codigo', codigoBase)
+    .maybeSingle()
+
+  if (existingFuenteByCodeError) {
+    return { success: false, error: existingFuenteByCodeError.message }
+  }
+
+  if (existingFuenteByCode?.activo) {
+    return { success: false, error: 'Ya existe una fuente activa con ese nombre.' }
+  }
+
+  if (existingFuenteByCode) {
+    const { error } = await supabase
+      .from('fuentes_financiamiento')
+      .update({
+        nombre,
+        activo,
+        codigo: codigoBase || null,
+      })
+      .eq('id', existingFuenteByCode.id)
 
     if (error) {
       return { success: false, error: error.message }
