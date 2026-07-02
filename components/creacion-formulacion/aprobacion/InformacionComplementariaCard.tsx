@@ -9,7 +9,7 @@ export default function InformacionComplementariaCard({
   return (
     <div style={cardStyle}>
       <h3 style={{ margin: 0, marginBottom: 18, fontSize: 20, fontWeight: 700 }}>
-        Información Complementaria
+        Problema del Proyecto
       </h3>
 
       <div
@@ -26,23 +26,6 @@ export default function InformacionComplementariaCard({
         </div>
         <div style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
           {diagnostico?.problema_central ?? 'Sin información de problemática.'}
-        </div>
-      </div>
-
-      <div
-        style={{
-          borderRadius: 16,
-          border: '1px solid #bbf7d0',
-          background: '#ecfdf5',
-          padding: 16,
-          marginBottom: 14,
-        }}
-      >
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#166534', marginBottom: 6 }}>
-          Justificación
-        </div>
-        <div style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
-          {diagnostico?.justificacion ?? 'Sin justificación registrada.'}
         </div>
       </div>
     </div>

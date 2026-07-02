@@ -252,8 +252,12 @@ export default function ProjectDataForm({
         </Field>
 
         <ProjectDescriptionAndBeneficiaries
+          problemaCentral={formData.problema_central}
           descripcion={formData.descripcion}
           beneficiarios={formData.poblacion_beneficiaria}
+          onProblemaCentralChange={(value) =>
+            onFieldChange('problema_central', value)
+          }
           onDescripcionChange={(value) => onFieldChange('descripcion', value)}
           onBeneficiaryChange={onBeneficiaryChange}
           onAddBeneficiary={onAddBeneficiary}

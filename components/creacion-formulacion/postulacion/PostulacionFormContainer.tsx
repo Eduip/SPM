@@ -76,7 +76,7 @@ export default function PostulacionFormContainer({
       <PostulacionHeader
         onSave={handleSave}
         saving={saving}
-        backHref={`/creacion-formulacion/diagnostico?proyectoId=${proyectoId}`}
+        backHref={`/creacion-formulacion?proyectoId=${proyectoId}`}
       />
       <PostulacionStepper />
 

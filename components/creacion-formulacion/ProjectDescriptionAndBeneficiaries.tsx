@@ -3,8 +3,10 @@ import { Field } from './shared'
 import type { BeneficiaryGroup } from './CreateProjectFormContainer'
 
 type Props = {
+  problemaCentral: string
   descripcion: string
   beneficiarios: BeneficiaryGroup[]
+  onProblemaCentralChange: (value: string) => void
   onDescripcionChange: (value: string) => void
   onBeneficiaryChange: (
     rowId: string,
@@ -17,8 +19,10 @@ type Props = {
 }
 
 export default function ProjectDescriptionAndBeneficiaries({
+  problemaCentral,
   descripcion,
   beneficiarios,
+  onProblemaCentralChange,
   onDescripcionChange,
   onBeneficiaryChange,
   onAddBeneficiary,
@@ -29,6 +33,16 @@ export default function ProjectDescriptionAndBeneficiaries({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <Field label="Problema Central *">
+        <textarea
+          placeholder="Describe de forma clara el problema principal que el proyecto busca resolver..."
+          style={{ ...textareaStyle, ...compactTextareaStyle, ...disabledStyle }}
+          value={problemaCentral}
+          readOnly={readOnly}
+          onChange={(e) => onProblemaCentralChange(e.target.value)}
+        />
+      </Field>
+
       <Field label="Descripción del Proyecto *">
         <textarea
           placeholder="Describe el proyecto, sus objetivos y alcance..."
@@ -157,6 +171,10 @@ const textareaStyle: React.CSSProperties = {
   resize: 'none',
   fontFamily: 'inherit',
   transition: 'all 0.2s ease',
+}
+
+const compactTextareaStyle: React.CSSProperties = {
+  minHeight: 130,
 }
 
 const tableInputStyle: React.CSSProperties = {

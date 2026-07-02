@@ -63,7 +63,7 @@ export default function PerfilProyectoCard({
           />
         </Field>
 
-        <Field label="Problema Priorizado (Referencia al Diagnóstico)">
+        <Field label="Problema Central">
           <input
             value="Deterioro significativo de pavimentación en sector norte de Curacautín"
             readOnly

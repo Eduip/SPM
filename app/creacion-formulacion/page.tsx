@@ -43,6 +43,7 @@ export default async function CreacionFormulacionPage({
     proyectosRes,
     proyectoActualRes,
     datosGeneralesActualRes,
+    diagnosticoActualRes,
   ] = await Promise.all([
     supabase
       .from('tipos_proyecto')
@@ -103,6 +104,15 @@ export default async function CreacionFormulacionPage({
           .eq('proyecto_id', proyectoId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+
+    proyectoId
+      ? supabase
+          .from('proyecto_diagnostico')
+          .select('problema_central')
+          .eq('proyecto_id', proyectoId)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+      : Promise.resolve({ data: null, error: null }),
   ])
 
   const tiposProyecto = tiposProyectoRes.data ?? []
@@ -119,6 +129,9 @@ export default async function CreacionFormulacionPage({
   const proyectosAprobados = proyectos.filter((proyecto) => proyecto.estado === 'aprobado')
   const proyectoActual = proyectoActualRes.data
   const datosGeneralesActual = datosGeneralesActualRes.data
+  const diagnosticoActual = Array.isArray(diagnosticoActualRes.data)
+    ? diagnosticoActualRes.data[0] ?? null
+    : diagnosticoActualRes.data
   const showForm = Boolean(proyectoId || creatingNewProject)
 
   return (
@@ -150,6 +163,7 @@ export default async function CreacionFormulacionPage({
               responsables={responsables}
               proyectoInicial={proyectoActual}
               datosGeneralesIniciales={datosGeneralesActual}
+              diagnosticoInicial={diagnosticoActual}
             />
           </>
         )}

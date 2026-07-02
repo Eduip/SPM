@@ -35,6 +35,7 @@ export type ProjectFormData = {
   localizacion: string
   fuente_financiamiento_id: string
   responsable_id: string
+  problema_central: string
   descripcion: string
   poblacion_beneficiaria: BeneficiaryGroup[]
 }
@@ -58,6 +59,10 @@ type DatosGeneralesIniciales = {
   poblacion_beneficiaria?: unknown
 } | null
 
+type DiagnosticoInicial = {
+  problema_central?: string | null
+} | null
+
 type CreateProjectFormContainerProps = {
     proyectoId?: string
     tiposProyecto: CatalogOption[]
@@ -66,6 +71,7 @@ type CreateProjectFormContainerProps = {
     responsables: ResponsibleOption[]
     proyectoInicial?: ProyectoInicial | null
     datosGeneralesIniciales?: DatosGeneralesIniciales
+    diagnosticoInicial?: DiagnosticoInicial
 }
 
 export default function CreateProjectFormContainer({
@@ -76,6 +82,7 @@ export default function CreateProjectFormContainer({
     responsables,
     proyectoInicial = null,
     datosGeneralesIniciales = null,
+    diagnosticoInicial = null,
 }: CreateProjectFormContainerProps) {
   const initialResponsibleId = responsables[0]?.id ?? ''
   const initialTipoProyectoId = tiposProyecto[0]?.id ?? ''
@@ -91,6 +98,7 @@ export default function CreateProjectFormContainer({
     localizacion: proyectoInicial?.localizacion ?? 'Curacautín, Chile',
     fuente_financiamiento_id: proyectoInicial?.fuente_financiamiento_id ?? '',
     responsable_id: proyectoInicial?.responsable_id ?? initialResponsibleId,
+    problema_central: diagnosticoInicial?.problema_central ?? '',
     descripcion: datosGeneralesIniciales?.descripcion ?? '',
     poblacion_beneficiaria: normalizeInitialBeneficiaries(
       datosGeneralesIniciales?.poblacion_beneficiaria
@@ -286,7 +294,7 @@ export default function CreateProjectFormContainer({
           <button
   onClick={() => {
     if (!savedProjectId) return
-    router.push(`/creacion-formulacion/diagnostico?proyectoId=${savedProjectId}`)
+    router.push(`/creacion-formulacion/postulacion?proyectoId=${savedProjectId}`)
   }}
   disabled={!savedProjectId}
   style={{
@@ -304,7 +312,7 @@ export default function CreateProjectFormContainer({
     opacity: savedProjectId ? 1 : 0.9,
   }}
 >
-  Continuar al Diagnóstico&nbsp;&nbsp;→
+  Continuar a Postulación&nbsp;&nbsp;→
 </button>
         </div>
       </div>

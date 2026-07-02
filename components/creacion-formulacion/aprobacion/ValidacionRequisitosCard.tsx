@@ -13,7 +13,7 @@ export default function ValidacionRequisitosCard({
 }) {
   const items = [
     { label: 'Datos del proyecto', ok: datosProyectoOk, detail: 'Información general registrada' },
-    { label: 'Diagnóstico', ok: diagnosticoOk, detail: 'Problema central y justificación registrados' },
+    { label: 'Problema central', ok: diagnosticoOk, detail: 'Problemática principal registrada' },
     { label: 'Postulación', ok: postulacionOk, detail: 'Fuente de financiamiento seleccionada' },
     { label: 'Documentación obligatoria', ok: documentosOk, detail: 'Verificación antes de aprobar' },
   ]

@@ -21,6 +21,7 @@ type SaveProjectPayload = {
   localizacion: string
   fuente_financiamiento_id: string
   responsable_id: string
+  problema_central: string
   descripcion: string
   poblacion_beneficiaria: BeneficiaryGroup[]
 }
@@ -49,6 +50,7 @@ export async function saveProjectData(payload: SaveProjectPayload) {
     { key: 'anio_inicio', label: 'Año de inicio' },
     { key: 'unidad_id', label: 'Unidad responsable' },
     { key: 'responsable_id', label: 'Responsable del proyecto' },
+    { key: 'problema_central', label: 'Problema central' },
     { key: 'descripcion', label: 'Descripción del proyecto' },
   ] as const
 
@@ -298,6 +300,47 @@ export async function saveProjectData(payload: SaveProjectPayload) {
       error:
         datosGeneralesError.message ||
         `Se ${payload.proyectoId ? 'actualizó' : 'creó'} el proyecto, pero falló el guardado de los datos generales.`,
+    }
+  }
+
+  const { data: diagnosticoExistente, error: diagnosticoExistenteError } =
+    await supabase
+      .from('proyecto_diagnostico')
+      .select('id, justificacion')
+      .eq('proyecto_id', proyecto.id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+
+  if (diagnosticoExistenteError) {
+    return {
+      success: false,
+      error:
+        diagnosticoExistenteError.message ||
+        'El proyecto se guardó, pero no se pudo verificar el problema central.',
+    }
+  }
+
+  const diagnosticoActual = diagnosticoExistente?.[0] ?? null
+  const { error: diagnosticoError } = diagnosticoActual?.id
+    ? await supabase
+        .from('proyecto_diagnostico')
+        .update({
+          problema_central: payload.problema_central,
+          justificacion: diagnosticoActual.justificacion ?? null,
+        })
+        .eq('id', diagnosticoActual.id)
+    : await supabase.from('proyecto_diagnostico').insert({
+        proyecto_id: proyecto.id,
+        problema_central: payload.problema_central,
+        justificacion: null,
+      })
+
+  if (diagnosticoError) {
+    return {
+      success: false,
+      error:
+        diagnosticoError.message ||
+        'El proyecto se guardó, pero no se pudo registrar el problema central.',
     }
   }
 

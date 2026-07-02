@@ -66,7 +66,7 @@ export default function AprobacionContainer({
       )
     )
 
-  const diagnosticoOk = Boolean(diagnostico?.problema_central && diagnostico?.justificacion)
+  const diagnosticoOk = Boolean(diagnostico?.problema_central)
   const postulacionOk = Boolean(fuenteNombre)
   const datosProyectoOk = Boolean(proyecto?.nombre && datosGenerales?.descripcion)
   const yaAprobado = proyecto?.estado === 'aprobado'
@@ -81,7 +81,6 @@ export default function AprobacionContainer({
     projectName: proyecto?.nombre ?? '',
     description: datosGenerales?.descripcion ?? '',
     problem: diagnostico?.problema_central ?? '',
-    justification: diagnostico?.justificacion ?? '',
     location:
       typeof proyecto?.localizacion === 'string' ? proyecto.localizacion : '',
     fundingSource: fuenteNombre,
@@ -167,21 +166,18 @@ function buildVisualizationSuggestion({
   projectName,
   description,
   problem,
-  justification,
   location,
   fundingSource,
 }: {
   projectName: string
   description: string
   problem: string
-  justification: string
   location: string
   fundingSource: string
 }) {
   const snippets = [
     description.trim(),
     problem.trim(),
-    justification.trim(),
   ].filter(Boolean)
 
   const context = snippets.join(' ').replace(/\s+/g, ' ').trim()

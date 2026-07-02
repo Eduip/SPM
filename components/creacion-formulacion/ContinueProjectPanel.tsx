@@ -336,11 +336,7 @@ function normalizeStage(stage: number | null) {
     return { label: 'Datos del proyecto', href: '/creacion-formulacion' }
   }
 
-  if (stage === 2) {
-    return { label: 'Diagnóstico', href: '/creacion-formulacion/diagnostico' }
-  }
-
-  if (stage === 3) {
+  if (stage === 2 || stage === 3) {
     return { label: 'Postulación', href: '/creacion-formulacion/postulacion' }
   }
 

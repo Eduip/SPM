@@ -1,10 +1,9 @@
 export default function DocumentosStepper() {
     const steps = [
       { number: 1, title: 'Datos del\nProyecto', status: 'Completo', completed: true, active: false },
-      { number: 2, title: 'Diagnóstico', status: 'Completo', completed: true, active: false },
-      { number: 3, title: 'Postulación', status: 'Completo', completed: true, active: false },
-      { number: 4, title: 'Documentos', status: 'En progreso', completed: false, active: true },
-      { number: 5, title: 'Aprobación', status: 'Pendiente', completed: false, active: false },
+      { number: 2, title: 'Postulación', status: 'Completo', completed: true, active: false },
+      { number: 3, title: 'Documentos', status: 'En progreso', completed: false, active: true },
+      { number: 4, title: 'Aprobación', status: 'Pendiente', completed: false, active: false },
     ]
   
     return (
