@@ -3,10 +3,12 @@
 import { createClient } from '../../../lib/supabase-server'
 import { requireAdmin } from '../../../lib/auth-guards'
 import { saveFieldAIConfig, type FieldAIMode } from '../../../lib/ai/field-ai-config'
+import type { TableFieldConfig } from '../../../lib/formulacion-types'
 import {
   createEstadoPagoDocumentConfig,
   deleteEstadoPagoDocumentConfig,
 } from '../../../lib/estado-pago-document-config'
+import { createDefaultTableFieldConfig, normalizeTableFieldConfig } from '../../../lib/table-field-config'
 
 export async function crearFuenteFinanciamiento(formData: FormData) {
   const supabase = await createClient()
@@ -223,6 +225,7 @@ export async function crearCampoFuente({
     grupo,
     subgrupo,
     orden_codigo,
+    config_json,
     tipo,
     obligatorio,
   }: {
@@ -233,6 +236,7 @@ export async function crearCampoFuente({
     grupo?: string
     subgrupo?: string
     orden_codigo?: string
+    config_json?: TableFieldConfig | null
     tipo: string
     obligatorio: boolean
   }) {
@@ -267,6 +271,10 @@ export async function crearCampoFuente({
         grupo: grupo?.trim() || null,
         subgrupo: subgrupo?.trim() || null,
         orden_codigo: orden_codigo?.trim() || String(Number(ultimoCampo?.orden ?? 0) + 1),
+        config_json:
+          normalizedTipo === 'tabla_estructurada'
+            ? normalizeTableFieldConfig(config_json ?? createDefaultTableFieldConfig())
+            : null,
         tipo: normalizedTipo,
         obligatorio,
         visible: true,
@@ -286,6 +294,7 @@ export async function actualizarCampoFuente({
   grupo,
   subgrupo,
   orden_codigo,
+  config_json,
   tipo,
   obligatorio,
   ai_mode,
@@ -297,6 +306,7 @@ export async function actualizarCampoFuente({
   grupo?: string
   subgrupo?: string
   orden_codigo?: string
+  config_json?: TableFieldConfig | null
   tipo: string
   obligatorio: boolean
   ai_mode: FieldAIMode
@@ -323,6 +333,10 @@ export async function actualizarCampoFuente({
       grupo: grupo?.trim() || null,
       subgrupo: subgrupo?.trim() || null,
       orden_codigo: orden_codigo?.trim() || null,
+      config_json:
+        normalizedTipo === 'tabla_estructurada'
+          ? normalizeTableFieldConfig(config_json ?? createDefaultTableFieldConfig())
+          : null,
       tipo: normalizedTipo,
       obligatorio,
     })
@@ -449,6 +463,7 @@ function normalizeCampoTipo(tipo: string) {
     'numero',
     'fecha',
     'booleano',
+    'tabla_estructurada',
     'plazo',
     'presupuesto',
   ])

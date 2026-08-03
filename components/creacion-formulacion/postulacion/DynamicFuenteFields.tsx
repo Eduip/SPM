@@ -7,10 +7,15 @@ import {
   sugerirCampoPostulacionConIA,
 } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
 import { compareCampoOrder } from '../../../lib/field-order'
+import {
+  getTableSumForCell,
+  normalizeTableFieldConfig,
+} from '../../../lib/table-field-config'
 import type {
   CampoPostulacion,
   DynamicFieldValue,
   RespuestaPostulacion,
+  TableFieldCellConfig,
 } from '../../../lib/formulacion-types'
 
 export default function DynamicFuenteFields({
@@ -429,7 +434,10 @@ function FieldRow({
   return (
     <div
       style={{
-        gridColumn: campo.tipo === 'texto_largo' ? '1 / -1' : 'auto',
+        gridColumn:
+          campo.tipo === 'texto_largo' || campo.tipo === 'tabla_estructurada'
+            ? '1 / -1'
+            : 'auto',
       }}
     >
       <label style={labelStyle}>
@@ -628,6 +636,17 @@ function renderField({
     )
   }
 
+  if (campo.tipo === 'tabla_estructurada') {
+    return (
+      <StructuredTableField
+        campo={campo}
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+      />
+    )
+  }
+
   return (
     <input
       type="text"
@@ -641,6 +660,7 @@ function renderField({
 }
 
 function defaultValueForType(tipo: string) {
+  if (tipo === 'tabla_estructurada') return {}
   if (tipo === 'booleano') return false
   return ''
 }
@@ -826,6 +846,189 @@ const subgroupTitleStyle: React.CSSProperties = {
   fontWeight: 700,
   color: '#4b5563',
 }
+
+function StructuredTableField({
+  campo,
+  value,
+  onChange,
+  onBlur,
+}: {
+  campo: CampoPostulacion
+  value: DynamicFieldValue
+  onChange: (value: DynamicFieldValue) => void
+  onBlur: () => void
+}) {
+  const config = normalizeTableFieldConfig(campo.config_json)
+  const tableValue =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, string | number | boolean | null>)
+      : {}
+
+  const updateTableValue = (itemId: string, nextValue: string) => {
+    onChange({
+      ...tableValue,
+      [itemId]: nextValue,
+    })
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={structuredTableStyle}>
+        <thead>
+          <tr>
+            {config.columns.map((column) => (
+              <th key={column.id} style={structuredHeaderStyle}>
+                {column.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {config.rows.map((row) => (
+            <tr key={row.id}>
+              {row.cells.map((cell) => (
+                <td key={cell.id} style={structuredCellStyle}>
+                  <StructuredTableCell
+                    cell={cell}
+                    valueMap={tableValue}
+                    onChange={updateTableValue}
+                    onBlur={onBlur}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function StructuredTableCell({
+  cell,
+  valueMap,
+  onChange,
+  onBlur,
+}: {
+  cell: TableFieldCellConfig
+  valueMap: Record<string, string | number | boolean | null>
+  onChange: (itemId: string, nextValue: string) => void
+  onBlur: () => void
+}) {
+  const sumValue = getTableSumForCell(cell, valueMap)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {cell.items.map((item) => {
+        if (item.kind === 'static_text') {
+          return (
+            <div key={item.id} style={item.highlighted ? structuredHighlightStyle : structuredStaticTextStyle}>
+              {item.text}
+            </div>
+          )
+        }
+
+        if (item.kind === 'sum_numbers') {
+          return (
+            <div key={item.id} style={item.highlighted ? structuredHighlightStyle : structuredSummaryStyle}>
+              {(item.label || 'Total')}: {new Intl.NumberFormat('es-CL').format(sumValue)}
+            </div>
+          )
+        }
+
+        if (item.kind === 'input_textarea') {
+          return (
+            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : null}
+            <textarea
+              value={String(valueMap[item.id] ?? '')}
+              onChange={(event) => onChange(item.id, event.target.value)}
+              onBlur={onBlur}
+              placeholder={item.placeholder || ''}
+              style={{
+                ...textareaStyle,
+                minHeight: 86,
+              }}
+            />
+            </div>
+          )
+        }
+
+        return (
+          <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : null}
+            <input
+              type={item.kind === 'input_number' ? 'number' : 'text'}
+              value={String(valueMap[item.id] ?? '')}
+              onChange={(event) => onChange(item.id, event.target.value)}
+              onBlur={onBlur}
+              placeholder={item.placeholder || ''}
+              style={{
+                ...inputStyle,
+                height: 38,
+              }}
+              min={item.kind === 'input_number' ? '0' : undefined}
+              step={item.kind === 'input_number' ? '1' : undefined}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+const structuredTableStyle: React.CSSProperties = {
+  width: '100%',
+  minWidth: 560,
+  borderCollapse: 'collapse',
+  border: '1px solid var(--border)',
+  background: '#fff',
+}
+
+const structuredHeaderStyle: React.CSSProperties = {
+  border: '1px solid var(--border)',
+  background: '#e2e8f0',
+  padding: '10px 12px',
+  textAlign: 'left',
+  fontSize: 13,
+  fontWeight: 800,
+  color: 'var(--text-strong)',
+}
+
+const structuredCellStyle: React.CSSProperties = {
+  border: '1px solid var(--border)',
+  padding: '10px 12px',
+  verticalAlign: 'top',
+}
+
+const structuredStaticTextStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: '#374151',
+  lineHeight: 1.5,
+  whiteSpace: 'pre-wrap',
+}
+
+const structuredSummaryStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 800,
+  color: 'var(--text-strong)',
+}
+
+const structuredHighlightStyle: React.CSSProperties = {
+  display: 'inline-block',
+  background: '#fef08a',
+  padding: '2px 4px',
+  fontSize: 13,
+  fontWeight: 800,
+  color: 'var(--text-strong)',
+}
+
+const structuredItemLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 700,
+  color: 'var(--text)',
+}
+
 
 const totalStyle: React.CSSProperties = {
   marginTop: 14,

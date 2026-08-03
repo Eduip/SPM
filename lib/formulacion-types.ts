@@ -19,11 +19,48 @@ export type CampoPostulacion = {
   grupo?: string | null
   subgrupo?: string | null
   orden_codigo?: string | null
+  config_json?: TableFieldConfig | null
   tipo: 'texto' | 'texto_largo' | 'numero' | 'fecha' | 'booleano' | 'plazo' | 'presupuesto' | string
   obligatorio: boolean
   visible: boolean
   orden: number
   ai_mode?: 'blocked' | 'suggest' | 'improve_only'
+}
+
+export type TableFieldItemKind =
+  | 'static_text'
+  | 'input_text'
+  | 'input_number'
+  | 'input_textarea'
+  | 'sum_numbers'
+
+export type TableFieldItemConfig = {
+  id: string
+  kind: TableFieldItemKind
+  label?: string | null
+  text?: string | null
+  placeholder?: string | null
+  highlighted?: boolean | null
+}
+
+export type TableFieldCellConfig = {
+  id: string
+  items: TableFieldItemConfig[]
+}
+
+export type TableFieldColumnConfig = {
+  id: string
+  header: string
+}
+
+export type TableFieldRowConfig = {
+  id: string
+  cells: TableFieldCellConfig[]
+}
+
+export type TableFieldConfig = {
+  columns: TableFieldColumnConfig[]
+  rows: TableFieldRowConfig[]
 }
 
 export type RespuestaPostulacion = {

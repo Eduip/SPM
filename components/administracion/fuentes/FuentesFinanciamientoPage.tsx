@@ -25,9 +25,17 @@ import type {
   DocumentoFuente,
   ReglaFuente,
   SeccionFormularioFuente,
+  TableFieldCellConfig,
+  TableFieldConfig,
+  TableFieldItemConfig,
+  TableFieldItemKind,
 } from '../../../lib/formulacion-types'
 import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
 import type { EstadoPagoDocumentoConfig } from '../../../lib/estado-pago-document-config'
+import {
+  createDefaultTableFieldConfig,
+  normalizeTableFieldConfig,
+} from '../../../lib/table-field-config'
 
 type FieldFormMode = 'descripcion' | 'plazo' | 'presupuesto'
 
@@ -68,9 +76,22 @@ const FIELD_TYPE_OPTIONS = [
   { value: 'numero', label: 'Número', section: 'descripcion' },
   { value: 'fecha', label: 'Fecha', section: 'descripcion' },
   { value: 'booleano', label: 'Sí / No', section: 'descripcion' },
+  { value: 'tabla_estructurada', label: 'Tabla estructurada', section: 'descripcion' },
   { value: 'plazo', label: 'Plazo', section: 'plazo' },
   { value: 'presupuesto', label: 'Presupuesto', section: 'presupuesto' },
 ]
+
+const TABLE_ITEM_KIND_OPTIONS: Array<{ value: TableFieldItemKind; label: string }> = [
+  { value: 'static_text', label: 'Texto fijo' },
+  { value: 'input_text', label: 'Texto corto' },
+  { value: 'input_textarea', label: 'Texto largo' },
+  { value: 'input_number', label: 'Número' },
+  { value: 'sum_numbers', label: 'Suma automática' },
+]
+
+function createUiConfigId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
 
 function getNewFieldPlaceholder(mode: FieldFormMode) {
   if (mode === 'plazo') return 'Nombre del plazo'
@@ -1204,6 +1225,9 @@ function FieldConfigRow({
   const [subgrupo, setSubgrupo] = useState(campo.subgrupo ?? '')
   const [ordenCodigo, setOrdenCodigo] = useState(campo.orden_codigo ?? String(campo.orden))
   const [tipo, setTipo] = useState(campo.tipo)
+  const [tableConfig, setTableConfig] = useState<TableFieldConfig>(() =>
+    normalizeTableFieldConfig(campo.config_json)
+  )
   const [obligatorio, setObligatorio] = useState(campo.obligatorio)
   const [aiMode, setAiMode] = useState<FieldAIMode>(
     campo.ai_mode ?? inferDefaultFieldAIMode(campo)
@@ -1238,6 +1262,7 @@ function FieldConfigRow({
           grupo: '',
           subgrupo,
           orden_codigo: ordenCodigo,
+          config_json: tipo === 'tabla_estructurada' ? tableConfig : null,
           tipo,
           obligatorio,
           ai_mode: aiMode,
@@ -1319,7 +1344,13 @@ function FieldConfigRow({
         <select
           name="tipo"
           value={tipo}
-          onChange={(event) => setTipo(event.target.value)}
+          onChange={(event) => {
+            const nextType = event.target.value
+            setTipo(nextType)
+            if (nextType === 'tabla_estructurada') {
+              setTableConfig((current) => normalizeTableFieldConfig(current))
+            }
+          }}
           style={compactSelectStyle}
         >
           {FIELD_TYPE_OPTIONS.map((option) => (
@@ -1341,6 +1372,7 @@ function FieldConfigRow({
           value={aiMode}
           onChange={(event) => setAiMode(event.target.value as FieldAIMode)}
           style={compactSelectStyle}
+          disabled={tipo === 'tabla_estructurada'}
         >
           <option value="blocked">Bloquear IA</option>
           <option value="suggest">Permitir IA</option>
@@ -1358,7 +1390,243 @@ function FieldConfigRow({
           {deleting ? 'Eliminando...' : 'Eliminar'}
         </button>
       </div>
+      {tipo === 'tabla_estructurada' ? (
+        <TableFieldConfigEditor config={tableConfig} onChange={setTableConfig} />
+      ) : null}
     </form>
+  )
+}
+
+function TableFieldConfigEditor({
+  config,
+  onChange,
+}: {
+  config: TableFieldConfig
+  onChange: (config: TableFieldConfig) => void
+}) {
+  const normalized = normalizeTableFieldConfig(config)
+
+  const updateColumnHeader = (columnIndex: number, header: string) => {
+    const next = normalizeTableFieldConfig(normalized)
+    next.columns[columnIndex].header = header
+    onChange(next)
+  }
+
+  const addColumn = () => {
+    const next = normalizeTableFieldConfig(normalized)
+    const columnId = createUiConfigId('col')
+    next.columns.push({ id: columnId, header: `Columna ${next.columns.length + 1}` })
+    next.rows = next.rows.map((row) => ({
+      ...row,
+      cells: [
+        ...row.cells,
+        {
+          id: createUiConfigId('cell'),
+          items: [
+            {
+              id: createUiConfigId('item'),
+              kind: 'input_text',
+              label: 'Dato',
+              text: '',
+              placeholder: 'Ingrese contenido',
+              highlighted: false,
+            },
+          ],
+        },
+      ],
+    }))
+    onChange(next)
+  }
+
+  const addRow = () => {
+    const next = normalizeTableFieldConfig(normalized)
+    next.rows.push({
+      id: createUiConfigId('row'),
+      cells: next.columns.map((column, index) => ({
+        id: createUiConfigId(`cell-${column.id}`),
+        items: [
+          {
+            id: createUiConfigId(`item-${column.id}`),
+            kind: index === 0 ? 'static_text' : 'input_text',
+            label: index === 0 ? '' : 'Dato',
+            text: index === 0 ? 'Texto de referencia' : '',
+            placeholder: index === 0 ? '' : 'Ingrese contenido',
+            highlighted: false,
+          },
+        ],
+      })),
+    })
+    onChange(next)
+  }
+
+  const updateCellItems = (rowIndex: number, cellIndex: number, items: TableFieldItemConfig[]) => {
+    const next = normalizeTableFieldConfig(normalized)
+    next.rows[rowIndex].cells[cellIndex].items = items
+    onChange(next)
+  }
+
+  return (
+    <div style={tableEditorWrapperStyle}>
+      <div style={tableEditorTitleStyle}>Configuración de la tabla</div>
+      <div style={tableEditorActionRowStyle}>
+        <button type="button" onClick={addColumn} style={miniSecondaryButtonStyle}>
+          + Columna
+        </button>
+        <button type="button" onClick={addRow} style={miniSecondaryButtonStyle}>
+          + Fila
+        </button>
+      </div>
+
+      <div style={tablePreviewGridStyle(normalized.columns.length)}>
+        {normalized.columns.map((column, columnIndex) => (
+          <input
+            key={column.id}
+            value={column.header}
+            onChange={(event) => updateColumnHeader(columnIndex, event.target.value)}
+            placeholder={`Encabezado ${columnIndex + 1}`}
+            style={tableHeaderInputStyle}
+          />
+        ))}
+
+        {normalized.rows.map((row, rowIndex) =>
+          row.cells.map((cell, cellIndex) => (
+            <TableCellEditor
+              key={cell.id}
+              cell={cell}
+              onChange={(items) => updateCellItems(rowIndex, cellIndex, items)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TableCellEditor({
+  cell,
+  onChange,
+}: {
+  cell: TableFieldCellConfig
+  onChange: (items: TableFieldItemConfig[]) => void
+}) {
+  const items = cell.items?.length ? cell.items : createDefaultTableFieldConfig().rows[0].cells[0].items
+
+  const updateItem = (
+    itemIndex: number,
+    patch: Partial<TableFieldItemConfig>
+  ) => {
+    const next = items.map((item, index) =>
+      index === itemIndex
+        ? {
+            ...item,
+            ...patch,
+          }
+        : item
+    )
+    onChange(next)
+  }
+
+  const addItem = () => {
+    onChange([
+      ...items,
+      {
+        id: createUiConfigId('item'),
+        kind: 'static_text',
+        label: '',
+        text: '',
+        placeholder: '',
+        highlighted: false,
+      },
+    ])
+  }
+
+  const removeItem = (itemIndex: number) => {
+    const next = items.filter((_, index) => index !== itemIndex)
+    onChange(next.length ? next : items)
+  }
+
+  return (
+    <div style={tableCellEditorStyle}>
+      {items.map((item, itemIndex) => (
+        <div key={item.id} style={tableItemCardStyle}>
+          <div style={tableItemRowStyle}>
+            <select
+              value={item.kind}
+              onChange={(event) =>
+                updateItem(itemIndex, {
+                  kind: event.target.value as TableFieldItemKind,
+                })
+              }
+              style={compactSelectStyle}
+            >
+              {TABLE_ITEM_KIND_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <label style={compactCheckboxStyle}>
+              <input
+                type="checkbox"
+                checked={Boolean(item.highlighted)}
+                onChange={(event) =>
+                  updateItem(itemIndex, {
+                    highlighted: event.target.checked,
+                  })
+                }
+              />
+              Resaltar
+            </label>
+            <button type="button" onClick={() => removeItem(itemIndex)} style={miniDangerButtonStyle}>
+              Quitar
+            </button>
+          </div>
+          {item.kind === 'static_text' ? (
+              <textarea
+              value={item.text ?? ''}
+              onChange={(event) => updateItem(itemIndex, { text: event.target.value })}
+              placeholder="Texto fijo o instrucción"
+              style={{
+                width: '100%',
+                minHeight: 76,
+                borderRadius: 10,
+                border: '1px solid #d1d5db',
+                background: '#fff',
+                padding: '10px 12px',
+                fontSize: 13,
+                color: 'var(--text-strong)',
+                boxSizing: 'border-box',
+                resize: 'vertical',
+              }}
+            />
+          ) : (
+            <>
+              <input
+                value={item.label ?? ''}
+                onChange={(event) => updateItem(itemIndex, { label: event.target.value })}
+                placeholder="Etiqueta"
+                style={compactInputStyle}
+              />
+              {item.kind !== 'sum_numbers' ? (
+                <input
+                  value={item.placeholder ?? ''}
+                  onChange={(event) => updateItem(itemIndex, { placeholder: event.target.value })}
+                  placeholder="Placeholder"
+                  style={compactInputStyle}
+                />
+              ) : (
+                <div style={tableInfoTextStyle}>
+                  La suma automática totaliza los números ingresados en esta celda.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ))}
+      <button type="button" onClick={addItem} style={miniSecondaryButtonStyle}>
+        + Item en celda
+      </button>
+    </div>
   )
 }
 
@@ -1471,6 +1739,63 @@ function normalizeText(value: string) {
 }
 
 function PreviewField({ campo }: { campo: CampoPostulacion }) {
+  if (campo.tipo === 'tabla_estructurada') {
+    const config = normalizeTableFieldConfig(campo.config_json)
+    return (
+      <div style={{ ...previewFieldStyle, overflowX: 'auto' }}>
+        <div style={fieldLabelStyle}>
+          {campo.nombre} {campo.obligatorio ? <span style={{ color: 'var(--danger)' }}>*</span> : null}
+        </div>
+        {campo.descripcion_campo ? (
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10, lineHeight: 1.4 }}>
+            {campo.descripcion_campo}
+          </div>
+        ) : null}
+        <table style={tablePreviewTableStyle}>
+          <thead>
+            <tr>
+              {config.columns.map((column) => (
+                <th key={column.id} style={tablePreviewHeaderStyle}>
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {config.rows.map((row) => (
+              <tr key={row.id}>
+                {row.cells.map((cell) => (
+                  <td key={cell.id} style={tablePreviewCellStyle}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {cell.items.map((item) => (
+                        <div
+                          key={item.id}
+                          style={item.highlighted ? tablePreviewHighlightedStyle : undefined}
+                        >
+                          {item.kind === 'static_text'
+                            ? item.text || 'Texto fijo'
+                            : item.kind === 'sum_numbers'
+                              ? 'Suma automática'
+                              : `${item.label || 'Campo'}: ${
+                                  item.kind === 'input_number'
+                                    ? '0'
+                                    : item.kind === 'input_textarea'
+                                      ? 'Texto largo'
+                                      : 'Texto'
+                                }`}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
   const placeholder =
     campo.tipo === 'fecha'
       ? 'Seleccione una fecha'
@@ -1797,6 +2122,116 @@ const previewInputStyle: React.CSSProperties = {
   padding: '0 12px',
   color: '#9ca3af',
   fontSize: 13,
+}
+
+const tableEditorWrapperStyle: React.CSSProperties = {
+  borderRadius: 14,
+  border: '1px solid #dbeafe',
+  background: '#f8fbff',
+  padding: 14,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+}
+
+const tableEditorTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 800,
+  color: 'var(--primary-dark)',
+}
+
+const tableEditorActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 8,
+  flexWrap: 'wrap',
+}
+
+const tableCellEditorStyle: React.CSSProperties = {
+  border: '1px solid #d1d5db',
+  borderRadius: 12,
+  background: '#fff',
+  padding: 10,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+}
+
+const tableItemCardStyle: React.CSSProperties = {
+  border: '1px solid #e5e7eb',
+  borderRadius: 10,
+  padding: 10,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  background: '#f9fafb',
+}
+
+const tableItemRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 8,
+  alignItems: 'center',
+  flexWrap: 'wrap',
+}
+
+const tableInfoTextStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#6b7280',
+  lineHeight: 1.45,
+}
+
+function tablePreviewGridStyle(columns: number): React.CSSProperties {
+  return {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${Math.max(columns, 1)}, minmax(180px, 1fr))`,
+    gap: 10,
+    alignItems: 'start',
+  }
+}
+
+const tableHeaderInputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 42,
+  borderRadius: 10,
+  border: '1px solid #d1d5db',
+  background: '#fff',
+  padding: '0 12px',
+  fontSize: 13,
+  color: 'var(--text-strong)',
+  boxSizing: 'border-box',
+  fontWeight: 700,
+  backgroundColor: '#eff6ff',
+}
+
+const tablePreviewTableStyle: React.CSSProperties = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  minWidth: 520,
+}
+
+const tablePreviewHeaderStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  background: '#e2e8f0',
+  color: 'var(--text-strong)',
+  textAlign: 'left',
+  padding: '10px 12px',
+  fontSize: 13,
+  fontWeight: 800,
+}
+
+const tablePreviewCellStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  background: '#fff',
+  verticalAlign: 'top',
+  padding: '10px 12px',
+  fontSize: 13,
+  color: '#374151',
+}
+
+const tablePreviewHighlightedStyle: React.CSSProperties = {
+  display: 'inline-block',
+  background: '#fef08a',
+  padding: '2px 4px',
+  fontWeight: 800,
 }
 
 const ruleRowStyle: React.CSSProperties = {
