@@ -1559,7 +1559,9 @@ function TableCellEditor({
   onChange: (items: TableFieldItemConfig[]) => void
   onChangeColspan: (colspan: number) => void
 }) {
-  const items = cell.items?.length ? cell.items : createDefaultTableFieldConfig().rows[0].cells[0].items
+  const items = Array.isArray(cell.items)
+    ? cell.items
+    : createDefaultTableFieldConfig().rows[0].cells[0].items
 
   const updateItem = (
     itemIndex: number,
@@ -1592,7 +1594,7 @@ function TableCellEditor({
 
   const removeItem = (itemIndex: number) => {
     const next = items.filter((_, index) => index !== itemIndex)
-    onChange(next.length ? next : items)
+    onChange(next)
   }
 
   return (
