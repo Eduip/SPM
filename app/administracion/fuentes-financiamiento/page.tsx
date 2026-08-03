@@ -5,6 +5,7 @@ import FuentesFinanciamientoPage from '../../../components/administracion/fuente
 import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 import { listFieldAIConfigs } from '../../../lib/ai/field-ai-config'
 import { listEstadoPagoDocumentConfigs } from '../../../lib/estado-pago-document-config'
+import type { SeccionFormularioFuente } from '../../../lib/formulacion-types'
 
 export default async function Page() {
     const supabase = await createClient()
@@ -29,7 +30,7 @@ export default async function Page() {
     .select('*')
     .order('orden', { ascending: true })
 
-    const [camposRes, fieldAIConfigs, documentosEstadoPago] = await Promise.all([
+    const [camposRes, fieldAIConfigs, documentosEstadoPago, seccionesRes] = await Promise.all([
       supabase
         .from('campos_formulario_fuente')
         .select('*')
@@ -37,11 +38,20 @@ export default async function Page() {
         .order('orden', { ascending: true }),
       listFieldAIConfigs(),
       listEstadoPagoDocumentConfigs(),
+      supabase
+        .from('secciones_formulario_fuente')
+        .select('*')
+        .eq('activa', true)
+        .order('orden', { ascending: true }),
     ])
 
+    const secciones = (seccionesRes.data ?? []) as SeccionFormularioFuente[]
+    const seccionMap = new Map(secciones.map((seccion) => [seccion.id, seccion]))
     const aiModeMap = new Map(fieldAIConfigs.map((item) => [item.fieldId, item.mode]))
     const campos = (camposRes.data ?? []).map((campo) => ({
       ...campo,
+      seccion_nombre: campo.seccion_id ? seccionMap.get(campo.seccion_id)?.nombre ?? null : null,
+      seccion_orden: campo.seccion_id ? seccionMap.get(campo.seccion_id)?.orden ?? null : null,
       ai_mode: aiModeMap.get(campo.id),
     }))
 
@@ -55,6 +65,7 @@ export default async function Page() {
   fuentes={fuentes ?? []}
   documentos={documentos ?? []}
   documentosEstadoPago={documentosEstadoPago}
+  secciones={secciones}
   campos={campos}
   reglas={reglas ?? []}
   error={error?.message ?? null}

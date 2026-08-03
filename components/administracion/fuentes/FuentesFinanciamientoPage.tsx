@@ -4,15 +4,18 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   actualizarCampoFuente,
+  actualizarSeccionFuente,
   crearCampoFuente,
   crearDocumentoEstadoPagoFuente,
   crearDocumentoFuente,
   crearFuenteFinanciamiento,
   crearReglaFuente,
+  crearSeccionFuente,
   eliminarCampoFuente,
   eliminarDocumentoEstadoPagoFuente,
   eliminarDocumentoFuente,
   eliminarFuenteFinanciamiento,
+  eliminarSeccionFuente,
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
@@ -21,6 +24,7 @@ import type {
   CampoPostulacion,
   DocumentoFuente,
   ReglaFuente,
+  SeccionFormularioFuente,
 } from '../../../lib/formulacion-types'
 import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
 import type { EstadoPagoDocumentoConfig } from '../../../lib/estado-pago-document-config'
@@ -98,6 +102,7 @@ export default function FuentesFinanciamientoPage({
     fuentes,
     documentos,
     documentosEstadoPago,
+    secciones,
     campos,
     reglas,
     error,
@@ -105,6 +110,7 @@ export default function FuentesFinanciamientoPage({
     fuentes: Fuente[]
     documentos: DocumentoFuente[]
     documentosEstadoPago: EstadoPagoDocumentoConfig[]
+    secciones: SeccionFormularioFuente[]
     campos: CampoPostulacion[]
     reglas: ReglaFuente[]
     error: string | null
@@ -112,6 +118,7 @@ export default function FuentesFinanciamientoPage({
   const router = useRouter()
   const [showNewForm, setShowNewForm] = useState(false)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false)
+  const [showNewSectionForm, setShowNewSectionForm] = useState(false)
   const [fieldFormMode, setFieldFormMode] = useState<FieldFormMode>('descripcion')
   const [showNewDocumentForm, setShowNewDocumentForm] = useState(false)
   const [showNewPaymentDocumentForm, setShowNewPaymentDocumentForm] = useState(false)
@@ -133,6 +140,9 @@ export default function FuentesFinanciamientoPage({
   const camposFuente = campos
     .filter((c) => c.fuente_id === selectedFuente?.id && c.visible)
     .sort(compareCampoOrder)
+  const seccionesFuente = secciones
+    .filter((seccion) => seccion.fuente_id === selectedFuente?.id)
+    .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es'))
   
   const reglasFuente = reglas.filter((r) => r.fuente_id === selectedFuente?.id)
 
@@ -143,6 +153,7 @@ export default function FuentesFinanciamientoPage({
     setForm(emptyForm)
     setShowNewForm(true)
     setShowNewFieldForm(false)
+    setShowNewSectionForm(false)
     setShowNewDocumentForm(false)
     setShowNewPaymentDocumentForm(false)
     setShowNewRuleForm(false)
@@ -153,6 +164,7 @@ export default function FuentesFinanciamientoPage({
     setForm(toFormState(fuente))
     setShowNewForm(false)
     setShowNewFieldForm(false)
+    setShowNewSectionForm(false)
     setShowNewDocumentForm(false)
     setShowNewPaymentDocumentForm(false)
     setShowNewRuleForm(false)
@@ -664,6 +676,14 @@ export default function FuentesFinanciamientoPage({
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
+                  onClick={() => setShowNewSectionForm((v) => !v)}
+                  disabled={!selectedFuente}
+                  style={!selectedFuente ? disabledMiniButtonStyle : miniSecondaryButtonStyle}
+                >
+                  + Crear sección
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     setFieldFormMode('descripcion')
                     setShowNewFieldForm((v) => !v || fieldFormMode !== 'descripcion')
@@ -698,12 +718,66 @@ export default function FuentesFinanciamientoPage({
               </div>
             </div>
 
+            {showNewSectionForm && selectedFuente && (
+              <form
+                action={async (formData) => {
+                  const nombre = String(formData.get('nombre') || '').trim()
+                  const orden = Number(formData.get('orden') || 0)
+
+                  const res = await crearSeccionFuente({
+                    fuente_id: selectedFuente.id,
+                    nombre,
+                    orden,
+                  })
+
+                  if (!res.success) {
+                    alert(res.error)
+                    return
+                  }
+
+                  setShowNewSectionForm(false)
+                  router.refresh()
+                }}
+                style={inlineFormStyle}
+              >
+                <input
+                  name="nombre"
+                  placeholder="Nombre de la sección"
+                  required
+                  style={inputStyle}
+                />
+                <input
+                  name="orden"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Orden de la sección"
+                  style={inputStyle}
+                />
+                <button type="submit" style={saveButtonStyle}>
+                  Guardar sección
+                </button>
+              </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+              {seccionesFuente.length === 0 ? (
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  Aún no hay secciones creadas para esta fuente.
+                </div>
+              ) : (
+                seccionesFuente.map((seccion) => (
+                  <SectionRow key={seccion.id} seccion={seccion} onSaved={() => router.refresh()} />
+                ))
+              )}
+            </div>
+
             {showNewFieldForm && selectedFuente && (
               <form
                 action={async (formData) => {
                   const nombre = String(formData.get('nombre') || '').trim()
                   const descripcionCampo = String(formData.get('descripcion_campo') || '').trim()
-                  const grupo = String(formData.get('grupo') || '').trim()
+                  const seccionId = String(formData.get('seccion_id') || '').trim()
                   const subgrupo = String(formData.get('subgrupo') || '').trim()
                   const ordenCodigo = String(formData.get('orden_codigo') || '').trim()
                   const tipo =
@@ -716,7 +790,8 @@ export default function FuentesFinanciamientoPage({
                     fuente_id: selectedFuente.id,
                     nombre,
                     descripcion_campo: descripcionCampo,
-                    grupo,
+                    seccion_id: seccionId,
+                    grupo: '',
                     subgrupo,
                     orden_codigo: ordenCodigo,
                     tipo,
@@ -745,15 +820,18 @@ export default function FuentesFinanciamientoPage({
                   style={inputStyle}
                 />
                 <input
-                  name="grupo"
-                  placeholder="Grupo o sección (opcional)"
-                  style={inputStyle}
-                />
-                <input
                   name="subgrupo"
                   placeholder="Subgrupo o subsección (opcional)"
                   style={inputStyle}
                 />
+                <select name="seccion_id" defaultValue="" style={inputStyle}>
+                  <option value="">Sin sección</option>
+                  {seccionesFuente.map((seccion) => (
+                    <option key={seccion.id} value={seccion.id}>
+                      {seccion.orden}. {seccion.nombre}
+                    </option>
+                  ))}
+                </select>
                 <input
                   name="orden_codigo"
                   placeholder="Orden visible (ej: 1, 1.2, 4.3)"
@@ -794,6 +872,7 @@ export default function FuentesFinanciamientoPage({
     <FieldConfigRow
       key={`${campo.id}-${campo.tipo}-${campo.obligatorio}-${campo.nombre}`}
       campo={campo}
+      secciones={seccionesFuente}
       onSaved={() => router.refresh()}
     />
   ))
@@ -1110,15 +1189,18 @@ function PaymentDocumentRow({
 
 function FieldConfigRow({
   campo,
+  secciones,
   onSaved,
 }: {
   campo: CampoPostulacion
+  secciones: SeccionFormularioFuente[]
   onSaved: () => void
 }) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [nombre, setNombre] = useState(campo.nombre)
   const [descripcionCampo, setDescripcionCampo] = useState(campo.descripcion_campo ?? '')
+  const [seccionId, setSeccionId] = useState(campo.seccion_id ?? '')
   const [grupo, setGrupo] = useState(campo.grupo ?? '')
   const [subgrupo, setSubgrupo] = useState(campo.subgrupo ?? '')
   const [ordenCodigo, setOrdenCodigo] = useState(campo.orden_codigo ?? String(campo.orden))
@@ -1153,6 +1235,7 @@ function FieldConfigRow({
           id: campo.id,
           nombre: nombre.trim(),
           descripcion_campo: descripcionCampo,
+          seccion_id: seccionId,
           grupo,
           subgrupo,
           orden_codigo: ordenCodigo,
@@ -1212,10 +1295,22 @@ function FieldConfigRow({
           style={compactInputStyle}
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <select
+            value={seccionId}
+            onChange={(event) => setSeccionId(event.target.value)}
+            style={compactSelectStyle}
+          >
+            <option value="">Sin sección</option>
+            {secciones.map((seccion) => (
+              <option key={seccion.id} value={seccion.id}>
+                {seccion.orden}. {seccion.nombre}
+              </option>
+            ))}
+          </select>
           <input
             value={grupo}
             onChange={(event) => setGrupo(event.target.value)}
-            placeholder="Grupo o sección"
+            placeholder="Agrupación heredada"
             style={compactInputStyle}
           />
           <input
@@ -1258,6 +1353,86 @@ function FieldConfigRow({
           <option value="suggest">Permitir IA</option>
           <option value="improve_only">Solo mejorar</option>
         </select>
+        <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={saving || deleting}
+          style={miniDangerButtonStyle}
+        >
+          {deleting ? 'Eliminando...' : 'Eliminar'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function SectionRow({
+  seccion,
+  onSaved,
+}: {
+  seccion: SeccionFormularioFuente
+  onSaved: () => void
+}) {
+  const [nombre, setNombre] = useState(seccion.nombre)
+  const [orden, setOrden] = useState(String(seccion.orden))
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`¿Eliminar la sección ${seccion.nombre}?`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    const res = await eliminarSeccionFuente(seccion.id)
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    onSaved()
+  }
+
+  return (
+    <form
+      action={async () => {
+        setSaving(true)
+        const res = await actualizarSeccionFuente({
+          id: seccion.id,
+          nombre,
+          orden: Number(orden || 0),
+        })
+        setSaving(false)
+
+        if (!res.success) {
+          alert(res.error)
+          return
+        }
+
+        onSaved()
+      }}
+      style={simpleRowStyle}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+        <input
+          value={orden}
+          onChange={(event) => setOrden(event.target.value)}
+          type="number"
+          min="1"
+          step="1"
+          style={{ ...compactInputStyle, width: 84 }}
+        />
+        <input
+          value={nombre}
+          onChange={(event) => setNombre(event.target.value)}
+          style={{ ...compactInputStyle, flex: 1 }}
+        />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
@@ -1411,7 +1586,7 @@ function groupCamposByHierarchy(campos: CampoPostulacion[]) {
   >()
 
   for (const campo of campos) {
-    const grupo = campo.grupo?.trim() || null
+    const grupo = campo.seccion_nombre?.trim() || campo.grupo?.trim() || null
     const subgrupo = campo.subgrupo?.trim() || null
     const groupKey = grupo ?? '__sin_grupo__'
 

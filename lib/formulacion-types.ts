@@ -13,6 +13,9 @@ export type CampoPostulacion = {
   fuente_id: string
   nombre: string
   descripcion_campo?: string | null
+  seccion_id?: string | null
+  seccion_nombre?: string | null
+  seccion_orden?: number | null
   grupo?: string | null
   subgrupo?: string | null
   orden_codigo?: string | null
@@ -66,6 +69,14 @@ export type ReglaFuente = {
   id: string
   fuente_id: string
   descripcion: string
+}
+
+export type SeccionFormularioFuente = {
+  id: string
+  fuente_id: string
+  nombre: string
+  orden: number
+  activa?: boolean | null
 }
 
 export type DiagnosticoProyecto = {

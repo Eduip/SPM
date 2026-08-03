@@ -219,6 +219,7 @@ export async function crearCampoFuente({
     fuente_id,
     nombre,
     descripcion_campo,
+    seccion_id,
     grupo,
     subgrupo,
     orden_codigo,
@@ -228,6 +229,7 @@ export async function crearCampoFuente({
     fuente_id: string
     nombre: string
     descripcion_campo?: string
+    seccion_id?: string
     grupo?: string
     subgrupo?: string
     orden_codigo?: string
@@ -261,6 +263,7 @@ export async function crearCampoFuente({
         fuente_id,
         nombre: nombre.trim(),
         descripcion_campo: descripcion_campo?.trim() || null,
+        seccion_id: seccion_id?.trim() || null,
         grupo: grupo?.trim() || null,
         subgrupo: subgrupo?.trim() || null,
         orden_codigo: orden_codigo?.trim() || String(Number(ultimoCampo?.orden ?? 0) + 1),
@@ -279,6 +282,7 @@ export async function actualizarCampoFuente({
   id,
   nombre,
   descripcion_campo,
+  seccion_id,
   grupo,
   subgrupo,
   orden_codigo,
@@ -289,6 +293,7 @@ export async function actualizarCampoFuente({
   id: string
   nombre: string
   descripcion_campo?: string
+  seccion_id?: string
   grupo?: string
   subgrupo?: string
   orden_codigo?: string
@@ -314,6 +319,7 @@ export async function actualizarCampoFuente({
     .update({
       nombre: nombre.trim(),
       descripcion_campo: descripcion_campo?.trim() || null,
+      seccion_id: seccion_id?.trim() || null,
       grupo: grupo?.trim() || null,
       subgrupo: subgrupo?.trim() || null,
       orden_codigo: orden_codigo?.trim() || null,
@@ -325,6 +331,113 @@ export async function actualizarCampoFuente({
   if (error) return { success: false, error: error.message }
 
   await saveFieldAIConfig(id, ai_mode)
+
+  return { success: true }
+}
+
+export async function crearSeccionFuente({
+  fuente_id,
+  nombre,
+  orden,
+}: {
+  fuente_id: string
+  nombre: string
+  orden?: number
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!fuente_id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para crear la sección.' }
+  }
+
+  const { data: ultimaSeccion } = await supabase
+    .from('secciones_formulario_fuente')
+    .select('orden')
+    .eq('fuente_id', fuente_id)
+    .order('orden', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const ordenFinal =
+    Number.isFinite(orden) && Number(orden) > 0
+      ? Number(orden)
+      : Number(ultimaSeccion?.orden ?? 0) + 1
+
+  const { error } = await supabase.from('secciones_formulario_fuente').insert({
+    fuente_id,
+    nombre: nombre.trim(),
+    orden: ordenFinal,
+    activa: true,
+  })
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function actualizarSeccionFuente({
+  id,
+  nombre,
+  orden,
+}: {
+  id: string
+  nombre: string
+  orden: number
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para actualizar la sección.' }
+  }
+
+  const { error } = await supabase
+    .from('secciones_formulario_fuente')
+    .update({
+      nombre: nombre.trim(),
+      orden: Number.isFinite(orden) && orden > 0 ? orden : 1,
+    })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function eliminarSeccionFuente(id: string) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!id) {
+    return { success: false, error: 'No se recibió la sección a eliminar.' }
+  }
+
+  const { error: camposError } = await supabase
+    .from('campos_formulario_fuente')
+    .update({ seccion_id: null })
+    .eq('seccion_id', id)
+
+  if (camposError) return { success: false, error: camposError.message }
+
+  const { error } = await supabase
+    .from('secciones_formulario_fuente')
+    .update({ activa: false })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
 
   return { success: true }
 }
