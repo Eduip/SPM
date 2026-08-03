@@ -1280,118 +1280,138 @@ function FieldConfigRow({
       style={{
         ...configRowStyle,
         alignItems: 'stretch',
+        flexDirection: 'column',
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ color: '#9ca3af', fontWeight: 700 }}>⋮⋮</div>
-          <div
-            style={{
-              width: 14,
-              height: 14,
-              borderRadius: 3,
-              background: 'var(--primary-dark)',
-            }}
-          />
-          <div>
-            <input
-              name="nombre"
-              value={nombre}
-              onChange={(event) => setNombre(event.target.value)}
-              required
-              style={compactInputStyle}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1.2fr) minmax(360px, 0.8fr)',
+          gap: 16,
+          alignItems: 'start',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ color: '#9ca3af', fontWeight: 700 }}>⋮⋮</div>
+            <div
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: 3,
+                background: 'var(--primary-dark)',
+              }}
             />
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-              Orden visible actual: {getCampoOrderLabel(campo)} · Orden interno: {campo.orden}
+            <div>
+              <input
+                name="nombre"
+                value={nombre}
+                onChange={(event) => setNombre(event.target.value)}
+                required
+                style={compactInputStyle}
+              />
+              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                Orden visible actual: {getCampoOrderLabel(campo)} · Orden interno: {campo.orden}
+              </div>
             </div>
           </div>
+          <input
+            value={ordenCodigo}
+            onChange={(event) => setOrdenCodigo(event.target.value)}
+            placeholder="Orden visible (ej: 1, 1.2, 4.3)"
+            style={compactInputStyle}
+          />
+          <input
+            value={descripcionCampo}
+            onChange={(event) => setDescripcionCampo(event.target.value)}
+            placeholder="Descripción del campo"
+            style={compactInputStyle}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <select
+              value={seccionId}
+              onChange={(event) => setSeccionId(event.target.value)}
+              style={compactSelectStyle}
+            >
+              <option value="">Sin sección</option>
+              {secciones.map((seccion) => (
+                <option key={seccion.id} value={seccion.id}>
+                  {seccion.orden}. {seccion.nombre}
+                </option>
+              ))}
+            </select>
+            <input
+              value={subgrupo}
+              onChange={(event) => setSubgrupo(event.target.value)}
+              placeholder="Subgrupo o subsección"
+              style={compactInputStyle}
+            />
+          </div>
         </div>
-        <input
-          value={ordenCodigo}
-          onChange={(event) => setOrdenCodigo(event.target.value)}
-          placeholder="Orden visible (ej: 1, 1.2, 4.3)"
-          style={compactInputStyle}
-        />
-        <input
-          value={descripcionCampo}
-          onChange={(event) => setDescripcionCampo(event.target.value)}
-          placeholder="Descripción del campo"
-          style={compactInputStyle}
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
+          }}
+        >
           <select
-            value={seccionId}
-            onChange={(event) => setSeccionId(event.target.value)}
+            name="tipo"
+            value={tipo}
+            onChange={(event) => {
+              const nextType = event.target.value
+              setTipo(nextType)
+              if (nextType === 'tabla_estructurada') {
+                setTableConfig((current) => normalizeTableFieldConfig(current))
+              }
+            }}
             style={compactSelectStyle}
           >
-            <option value="">Sin sección</option>
-            {secciones.map((seccion) => (
-              <option key={seccion.id} value={seccion.id}>
-                {seccion.orden}. {seccion.nombre}
+            {FIELD_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
-          <input
-            value={subgrupo}
-            onChange={(event) => setSubgrupo(event.target.value)}
-            placeholder="Subgrupo o subsección"
-            style={compactInputStyle}
-          />
+          <label style={compactCheckboxStyle}>
+            <input
+              type="checkbox"
+              name="obligatorio"
+              checked={obligatorio}
+              onChange={(event) => setObligatorio(event.target.checked)}
+            />
+            Obligatorio
+          </label>
+          <select
+            value={aiMode}
+            onChange={(event) => setAiMode(event.target.value as FieldAIMode)}
+            style={compactSelectStyle}
+            disabled={tipo === 'tabla_estructurada'}
+          >
+            <option value="blocked">Bloquear IA</option>
+            <option value="suggest">Permitir IA</option>
+            <option value="improve_only">Solo mejorar</option>
+          </select>
+          <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
+            {saving ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving || deleting}
+            style={miniDangerButtonStyle}
+          >
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </button>
         </div>
       </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <select
-          name="tipo"
-          value={tipo}
-          onChange={(event) => {
-            const nextType = event.target.value
-            setTipo(nextType)
-            if (nextType === 'tabla_estructurada') {
-              setTableConfig((current) => normalizeTableFieldConfig(current))
-            }
-          }}
-          style={compactSelectStyle}
-        >
-          {FIELD_TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <label style={compactCheckboxStyle}>
-          <input
-            type="checkbox"
-            name="obligatorio"
-            checked={obligatorio}
-            onChange={(event) => setObligatorio(event.target.checked)}
-          />
-          Obligatorio
-        </label>
-        <select
-          value={aiMode}
-          onChange={(event) => setAiMode(event.target.value as FieldAIMode)}
-          style={compactSelectStyle}
-          disabled={tipo === 'tabla_estructurada'}
-        >
-          <option value="blocked">Bloquear IA</option>
-          <option value="suggest">Permitir IA</option>
-          <option value="improve_only">Solo mejorar</option>
-        </select>
-        <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
-          {saving ? 'Guardando...' : 'Guardar'}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={saving || deleting}
-          style={miniDangerButtonStyle}
-        >
-          {deleting ? 'Eliminando...' : 'Eliminar'}
-        </button>
-      </div>
       {tipo === 'tabla_estructurada' ? (
-        <TableFieldConfigEditor config={tableConfig} onChange={setTableConfig} />
+        <div style={{ width: '100%' }}>
+          <TableFieldConfigEditor config={tableConfig} onChange={setTableConfig} />
+        </div>
       ) : null}
     </form>
   )
