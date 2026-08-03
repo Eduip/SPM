@@ -1201,7 +1201,6 @@ function FieldConfigRow({
   const [nombre, setNombre] = useState(campo.nombre)
   const [descripcionCampo, setDescripcionCampo] = useState(campo.descripcion_campo ?? '')
   const [seccionId, setSeccionId] = useState(campo.seccion_id ?? '')
-  const [grupo, setGrupo] = useState(campo.grupo ?? '')
   const [subgrupo, setSubgrupo] = useState(campo.subgrupo ?? '')
   const [ordenCodigo, setOrdenCodigo] = useState(campo.orden_codigo ?? String(campo.orden))
   const [tipo, setTipo] = useState(campo.tipo)
@@ -1236,7 +1235,7 @@ function FieldConfigRow({
           nombre: nombre.trim(),
           descripcion_campo: descripcionCampo,
           seccion_id: seccionId,
-          grupo,
+          grupo: '',
           subgrupo,
           orden_codigo: ordenCodigo,
           tipo,
@@ -1307,12 +1306,6 @@ function FieldConfigRow({
               </option>
             ))}
           </select>
-          <input
-            value={grupo}
-            onChange={(event) => setGrupo(event.target.value)}
-            placeholder="Agrupación heredada"
-            style={compactInputStyle}
-          />
           <input
             value={subgrupo}
             onChange={(event) => setSubgrupo(event.target.value)}
@@ -1586,7 +1579,7 @@ function groupCamposByHierarchy(campos: CampoPostulacion[]) {
   >()
 
   for (const campo of campos) {
-    const grupo = campo.seccion_nombre?.trim() || campo.grupo?.trim() || null
+    const grupo = campo.seccion_nombre?.trim() || null
     const subgrupo = campo.subgrupo?.trim() || null
     const groupKey = grupo ?? '__sin_grupo__'
 

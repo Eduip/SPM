@@ -517,7 +517,7 @@ function groupCamposByHierarchy(campos: CampoPostulacion[]) {
   >()
 
   for (const campo of campos) {
-    const grupo = campo.seccion_nombre?.trim() || campo.grupo?.trim() || null
+    const grupo = campo.seccion_nombre?.trim() || null
     const subgrupo = campo.subgrupo?.trim() || null
     const groupKey = grupo ?? '__sin_grupo__'
 
