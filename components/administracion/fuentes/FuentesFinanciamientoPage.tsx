@@ -34,6 +34,7 @@ import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
 import type { EstadoPagoDocumentoConfig } from '../../../lib/estado-pago-document-config'
 import {
   createDefaultTableFieldConfig,
+  getRenderableTableCells,
   normalizeTableFieldConfig,
 } from '../../../lib/table-field-config'
 
@@ -1442,6 +1443,7 @@ function TableFieldConfigEditor({
         ...row.cells,
         {
           id: createUiConfigId('cell'),
+          colspan: 1,
           items: [
             {
               id: createUiConfigId('item'),
@@ -1464,6 +1466,7 @@ function TableFieldConfigEditor({
       id: createUiConfigId('row'),
       cells: next.columns.map((column, index) => ({
         id: createUiConfigId(`cell-${column.id}`),
+        colspan: 1,
         items: [
           {
             id: createUiConfigId(`item-${column.id}`),
@@ -1485,6 +1488,12 @@ function TableFieldConfigEditor({
     onChange(next)
   }
 
+  const updateCellColspan = (rowIndex: number, cellIndex: number, colspan: number) => {
+    const next = normalizeTableFieldConfig(normalized)
+    next.rows[rowIndex].cells[cellIndex].colspan = Math.max(1, Math.floor(colspan || 1))
+    onChange(next)
+  }
+
   return (
     <div style={tableEditorWrapperStyle}>
       <div style={tableEditorTitleStyle}>Configuración de la tabla</div>
@@ -1497,26 +1506,43 @@ function TableFieldConfigEditor({
         </button>
       </div>
 
-      <div style={tablePreviewGridStyle(normalized.columns.length)}>
-        {normalized.columns.map((column, columnIndex) => (
-          <input
-            key={column.id}
-            value={column.header}
-            onChange={(event) => updateColumnHeader(columnIndex, event.target.value)}
-            placeholder={`Encabezado ${columnIndex + 1}`}
-            style={tableHeaderInputStyle}
-          />
-        ))}
-
-        {normalized.rows.map((row, rowIndex) =>
-          row.cells.map((cell, cellIndex) => (
-            <TableCellEditor
-              key={cell.id}
-              cell={cell}
-              onChange={(items) => updateCellItems(rowIndex, cellIndex, items)}
-            />
-          ))
-        )}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={tableEditorTableStyle}>
+          <thead>
+            <tr>
+              {normalized.columns.map((column, columnIndex) => (
+                <th key={column.id} style={tableEditorHeaderStyle}>
+                  <input
+                    value={column.header}
+                    onChange={(event) => updateColumnHeader(columnIndex, event.target.value)}
+                    placeholder={`Encabezado ${columnIndex + 1}`}
+                    style={tableHeaderInputStyle}
+                  />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {normalized.rows.map((row, rowIndex) => (
+              <tr key={row.id}>
+                {getRenderableTableCells(row, normalized.columns.length).map(
+                  ({ cell, cellIndex, colspan }) => (
+                    <td key={cell.id} colSpan={colspan} style={tableEditorCellStyle}>
+                      <TableCellEditor
+                        cell={cell}
+                        maxColumns={normalized.columns.length}
+                        onChange={(items) => updateCellItems(rowIndex, cellIndex, items)}
+                        onChangeColspan={(nextColspan) =>
+                          updateCellColspan(rowIndex, cellIndex, nextColspan)
+                        }
+                      />
+                    </td>
+                  )
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
@@ -1524,10 +1550,14 @@ function TableFieldConfigEditor({
 
 function TableCellEditor({
   cell,
+  maxColumns,
   onChange,
+  onChangeColspan,
 }: {
   cell: TableFieldCellConfig
+  maxColumns: number
   onChange: (items: TableFieldItemConfig[]) => void
+  onChangeColspan: (colspan: number) => void
 }) {
   const items = cell.items?.length ? cell.items : createDefaultTableFieldConfig().rows[0].cells[0].items
 
@@ -1596,6 +1626,17 @@ function TableCellEditor({
                 }
               />
               Resaltar
+            </label>
+            <label style={tableColspanLabelStyle}>
+              Ancho
+              <input
+                type="number"
+                min="1"
+                max={maxColumns}
+                value={cell.colspan ?? 1}
+                onChange={(event) => onChangeColspan(Number(event.target.value || 1))}
+                style={tableColspanInputStyle}
+              />
             </label>
             <button type="button" onClick={() => removeItem(itemIndex)} style={miniDangerButtonStyle}>
               Quitar
@@ -1784,8 +1825,8 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
           <tbody>
             {config.rows.map((row) => (
               <tr key={row.id}>
-                {row.cells.map((cell) => (
-                  <td key={cell.id} style={tablePreviewCellStyle}>
+                {getRenderableTableCells(row, config.columns.length).map(({ cell, colspan }) => (
+                  <td key={cell.id} colSpan={colspan} style={tablePreviewCellStyle}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {cell.items.map((item) => (
                         <div
@@ -2166,6 +2207,26 @@ const tableEditorActionRowStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 }
 
+const tableEditorTableStyle: React.CSSProperties = {
+  width: '100%',
+  minWidth: 760,
+  borderCollapse: 'collapse',
+}
+
+const tableEditorHeaderStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  background: '#e2e8f0',
+  padding: 8,
+  verticalAlign: 'top',
+}
+
+const tableEditorCellStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  background: '#fff',
+  padding: 8,
+  verticalAlign: 'top',
+}
+
 const tableCellEditorStyle: React.CSSProperties = {
   border: '1px solid #d1d5db',
   borderRadius: 12,
@@ -2193,19 +2254,30 @@ const tableItemRowStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 }
 
+const tableColspanLabelStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#4b5563',
+}
+
+const tableColspanInputStyle: React.CSSProperties = {
+  width: 56,
+  height: 32,
+  borderRadius: 8,
+  border: '1px solid #d1d5db',
+  padding: '0 8px',
+  fontSize: 12,
+  color: 'var(--text-strong)',
+  boxSizing: 'border-box',
+}
+
 const tableInfoTextStyle: React.CSSProperties = {
   fontSize: 12,
   color: '#6b7280',
   lineHeight: 1.45,
-}
-
-function tablePreviewGridStyle(columns: number): React.CSSProperties {
-  return {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${Math.max(columns, 1)}, minmax(180px, 1fr))`,
-    gap: 10,
-    alignItems: 'start',
-  }
 }
 
 const tableHeaderInputStyle: React.CSSProperties = {

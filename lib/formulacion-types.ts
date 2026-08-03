@@ -45,6 +45,7 @@ export type TableFieldItemConfig = {
 
 export type TableFieldCellConfig = {
   id: string
+  colspan?: number | null
   items: TableFieldItemConfig[]
 }
 

@@ -8,6 +8,7 @@ import {
 } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
 import { compareCampoOrder } from '../../../lib/field-order'
 import {
+  getRenderableTableCells,
   getTableSumForCell,
   normalizeTableFieldConfig,
 } from '../../../lib/table-field-config'
@@ -886,8 +887,9 @@ function StructuredTableField({
         <tbody>
           {config.rows.map((row) => (
             <tr key={row.id}>
-              {row.cells.map((cell) => (
-                <td key={cell.id} style={structuredCellStyle}>
+              {getRenderableTableCells(row, config.columns.length).map(
+                ({ cell, colspan }) => (
+                <td key={cell.id} colSpan={colspan} style={structuredCellStyle}>
                   <StructuredTableCell
                     cell={cell}
                     valueMap={tableValue}

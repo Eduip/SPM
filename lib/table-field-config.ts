@@ -21,6 +21,7 @@ export function createDefaultTableFieldConfig(): TableFieldConfig {
       id: safeId('row'),
       cells: columns.map((column, index) => ({
         id: safeId(`cell-${column.id}`),
+        colspan: 1,
         items: [
           {
             id: safeId('item'),
@@ -61,6 +62,7 @@ export function normalizeTableFieldConfig(value: unknown): TableFieldConfig {
           const sourceCell = Array.isArray(row?.cells) ? row?.cells[columnIndex] : null
           return {
             id: sourceCell?.id || safeId(`cell-${rowIndex + 1}-${column.id}`),
+            colspan: normalizeColspan(sourceCell?.colspan),
             items: Array.isArray(sourceCell?.items) && sourceCell.items.length > 0
               ? sourceCell.items.map((item, itemIndex) => normalizeTableItem(item, itemIndex))
               : [createDefaultCellItem(columnIndex)],
@@ -73,6 +75,12 @@ export function normalizeTableFieldConfig(value: unknown): TableFieldConfig {
     columns: normalizedColumns,
     rows: normalizedRows,
   }
+}
+
+function normalizeColspan(value: unknown) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 1) return 1
+  return Math.max(1, Math.floor(parsed))
 }
 
 function normalizeTableItem(item: Partial<TableFieldItemConfig> | null | undefined, index: number) {
@@ -108,4 +116,42 @@ export function getTableSumForCell(
     const numeric = Number(raw)
     return Number.isFinite(numeric) ? sum + numeric : sum
   }, 0)
+}
+
+export function getRenderableTableCells(
+  row: TableFieldRowConfig,
+  totalColumns: number
+) {
+  const renderable: Array<{
+    cell: TableFieldCellConfig
+    cellIndex: number
+    colspan: number
+  }> = []
+
+  let covered = 0
+  let consumedColumns = 0
+
+  for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+    const cell = row.cells[cellIndex]
+
+    if (covered > 0) {
+      covered -= 1
+      continue
+    }
+
+    const remainingColumns = Math.max(totalColumns - consumedColumns, 1)
+    const colspan = Math.min(normalizeColspan(cell.colspan), remainingColumns)
+    consumedColumns += colspan
+    covered = colspan - 1
+
+    renderable.push({
+      cell,
+      cellIndex,
+      colspan,
+    })
+
+    if (consumedColumns >= totalColumns) break
+  }
+
+  return renderable
 }
