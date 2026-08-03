@@ -15,6 +15,7 @@ export type CampoPostulacion = {
   descripcion_campo?: string | null
   grupo?: string | null
   subgrupo?: string | null
+  orden_codigo?: string | null
   tipo: 'texto' | 'texto_largo' | 'numero' | 'fecha' | 'booleano' | 'plazo' | 'presupuesto' | string
   obligatorio: boolean
   visible: boolean

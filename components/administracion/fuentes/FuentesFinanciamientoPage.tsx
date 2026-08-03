@@ -16,6 +16,7 @@ import {
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
+import { compareCampoOrder, getCampoOrderLabel } from '../../../lib/field-order'
 import type {
   CampoPostulacion,
   DocumentoFuente,
@@ -131,7 +132,7 @@ export default function FuentesFinanciamientoPage({
   
   const camposFuente = campos
     .filter((c) => c.fuente_id === selectedFuente?.id && c.visible)
-    .sort((a, b) => a.orden - b.orden)
+    .sort(compareCampoOrder)
   
   const reglasFuente = reglas.filter((r) => r.fuente_id === selectedFuente?.id)
 
@@ -704,6 +705,7 @@ export default function FuentesFinanciamientoPage({
                   const descripcionCampo = String(formData.get('descripcion_campo') || '').trim()
                   const grupo = String(formData.get('grupo') || '').trim()
                   const subgrupo = String(formData.get('subgrupo') || '').trim()
+                  const ordenCodigo = String(formData.get('orden_codigo') || '').trim()
                   const tipo =
                     fieldFormMode === 'descripcion'
                       ? String(formData.get('tipo') || 'texto')
@@ -716,6 +718,7 @@ export default function FuentesFinanciamientoPage({
                     descripcion_campo: descripcionCampo,
                     grupo,
                     subgrupo,
+                    orden_codigo: ordenCodigo,
                     tipo,
                     obligatorio,
                   })
@@ -749,6 +752,11 @@ export default function FuentesFinanciamientoPage({
                 <input
                   name="subgrupo"
                   placeholder="Subgrupo o subsección (opcional)"
+                  style={inputStyle}
+                />
+                <input
+                  name="orden_codigo"
+                  placeholder="Orden visible (ej: 1, 1.2, 4.3)"
                   style={inputStyle}
                 />
                 {fieldFormMode === 'descripcion' ? (
@@ -1113,6 +1121,7 @@ function FieldConfigRow({
   const [descripcionCampo, setDescripcionCampo] = useState(campo.descripcion_campo ?? '')
   const [grupo, setGrupo] = useState(campo.grupo ?? '')
   const [subgrupo, setSubgrupo] = useState(campo.subgrupo ?? '')
+  const [ordenCodigo, setOrdenCodigo] = useState(campo.orden_codigo ?? String(campo.orden))
   const [tipo, setTipo] = useState(campo.tipo)
   const [obligatorio, setObligatorio] = useState(campo.obligatorio)
   const [aiMode, setAiMode] = useState<FieldAIMode>(
@@ -1146,6 +1155,7 @@ function FieldConfigRow({
           descripcion_campo: descripcionCampo,
           grupo,
           subgrupo,
+          orden_codigo: ordenCodigo,
           tipo,
           obligatorio,
           ai_mode: aiMode,
@@ -1185,10 +1195,16 @@ function FieldConfigRow({
               style={compactInputStyle}
             />
             <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-              Orden: {campo.orden}
+              Orden visible actual: {getCampoOrderLabel(campo)} · Orden interno: {campo.orden}
             </div>
           </div>
         </div>
+        <input
+          value={ordenCodigo}
+          onChange={(event) => setOrdenCodigo(event.target.value)}
+          placeholder="Orden visible (ej: 1, 1.2, 4.3)"
+          style={compactInputStyle}
+        />
         <input
           value={descripcionCampo}
           onChange={(event) => setDescripcionCampo(event.target.value)}
@@ -1314,9 +1330,15 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
 }
 
 function PreviewSections({ campos }: { campos: CampoPostulacion[] }) {
-  const descripcion = campos.filter((campo) => getFieldSection(campo.tipo) === 'descripcion')
-  const plazos = campos.filter((campo) => getFieldSection(campo.tipo) === 'plazo')
-  const presupuestos = campos.filter((campo) => getFieldSection(campo.tipo) === 'presupuesto')
+  const descripcion = campos
+    .filter((campo) => getFieldSection(campo.tipo) === 'descripcion')
+    .sort(compareCampoOrder)
+  const plazos = campos
+    .filter((campo) => getFieldSection(campo.tipo) === 'plazo')
+    .sort(compareCampoOrder)
+  const presupuestos = campos
+    .filter((campo) => getFieldSection(campo.tipo) === 'presupuesto')
+    .sort(compareCampoOrder)
 
   return (
     <>

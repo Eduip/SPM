@@ -6,6 +6,7 @@ import {
   guardarRespuestaDinamica,
   sugerirCampoPostulacionConIA,
 } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
+import { compareCampoOrder } from '../../../lib/field-order'
 import type {
   CampoPostulacion,
   DynamicFieldValue,
@@ -40,7 +41,7 @@ export default function DynamicFuenteFields({
     if (!fuenteId) return []
     return campos
       .filter((c) => String(c.fuente_id) === String(fuenteId) && c.visible)
-      .sort((a, b) => a.orden - b.orden)
+      .sort(compareCampoOrder)
   }, [campos, fuenteId])
 
   const respuestaMap = useMemo(() => {

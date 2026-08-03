@@ -221,6 +221,7 @@ export async function crearCampoFuente({
     descripcion_campo,
     grupo,
     subgrupo,
+    orden_codigo,
     tipo,
     obligatorio,
   }: {
@@ -229,6 +230,7 @@ export async function crearCampoFuente({
     descripcion_campo?: string
     grupo?: string
     subgrupo?: string
+    orden_codigo?: string
     tipo: string
     obligatorio: boolean
   }) {
@@ -261,6 +263,7 @@ export async function crearCampoFuente({
         descripcion_campo: descripcion_campo?.trim() || null,
         grupo: grupo?.trim() || null,
         subgrupo: subgrupo?.trim() || null,
+        orden_codigo: orden_codigo?.trim() || String(Number(ultimoCampo?.orden ?? 0) + 1),
         tipo: normalizedTipo,
         obligatorio,
         visible: true,
@@ -278,6 +281,7 @@ export async function actualizarCampoFuente({
   descripcion_campo,
   grupo,
   subgrupo,
+  orden_codigo,
   tipo,
   obligatorio,
   ai_mode,
@@ -287,6 +291,7 @@ export async function actualizarCampoFuente({
   descripcion_campo?: string
   grupo?: string
   subgrupo?: string
+  orden_codigo?: string
   tipo: string
   obligatorio: boolean
   ai_mode: FieldAIMode
@@ -311,6 +316,7 @@ export async function actualizarCampoFuente({
       descripcion_campo: descripcion_campo?.trim() || null,
       grupo: grupo?.trim() || null,
       subgrupo: subgrupo?.trim() || null,
+      orden_codigo: orden_codigo?.trim() || null,
       tipo: normalizedTipo,
       obligatorio,
     })
