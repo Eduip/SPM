@@ -701,6 +701,9 @@ export default function FuentesFinanciamientoPage({
               <form
                 action={async (formData) => {
                   const nombre = String(formData.get('nombre') || '').trim()
+                  const descripcionCampo = String(formData.get('descripcion_campo') || '').trim()
+                  const grupo = String(formData.get('grupo') || '').trim()
+                  const subgrupo = String(formData.get('subgrupo') || '').trim()
                   const tipo =
                     fieldFormMode === 'descripcion'
                       ? String(formData.get('tipo') || 'texto')
@@ -710,6 +713,9 @@ export default function FuentesFinanciamientoPage({
                   const res = await crearCampoFuente({
                     fuente_id: selectedFuente.id,
                     nombre,
+                    descripcion_campo: descripcionCampo,
+                    grupo,
+                    subgrupo,
                     tipo,
                     obligatorio,
                   })
@@ -728,6 +734,21 @@ export default function FuentesFinanciamientoPage({
                   name="nombre"
                   placeholder={getNewFieldPlaceholder(fieldFormMode)}
                   required
+                  style={inputStyle}
+                />
+                <input
+                  name="descripcion_campo"
+                  placeholder="Descripción del campo"
+                  style={inputStyle}
+                />
+                <input
+                  name="grupo"
+                  placeholder="Grupo o sección (opcional)"
+                  style={inputStyle}
+                />
+                <input
+                  name="subgrupo"
+                  placeholder="Subgrupo o subsección (opcional)"
                   style={inputStyle}
                 />
                 {fieldFormMode === 'descripcion' ? (
@@ -1089,6 +1110,9 @@ function FieldConfigRow({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [nombre, setNombre] = useState(campo.nombre)
+  const [descripcionCampo, setDescripcionCampo] = useState(campo.descripcion_campo ?? '')
+  const [grupo, setGrupo] = useState(campo.grupo ?? '')
+  const [subgrupo, setSubgrupo] = useState(campo.subgrupo ?? '')
   const [tipo, setTipo] = useState(campo.tipo)
   const [obligatorio, setObligatorio] = useState(campo.obligatorio)
   const [aiMode, setAiMode] = useState<FieldAIMode>(
@@ -1119,6 +1143,9 @@ function FieldConfigRow({
         const res = await actualizarCampoFuente({
           id: campo.id,
           nombre: nombre.trim(),
+          descripcion_campo: descripcionCampo,
+          grupo,
+          subgrupo,
           tipo,
           obligatorio,
           ai_mode: aiMode,
@@ -1133,29 +1160,54 @@ function FieldConfigRow({
 
         onSaved()
       }}
-      style={configRowStyle}
+      style={{
+        ...configRowStyle,
+        alignItems: 'stretch',
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ color: '#9ca3af', fontWeight: 700 }}>⋮⋮</div>
-        <div
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 3,
-            background: 'var(--primary-dark)',
-          }}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ color: '#9ca3af', fontWeight: 700 }}>⋮⋮</div>
+          <div
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 3,
+              background: 'var(--primary-dark)',
+            }}
+          />
+          <div>
+            <input
+              name="nombre"
+              value={nombre}
+              onChange={(event) => setNombre(event.target.value)}
+              required
+              style={compactInputStyle}
+            />
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+              Orden: {campo.orden}
+            </div>
+          </div>
+        </div>
+        <input
+          value={descripcionCampo}
+          onChange={(event) => setDescripcionCampo(event.target.value)}
+          placeholder="Descripción del campo"
+          style={compactInputStyle}
         />
-        <div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <input
-            name="nombre"
-            value={nombre}
-            onChange={(event) => setNombre(event.target.value)}
-            required
+            value={grupo}
+            onChange={(event) => setGrupo(event.target.value)}
+            placeholder="Grupo o sección"
             style={compactInputStyle}
           />
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-            Orden: {campo.orden}
-          </div>
+          <input
+            value={subgrupo}
+            onChange={(event) => setSubgrupo(event.target.value)}
+            placeholder="Subgrupo o subsección"
+            style={compactInputStyle}
+          />
         </div>
       </div>
 
@@ -1251,6 +1303,11 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
       <div style={fieldLabelStyle}>
         {campo.nombre} {campo.obligatorio ? <span style={{ color: 'var(--danger)' }}>*</span> : null}
       </div>
+      {campo.descripcion_campo ? (
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6, lineHeight: 1.4 }}>
+          {campo.descripcion_campo}
+        </div>
+      ) : null}
       <div style={previewInputStyle}>{placeholder}</div>
     </div>
   )
@@ -1283,13 +1340,29 @@ function PreviewSection({
   totalLabel?: string
   totalValue?: string
 }) {
+  const grouped = groupCamposByHierarchy(campos)
+
   return (
     <div style={previewSectionStyle}>
       <div style={previewSectionTitleStyle}>{title}</div>
       {campos.length === 0 ? (
         <div style={{ fontSize: 13, color: '#9ca3af' }}>{emptyText}</div>
       ) : (
-        campos.map((campo) => <PreviewField key={campo.id} campo={campo} />)
+        grouped.map((group) => (
+          <div key={group.key} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {group.grupo ? <div style={previewGroupTitleStyle}>{group.grupo}</div> : null}
+            {group.subgroups.map((subgroup) => (
+              <div key={subgroup.key} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {subgroup.subgrupo ? (
+                  <div style={previewSubgroupTitleStyle}>{subgroup.subgrupo}</div>
+                ) : null}
+                {subgroup.campos.map((campo) => (
+                  <PreviewField key={campo.id} campo={campo} />
+                ))}
+              </div>
+            ))}
+          </div>
+        ))
       )}
       {totalLabel ? (
         <div style={previewTotalStyle}>
@@ -1299,6 +1372,52 @@ function PreviewSection({
       ) : null}
     </div>
   )
+}
+
+function groupCamposByHierarchy(campos: CampoPostulacion[]) {
+  const groupMap = new Map<
+    string,
+    {
+      key: string
+      grupo: string | null
+      subgroups: Array<{
+        key: string
+        subgrupo: string | null
+        campos: CampoPostulacion[]
+      }>
+    }
+  >()
+
+  for (const campo of campos) {
+    const grupo = campo.grupo?.trim() || null
+    const subgrupo = campo.subgrupo?.trim() || null
+    const groupKey = grupo ?? '__sin_grupo__'
+
+    if (!groupMap.has(groupKey)) {
+      groupMap.set(groupKey, {
+        key: groupKey,
+        grupo,
+        subgroups: [],
+      })
+    }
+
+    const group = groupMap.get(groupKey)!
+    const subgroupKey = subgrupo ?? '__sin_subgrupo__'
+    let subgroup = group.subgroups.find((item) => item.key === subgroupKey)
+
+    if (!subgroup) {
+      subgroup = {
+        key: subgroupKey,
+        subgrupo,
+        campos: [],
+      }
+      group.subgroups.push(subgroup)
+    }
+
+    subgroup.campos.push(campo)
+  }
+
+  return Array.from(groupMap.values())
 }
 
 function RuleRow({ text }: { text: string }) {
@@ -1425,7 +1544,7 @@ const configRowStyle: React.CSSProperties = {
   padding: '12px 14px',
   display: 'flex',
   justifyContent: 'space-between',
-  alignItems: 'center',
+  alignItems: 'stretch',
   gap: 12,
 }
 
@@ -1450,6 +1569,18 @@ const previewSectionTitleStyle: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 800,
   color: 'var(--text-strong)',
+}
+
+const previewGroupTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 800,
+  color: 'var(--primary-dark)',
+}
+
+const previewSubgroupTitleStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#4b5563',
 }
 
 const previewTotalStyle: React.CSSProperties = {

@@ -351,26 +351,40 @@ function FieldSection({
   onBlur: (campo: CampoPostulacion, value: DynamicFieldValue) => void
   onAISuggest: (campo: CampoPostulacion) => void
 }) {
+  const grouped = groupCamposByHierarchy(campos)
+
   return (
     <section style={sectionStyle}>
       <h4 style={sectionTitleStyle}>{title}</h4>
       {campos.length === 0 ? (
         <div style={{ color: '#9ca3af', fontSize: 14 }}>{emptyText}</div>
       ) : (
-        <div style={fieldsGridStyle}>
-          {campos.map((campo) => (
-            <FieldRow
-              key={campo.id}
-              campo={campo}
-              value={values[campo.id] ?? defaultValueForType(campo.tipo)}
-              aiLoadingFieldId={aiLoadingFieldId}
-              aiMessageFieldId={aiMessageFieldId}
-              feedback={fieldFeedback[campo.id] ?? null}
-              savingFieldId={savingFieldId}
-              onChange={(newValue) => onChange(campo.id, newValue)}
-              onBlur={() => onBlur(campo, values[campo.id])}
-              onAISuggest={() => onAISuggest(campo)}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {grouped.map((group) => (
+            <div key={group.key} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {group.grupo ? <div style={groupTitleStyle}>{group.grupo}</div> : null}
+              {group.subgroups.map((subgroup) => (
+                <div key={subgroup.key} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {subgroup.subgrupo ? <div style={subgroupTitleStyle}>{subgroup.subgrupo}</div> : null}
+                  <div style={fieldsGridStyle}>
+                    {subgroup.campos.map((campo) => (
+                      <FieldRow
+                        key={campo.id}
+                        campo={campo}
+                        value={values[campo.id] ?? defaultValueForType(campo.tipo)}
+                        aiLoadingFieldId={aiLoadingFieldId}
+                        aiMessageFieldId={aiMessageFieldId}
+                        feedback={fieldFeedback[campo.id] ?? null}
+                        savingFieldId={savingFieldId}
+                        onChange={(newValue) => onChange(campo.id, newValue)}
+                        onBlur={() => onBlur(campo, values[campo.id])}
+                        onAISuggest={() => onAISuggest(campo)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -420,6 +434,9 @@ function FieldRow({
       <label style={labelStyle}>
         {campo.nombre} {campo.obligatorio ? <span style={{ color: 'var(--danger)' }}>*</span> : null}
       </label>
+      {campo.descripcion_campo ? (
+        <div style={descriptionStyle}>{campo.descripcion_campo}</div>
+      ) : null}
 
       <div
         style={{
@@ -482,6 +499,52 @@ function FieldRow({
       ) : null}
     </div>
   )
+}
+
+function groupCamposByHierarchy(campos: CampoPostulacion[]) {
+  const groupMap = new Map<
+    string,
+    {
+      key: string
+      grupo: string | null
+      subgroups: Array<{
+        key: string
+        subgrupo: string | null
+        campos: CampoPostulacion[]
+      }>
+    }
+  >()
+
+  for (const campo of campos) {
+    const grupo = campo.grupo?.trim() || null
+    const subgrupo = campo.subgrupo?.trim() || null
+    const groupKey = grupo ?? '__sin_grupo__'
+
+    if (!groupMap.has(groupKey)) {
+      groupMap.set(groupKey, {
+        key: groupKey,
+        grupo,
+        subgroups: [],
+      })
+    }
+
+    const group = groupMap.get(groupKey)!
+    const subgroupKey = subgrupo ?? '__sin_subgrupo__'
+    let subgroup = group.subgroups.find((item) => item.key === subgroupKey)
+
+    if (!subgroup) {
+      subgroup = {
+        key: subgroupKey,
+        subgrupo,
+        campos: [],
+      }
+      group.subgroups.push(subgroup)
+    }
+
+    subgroup.campos.push(campo)
+  }
+
+  return Array.from(groupMap.values())
 }
 
 function renderField({
@@ -742,6 +805,25 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 700,
   color: 'var(--text)',
   marginBottom: 6,
+}
+
+const descriptionStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: 'var(--text-muted)',
+  lineHeight: 1.45,
+  marginBottom: 6,
+}
+
+const groupTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  fontWeight: 800,
+  color: 'var(--primary-dark)',
+}
+
+const subgroupTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 700,
+  color: '#4b5563',
 }
 
 const totalStyle: React.CSSProperties = {

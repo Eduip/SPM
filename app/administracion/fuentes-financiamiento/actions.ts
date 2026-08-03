@@ -218,11 +218,17 @@ export async function guardarConfiguracionFuente({
 export async function crearCampoFuente({
     fuente_id,
     nombre,
+    descripcion_campo,
+    grupo,
+    subgrupo,
     tipo,
     obligatorio,
   }: {
     fuente_id: string
     nombre: string
+    descripcion_campo?: string
+    grupo?: string
+    subgrupo?: string
     tipo: string
     obligatorio: boolean
   }) {
@@ -252,6 +258,9 @@ export async function crearCampoFuente({
       .insert({
         fuente_id,
         nombre: nombre.trim(),
+        descripcion_campo: descripcion_campo?.trim() || null,
+        grupo: grupo?.trim() || null,
+        subgrupo: subgrupo?.trim() || null,
         tipo: normalizedTipo,
         obligatorio,
         visible: true,
@@ -266,12 +275,18 @@ export async function crearCampoFuente({
 export async function actualizarCampoFuente({
   id,
   nombre,
+  descripcion_campo,
+  grupo,
+  subgrupo,
   tipo,
   obligatorio,
   ai_mode,
 }: {
   id: string
   nombre: string
+  descripcion_campo?: string
+  grupo?: string
+  subgrupo?: string
   tipo: string
   obligatorio: boolean
   ai_mode: FieldAIMode
@@ -293,6 +308,9 @@ export async function actualizarCampoFuente({
     .from('campos_formulario_fuente')
     .update({
       nombre: nombre.trim(),
+      descripcion_campo: descripcion_campo?.trim() || null,
+      grupo: grupo?.trim() || null,
+      subgrupo: subgrupo?.trim() || null,
       tipo: normalizedTipo,
       obligatorio,
     })
