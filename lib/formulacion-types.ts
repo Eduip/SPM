@@ -127,6 +127,15 @@ export type SeccionFormularioFuente = {
   activa?: boolean | null
 }
 
+export type SubseccionFormularioFuente = {
+  id: string
+  fuente_id: string
+  seccion_id: string
+  nombre: string
+  orden: number
+  activa?: boolean | null
+}
+
 export type DiagnosticoProyecto = {
   problema_central?: string | null
   justificacion?: string | null

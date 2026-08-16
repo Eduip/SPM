@@ -5,7 +5,10 @@ import FuentesFinanciamientoPage from '../../../components/administracion/fuente
 import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 import { listFieldAIConfigs } from '../../../lib/ai/field-ai-config'
 import { listEstadoPagoDocumentConfigs } from '../../../lib/estado-pago-document-config'
-import type { SeccionFormularioFuente } from '../../../lib/formulacion-types'
+import type {
+  SeccionFormularioFuente,
+  SubseccionFormularioFuente,
+} from '../../../lib/formulacion-types'
 
 export default async function Page() {
     const supabase = await createClient()
@@ -30,7 +33,7 @@ export default async function Page() {
     .select('*')
     .order('orden', { ascending: true })
 
-    const [camposRes, fieldAIConfigs, documentosEstadoPago, seccionesRes] = await Promise.all([
+    const [camposRes, fieldAIConfigs, documentosEstadoPago, seccionesRes, subseccionesRes] = await Promise.all([
       supabase
         .from('campos_formulario_fuente')
         .select('*')
@@ -43,9 +46,15 @@ export default async function Page() {
         .select('*')
         .eq('activa', true)
         .order('orden', { ascending: true }),
+      supabase
+        .from('subsecciones_formulario_fuente')
+        .select('*')
+        .eq('activa', true)
+        .order('orden', { ascending: true }),
     ])
 
     const secciones = (seccionesRes.data ?? []) as SeccionFormularioFuente[]
+    const subsecciones = (subseccionesRes.data ?? []) as SubseccionFormularioFuente[]
     const seccionMap = new Map(secciones.map((seccion) => [seccion.id, seccion]))
     const aiModeMap = new Map(fieldAIConfigs.map((item) => [item.fieldId, item.mode]))
     const campos = (camposRes.data ?? []).map((campo) => ({
@@ -66,6 +75,7 @@ export default async function Page() {
   documentos={documentos ?? []}
   documentosEstadoPago={documentosEstadoPago}
   secciones={secciones}
+  subsecciones={subsecciones}
   campos={campos}
   reglas={reglas ?? []}
   error={error?.message ?? null}

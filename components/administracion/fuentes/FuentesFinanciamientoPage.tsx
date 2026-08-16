@@ -5,17 +5,20 @@ import { useRouter } from 'next/navigation'
 import {
   actualizarCampoFuente,
   actualizarSeccionFuente,
+  actualizarSubseccionFuente,
   crearCampoFuente,
   crearDocumentoEstadoPagoFuente,
   crearDocumentoFuente,
   crearFuenteFinanciamiento,
   crearReglaFuente,
   crearSeccionFuente,
+  crearSubseccionFuente,
   eliminarCampoFuente,
   eliminarDocumentoEstadoPagoFuente,
   eliminarDocumentoFuente,
   eliminarFuenteFinanciamiento,
   eliminarSeccionFuente,
+  eliminarSubseccionFuente,
   guardarConfiguracionFuente,
 } from '../../../app/administracion/fuentes-financiamiento/actions'
 import { exportRowsToCsv } from '../../../lib/export-csv'
@@ -25,6 +28,7 @@ import type {
   DocumentoFuente,
   ReglaFuente,
   SeccionFormularioFuente,
+  SubseccionFormularioFuente,
   TableFieldCellAlign,
   TableFieldCellBackground,
   TableFieldCellConfig,
@@ -150,6 +154,7 @@ export default function FuentesFinanciamientoPage({
     documentos,
     documentosEstadoPago,
     secciones,
+    subsecciones,
     campos,
     reglas,
     error,
@@ -158,6 +163,7 @@ export default function FuentesFinanciamientoPage({
     documentos: DocumentoFuente[]
     documentosEstadoPago: EstadoPagoDocumentoConfig[]
     secciones: SeccionFormularioFuente[]
+    subsecciones: SubseccionFormularioFuente[]
     campos: CampoPostulacion[]
     reglas: ReglaFuente[]
     error: string | null
@@ -166,6 +172,7 @@ export default function FuentesFinanciamientoPage({
   const [showNewForm, setShowNewForm] = useState(false)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false)
   const [showNewSectionForm, setShowNewSectionForm] = useState(false)
+  const [showNewSubsectionForm, setShowNewSubsectionForm] = useState(false)
   const [fieldFormMode, setFieldFormMode] = useState<FieldFormMode>('descripcion')
   const [showNewDocumentForm, setShowNewDocumentForm] = useState(false)
   const [showNewPaymentDocumentForm, setShowNewPaymentDocumentForm] = useState(false)
@@ -190,6 +197,9 @@ export default function FuentesFinanciamientoPage({
   const seccionesFuente = secciones
     .filter((seccion) => seccion.fuente_id === selectedFuente?.id)
     .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es'))
+  const subseccionesFuente = subsecciones
+    .filter((subseccion) => subseccion.fuente_id === selectedFuente?.id)
+    .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es'))
   
   const reglasFuente = reglas.filter((r) => r.fuente_id === selectedFuente?.id)
 
@@ -201,6 +211,7 @@ export default function FuentesFinanciamientoPage({
     setShowNewForm(true)
     setShowNewFieldForm(false)
     setShowNewSectionForm(false)
+    setShowNewSubsectionForm(false)
     setShowNewDocumentForm(false)
     setShowNewPaymentDocumentForm(false)
     setShowNewRuleForm(false)
@@ -212,6 +223,7 @@ export default function FuentesFinanciamientoPage({
     setShowNewForm(false)
     setShowNewFieldForm(false)
     setShowNewSectionForm(false)
+    setShowNewSubsectionForm(false)
     setShowNewDocumentForm(false)
     setShowNewPaymentDocumentForm(false)
     setShowNewRuleForm(false)
@@ -723,7 +735,11 @@ export default function FuentesFinanciamientoPage({
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
-                  onClick={() => setShowNewSectionForm((v) => !v)}
+                  onClick={() => {
+                    setShowNewSectionForm((v) => !v)
+                    setShowNewSubsectionForm(false)
+                    setShowNewFieldForm(false)
+                  }}
                   disabled={!selectedFuente}
                   style={!selectedFuente ? disabledMiniButtonStyle : miniSecondaryButtonStyle}
                 >
@@ -732,7 +748,25 @@ export default function FuentesFinanciamientoPage({
                 <button
                   type="button"
                   onClick={() => {
+                    setShowNewSubsectionForm((v) => !v)
+                    setShowNewSectionForm(false)
+                    setShowNewFieldForm(false)
+                  }}
+                  disabled={!selectedFuente || seccionesFuente.length === 0}
+                  style={
+                    !selectedFuente || seccionesFuente.length === 0
+                      ? disabledMiniButtonStyle
+                      : miniSecondaryButtonStyle
+                  }
+                >
+                  + Crear subsección
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     setFieldFormMode('descripcion')
+                    setShowNewSectionForm(false)
+                    setShowNewSubsectionForm(false)
                     setShowNewFieldForm((v) => !v || fieldFormMode !== 'descripcion')
                   }}
                   disabled={!selectedFuente}
@@ -744,6 +778,8 @@ export default function FuentesFinanciamientoPage({
                   type="button"
                   onClick={() => {
                     setFieldFormMode('plazo')
+                    setShowNewSectionForm(false)
+                    setShowNewSubsectionForm(false)
                     setShowNewFieldForm((v) => !v || fieldFormMode !== 'plazo')
                   }}
                   disabled={!selectedFuente}
@@ -755,6 +791,8 @@ export default function FuentesFinanciamientoPage({
                   type="button"
                   onClick={() => {
                     setFieldFormMode('presupuesto')
+                    setShowNewSectionForm(false)
+                    setShowNewSubsectionForm(false)
                     setShowNewFieldForm((v) => !v || fieldFormMode !== 'presupuesto')
                   }}
                   disabled={!selectedFuente}
@@ -807,42 +845,18 @@ export default function FuentesFinanciamientoPage({
               </form>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-              {seccionesFuente.length === 0 ? (
-                <div style={{ fontSize: 13, color: '#6b7280' }}>
-                  Aún no hay secciones creadas para esta fuente.
-                </div>
-              ) : (
-                seccionesFuente.map((seccion) => (
-                  <SectionRow key={seccion.id} seccion={seccion} onSaved={() => router.refresh()} />
-                ))
-              )}
-            </div>
-
-            {showNewFieldForm && selectedFuente && (
+            {showNewSubsectionForm && selectedFuente && (
               <form
                 action={async (formData) => {
-                  const nombre = String(formData.get('nombre') || '').trim()
-                  const descripcionCampo = String(formData.get('descripcion_campo') || '').trim()
                   const seccionId = String(formData.get('seccion_id') || '').trim()
-                  const subgrupo = String(formData.get('subgrupo') || '').trim()
-                  const ordenCodigo = String(formData.get('orden_codigo') || '').trim()
-                  const tipo =
-                    fieldFormMode === 'descripcion'
-                      ? String(formData.get('tipo') || 'texto')
-                      : fieldFormMode
-                  const obligatorio = formData.get('obligatorio') === 'on'
+                  const nombre = String(formData.get('nombre') || '').trim()
+                  const orden = Number(formData.get('orden') || 0)
 
-                  const res = await crearCampoFuente({
+                  const res = await crearSubseccionFuente({
                     fuente_id: selectedFuente.id,
-                    nombre,
-                    descripcion_campo: descripcionCampo,
                     seccion_id: seccionId,
-                    grupo: '',
-                    subgrupo,
-                    orden_codigo: ordenCodigo,
-                    tipo,
-                    obligatorio,
+                    nombre,
+                    orden,
                   })
 
                   if (!res.success) {
@@ -850,29 +864,15 @@ export default function FuentesFinanciamientoPage({
                     return
                   }
 
-                  setShowNewFieldForm(false)
+                  setShowNewSubsectionForm(false)
                   router.refresh()
                 }}
                 style={inlineFormStyle}
               >
-                <input
-                  name="nombre"
-                  placeholder={getNewFieldPlaceholder(fieldFormMode)}
-                  required
-                  style={inputStyle}
-                />
-                <input
-                  name="descripcion_campo"
-                  placeholder="Descripción del campo"
-                  style={inputStyle}
-                />
-                <input
-                  name="subgrupo"
-                  placeholder="Subgrupo o subsección (opcional)"
-                  style={inputStyle}
-                />
-                <select name="seccion_id" defaultValue="" style={inputStyle}>
-                  <option value="">Sin sección</option>
+                <select name="seccion_id" defaultValue="" required style={inputStyle}>
+                  <option value="" disabled>
+                    Seleccione sección
+                  </option>
                   {seccionesFuente.map((seccion) => (
                     <option key={seccion.id} value={seccion.id}>
                       {seccion.orden}. {seccion.nombre}
@@ -880,33 +880,55 @@ export default function FuentesFinanciamientoPage({
                   ))}
                 </select>
                 <input
-                  name="orden_codigo"
-                  placeholder="Orden visible (ej: 1, 1.2, 4.3)"
+                  name="nombre"
+                  placeholder="Nombre de la subsección"
+                  required
                   style={inputStyle}
                 />
-                {fieldFormMode === 'descripcion' ? (
-                  <select name="tipo" defaultValue="texto" style={inputStyle}>
-                    {FIELD_TYPE_OPTIONS.filter(
-                      (option) => option.section === 'descripcion'
-                    ).map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div style={lockedTypeStyle}>
-                    {fieldFormMode === 'plazo' ? 'Número para plazo' : 'Número para presupuesto'}
-                  </div>
-                )}
-                <label style={inlineCheckboxStyle}>
-                  <input type="checkbox" name="obligatorio" />
-                  Obligatorio
-                </label>
+                <input
+                  name="orden"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Orden de la subsección"
+                  style={inputStyle}
+                />
                 <button type="submit" style={saveButtonStyle}>
-                  Guardar campo
+                  Guardar subsección
                 </button>
               </form>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+              {seccionesFuente.length === 0 ? (
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  Aún no hay secciones creadas para esta fuente.
+                </div>
+              ) : (
+                seccionesFuente.map((seccion) => (
+                  <SectionRow
+                    key={seccion.id}
+                    seccion={seccion}
+                    subsecciones={subseccionesFuente.filter(
+                      (subseccion) => subseccion.seccion_id === seccion.id
+                    )}
+                    onSaved={() => router.refresh()}
+                  />
+                ))
+              )}
+            </div>
+
+            {showNewFieldForm && selectedFuente && (
+              <NewFieldForm
+                fieldFormMode={fieldFormMode}
+                selectedFuenteId={selectedFuente.id}
+                secciones={seccionesFuente}
+                subsecciones={subseccionesFuente}
+                onSaved={() => {
+                  setShowNewFieldForm(false)
+                  router.refresh()
+                }}
+              />
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -920,6 +942,7 @@ export default function FuentesFinanciamientoPage({
       key={`${campo.id}-${campo.tipo}-${campo.obligatorio}-${campo.nombre}`}
       campo={campo}
       secciones={seccionesFuente}
+      subsecciones={subseccionesFuente}
       onSaved={() => router.refresh()}
     />
   ))
@@ -1234,13 +1257,150 @@ function PaymentDocumentRow({
   )
 }
 
+function getSubseccionesForSeccion(
+  subsecciones: SubseccionFormularioFuente[],
+  seccionId: string
+) {
+  if (!seccionId) return []
+  return subsecciones
+    .filter((subseccion) => subseccion.seccion_id === seccionId)
+    .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es'))
+}
+
+function NewFieldForm({
+  fieldFormMode,
+  selectedFuenteId,
+  secciones,
+  subsecciones,
+  onSaved,
+}: {
+  fieldFormMode: FieldFormMode
+  selectedFuenteId: string
+  secciones: SeccionFormularioFuente[]
+  subsecciones: SubseccionFormularioFuente[]
+  onSaved: () => void
+}) {
+  const [seccionId, setSeccionId] = useState('')
+  const [subgrupo, setSubgrupo] = useState('')
+
+  const subseccionesDisponibles = useMemo(
+    () => getSubseccionesForSeccion(subsecciones, seccionId),
+    [subsecciones, seccionId]
+  )
+
+  return (
+    <form
+      action={async (formData) => {
+        const nombre = String(formData.get('nombre') || '').trim()
+        const descripcionCampo = String(formData.get('descripcion_campo') || '').trim()
+        const ordenCodigo = String(formData.get('orden_codigo') || '').trim()
+        const tipo =
+          fieldFormMode === 'descripcion' ? String(formData.get('tipo') || 'texto') : fieldFormMode
+        const obligatorio = formData.get('obligatorio') === 'on'
+
+        const res = await crearCampoFuente({
+          fuente_id: selectedFuenteId,
+          nombre,
+          descripcion_campo: descripcionCampo,
+          seccion_id: seccionId,
+          grupo: '',
+          subgrupo,
+          orden_codigo: ordenCodigo,
+          tipo,
+          obligatorio,
+        })
+
+        if (!res.success) {
+          alert(res.error)
+          return
+        }
+
+        onSaved()
+      }}
+      style={inlineFormStyle}
+    >
+      <input
+        name="nombre"
+        placeholder={getNewFieldPlaceholder(fieldFormMode)}
+        required
+        style={inputStyle}
+      />
+      <input
+        name="descripcion_campo"
+        placeholder="Descripción del campo"
+        style={inputStyle}
+      />
+      <select value={seccionId} onChange={(event) => {
+        const nextSeccion = event.target.value
+        setSeccionId(nextSeccion)
+        if (!getSubseccionesForSeccion(subsecciones, nextSeccion).some((item) => item.nombre === subgrupo)) {
+          setSubgrupo('')
+        }
+      }} style={inputStyle}>
+        <option value="">Sin sección</option>
+        {secciones.map((seccion) => (
+          <option key={seccion.id} value={seccion.id}>
+            {seccion.orden}. {seccion.nombre}
+          </option>
+        ))}
+      </select>
+      <select
+        value={subgrupo}
+        onChange={(event) => setSubgrupo(event.target.value)}
+        style={inputStyle}
+        disabled={!seccionId || subseccionesDisponibles.length === 0}
+      >
+        <option value="">
+          {!seccionId
+            ? 'Seleccione sección primero'
+            : subseccionesDisponibles.length === 0
+              ? 'Sin subsecciones'
+              : 'Sin subsección'}
+        </option>
+        {subseccionesDisponibles.map((subseccion) => (
+          <option key={subseccion.id} value={subseccion.nombre}>
+            {subseccion.orden}. {subseccion.nombre}
+          </option>
+        ))}
+      </select>
+      <input
+        name="orden_codigo"
+        placeholder="Orden visible (ej: 1, 1.2, 4.3)"
+        style={inputStyle}
+      />
+      {fieldFormMode === 'descripcion' ? (
+        <select name="tipo" defaultValue="texto" style={inputStyle}>
+          {FIELD_TYPE_OPTIONS.filter((option) => option.section === 'descripcion').map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div style={lockedTypeStyle}>
+          {fieldFormMode === 'plazo' ? 'Número para plazo' : 'Número para presupuesto'}
+        </div>
+      )}
+      <label style={inlineCheckboxStyle}>
+        <input type="checkbox" name="obligatorio" />
+        Obligatorio
+      </label>
+      <button type="submit" style={saveButtonStyle}>
+        Guardar campo
+      </button>
+    </form>
+  )
+}
+
 function FieldConfigRow({
   campo,
   secciones,
+  subsecciones,
   onSaved,
 }: {
   campo: CampoPostulacion
   secciones: SeccionFormularioFuente[]
+  subsecciones: SubseccionFormularioFuente[]
   onSaved: () => void
 }) {
   const [saving, setSaving] = useState(false)
@@ -1257,6 +1417,10 @@ function FieldConfigRow({
   const [obligatorio, setObligatorio] = useState(campo.obligatorio)
   const [aiMode, setAiMode] = useState<FieldAIMode>(
     campo.ai_mode ?? inferDefaultFieldAIMode(campo)
+  )
+  const subseccionesDisponibles = useMemo(
+    () => getSubseccionesForSeccion(subsecciones, seccionId),
+    [subsecciones, seccionId]
   )
 
   const handleDelete = async () => {
@@ -1356,7 +1520,17 @@ function FieldConfigRow({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <select
               value={seccionId}
-              onChange={(event) => setSeccionId(event.target.value)}
+              onChange={(event) => {
+                const nextSeccion = event.target.value
+                setSeccionId(nextSeccion)
+                if (
+                  !getSubseccionesForSeccion(subsecciones, nextSeccion).some(
+                    (item) => item.nombre === subgrupo
+                  )
+                ) {
+                  setSubgrupo('')
+                }
+              }}
               style={compactSelectStyle}
             >
               <option value="">Sin sección</option>
@@ -1366,11 +1540,29 @@ function FieldConfigRow({
                 </option>
               ))}
             </select>
-            <input
+            <select
               value={subgrupo}
               onChange={(event) => setSubgrupo(event.target.value)}
-              placeholder="Subgrupo o subsección"
-              style={compactInputStyle}
+              style={compactSelectStyle}
+              disabled={!seccionId || subseccionesDisponibles.length === 0}
+            >
+              <option value="">
+                {!seccionId
+                  ? 'Seleccione sección primero'
+                  : subseccionesDisponibles.length === 0
+                    ? 'Sin subsecciones'
+                    : 'Sin subsección'}
+              </option>
+              {subseccionesDisponibles.map((subseccion) => (
+                <option key={subseccion.id} value={subseccion.nombre}>
+                  {subseccion.orden}. {subseccion.nombre}
+                </option>
+              ))}
+            </select>
+            <input
+              type="hidden"
+              value={subgrupo}
+              readOnly
             />
           </div>
         </div>
@@ -1821,9 +2013,11 @@ function TableCellEditor({
 
 function SectionRow({
   seccion,
+  subsecciones,
   onSaved,
 }: {
   seccion: SeccionFormularioFuente
+  subsecciones: SubseccionFormularioFuente[]
   onSaved: () => void
 }) {
   const [nombre, setNombre] = useState(seccion.nombre)
@@ -1848,11 +2042,112 @@ function SectionRow({
   }
 
   return (
+    <div
+      style={{
+        borderRadius: 12,
+        border: '1px solid #e5e7eb',
+        background: '#ffffff',
+        padding: 12,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      <form
+        action={async () => {
+          setSaving(true)
+          const res = await actualizarSeccionFuente({
+            id: seccion.id,
+            nombre,
+            orden: Number(orden || 0),
+          })
+          setSaving(false)
+
+          if (!res.success) {
+            alert(res.error)
+            return
+          }
+
+          onSaved()
+        }}
+        style={simpleRowStyle}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+          <input
+            value={orden}
+            onChange={(event) => setOrden(event.target.value)}
+            type="number"
+            min="1"
+            step="1"
+            style={{ ...compactInputStyle, width: 84 }}
+          />
+          <input
+            value={nombre}
+            onChange={(event) => setNombre(event.target.value)}
+            style={{ ...compactInputStyle, flex: 1 }}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button type="submit" disabled={saving || deleting} style={miniSecondaryButtonStyle}>
+            {saving ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving || deleting}
+            style={miniDangerButtonStyle}
+          >
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
+      </form>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 12 }}>
+        {subsecciones.length === 0 ? (
+          <div style={{ fontSize: 12, color: '#94a3b8' }}>Sin subsecciones en esta sección.</div>
+        ) : (
+          subsecciones.map((subseccion) => (
+            <SubsectionRow key={subseccion.id} subseccion={subseccion} onSaved={onSaved} />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SubsectionRow({
+  subseccion,
+  onSaved,
+}: {
+  subseccion: SubseccionFormularioFuente
+  onSaved: () => void
+}) {
+  const [nombre, setNombre] = useState(subseccion.nombre)
+  const [orden, setOrden] = useState(String(subseccion.orden))
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(`¿Eliminar la subsección ${subseccion.nombre}?`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    const res = await eliminarSubseccionFuente(subseccion.id)
+    setDeleting(false)
+
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+
+    onSaved()
+  }
+
+  return (
     <form
       action={async () => {
         setSaving(true)
-        const res = await actualizarSeccionFuente({
-          id: seccion.id,
+        const res = await actualizarSubseccionFuente({
+          id: subseccion.id,
           nombre,
           orden: Number(orden || 0),
         })
@@ -1865,7 +2160,11 @@ function SectionRow({
 
         onSaved()
       }}
-      style={simpleRowStyle}
+      style={{
+        ...simpleRowStyle,
+        background: '#f8fafc',
+        border: '1px solid #e2e8f0',
+      }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
         <input

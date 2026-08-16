@@ -446,8 +446,154 @@ export async function eliminarSeccionFuente(id: string) {
 
   if (camposError) return { success: false, error: camposError.message }
 
+  await supabase
+    .from('subsecciones_formulario_fuente')
+    .update({ activa: false })
+    .eq('seccion_id', id)
+
   const { error } = await supabase
     .from('secciones_formulario_fuente')
+    .update({ activa: false })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function crearSubseccionFuente({
+  fuente_id,
+  seccion_id,
+  nombre,
+  orden,
+}: {
+  fuente_id: string
+  seccion_id: string
+  nombre: string
+  orden?: number
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!fuente_id || !seccion_id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para crear la subsección.' }
+  }
+
+  const { data: ultimaSubseccion } = await supabase
+    .from('subsecciones_formulario_fuente')
+    .select('orden')
+    .eq('seccion_id', seccion_id)
+    .order('orden', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const ordenFinal =
+    Number.isFinite(orden) && Number(orden) > 0
+      ? Number(orden)
+      : Number(ultimaSubseccion?.orden ?? 0) + 1
+
+  const { error } = await supabase.from('subsecciones_formulario_fuente').insert({
+    fuente_id,
+    seccion_id,
+    nombre: nombre.trim(),
+    orden: ordenFinal,
+    activa: true,
+  })
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function actualizarSubseccionFuente({
+  id,
+  nombre,
+  orden,
+}: {
+  id: string
+  nombre: string
+  orden: number
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para actualizar la subsección.' }
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('subsecciones_formulario_fuente')
+    .select('id, seccion_id, nombre')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (existingError) return { success: false, error: existingError.message }
+  if (!existing) return { success: false, error: 'No se encontró la subsección.' }
+
+  const nextName = nombre.trim()
+
+  const { error } = await supabase
+    .from('subsecciones_formulario_fuente')
+    .update({
+      nombre: nextName,
+      orden: Number.isFinite(orden) && orden > 0 ? orden : 1,
+    })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  if (existing.nombre?.trim() && existing.nombre.trim() !== nextName) {
+    const { error: camposError } = await supabase
+      .from('campos_formulario_fuente')
+      .update({ subgrupo: nextName })
+      .eq('seccion_id', existing.seccion_id)
+      .eq('subgrupo', existing.nombre.trim())
+
+    if (camposError) return { success: false, error: camposError.message }
+  }
+
+  return { success: true }
+}
+
+export async function eliminarSubseccionFuente(id: string) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!id) {
+    return { success: false, error: 'No se recibió la subsección a eliminar.' }
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('subsecciones_formulario_fuente')
+    .select('id, seccion_id, nombre')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (existingError) return { success: false, error: existingError.message }
+  if (!existing) return { success: false, error: 'No se encontró la subsección.' }
+
+  const { error: camposError } = await supabase
+    .from('campos_formulario_fuente')
+    .update({ subgrupo: null })
+    .eq('seccion_id', existing.seccion_id)
+    .eq('subgrupo', existing.nombre)
+
+  if (camposError) return { success: false, error: camposError.message }
+
+  const { error } = await supabase
+    .from('subsecciones_formulario_fuente')
     .update({ activa: false })
     .eq('id', id)
 
