@@ -1,6 +1,7 @@
 import AppShell from '../../../components/AppShell'
 import AccessDenied from '../../../components/AccessDenied'
 import { createClient } from '../../../lib/supabase-server'
+import { createAdminClient } from '../../../lib/supabase-admin'
 import FuentesFinanciamientoPage from '../../../components/administracion/fuentes/FuentesFinanciamientoPage'
 import { PERMISSIONS, requirePermission } from '../../../lib/auth-guards'
 import { listFieldAIConfigs } from '../../../lib/ai/field-ai-config'
@@ -12,6 +13,7 @@ import type {
 
 export default async function Page() {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
     const access = await requirePermission(supabase, PERMISSIONS.administracionManage)
 
     if (!access.success) {
@@ -46,7 +48,7 @@ export default async function Page() {
         .select('*')
         .eq('activa', true)
         .order('orden', { ascending: true }),
-      supabase
+      adminSupabase
         .from('subsecciones_formulario_fuente')
         .select('*')
         .eq('activa', true)
