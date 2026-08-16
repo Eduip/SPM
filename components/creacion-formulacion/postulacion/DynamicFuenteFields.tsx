@@ -374,22 +374,27 @@ function FieldSection({
               {group.subgroups.map((subgroup) => (
                 <div key={subgroup.key} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {subgroup.subgrupo ? <div style={subgroupTitleStyle}>{subgroup.subgrupo}</div> : null}
-                  <div style={fieldsGridStyle}>
-                    {subgroup.campos.map((campo) => (
-                      <FieldRow
-                        key={campo.id}
-                        campo={campo}
-                        value={values[campo.id] ?? defaultValueForType(campo.tipo)}
-                        aiLoadingFieldId={aiLoadingFieldId}
-                        aiMessageFieldId={aiMessageFieldId}
-                        feedback={fieldFeedback[campo.id] ?? null}
-                        savingFieldId={savingFieldId}
-                        onChange={(newValue) => onChange(campo.id, newValue)}
-                        onBlur={() => onBlur(campo, values[campo.id])}
-                        onAISuggest={() => onAISuggest(campo)}
-                      />
-                    ))}
-                  </div>
+                  {subgroup.subsubgroups.map((subsubgroup) => (
+                    <div key={subsubgroup.key} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {subsubgroup.subsubgrupo ? <div style={subsubgroupTitleStyle}>{subsubgroup.subsubgrupo}</div> : null}
+                      <div style={fieldsGridStyle}>
+                        {subsubgroup.campos.map((campo) => (
+                          <FieldRow
+                            key={campo.id}
+                            campo={campo}
+                            value={values[campo.id] ?? defaultValueForType(campo.tipo)}
+                            aiLoadingFieldId={aiLoadingFieldId}
+                            aiMessageFieldId={aiMessageFieldId}
+                            feedback={fieldFeedback[campo.id] ?? null}
+                            savingFieldId={savingFieldId}
+                            onChange={(newValue) => onChange(campo.id, newValue)}
+                            onBlur={() => onBlur(campo, values[campo.id])}
+                            onAISuggest={() => onAISuggest(campo)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -521,7 +526,11 @@ function groupCamposByHierarchy(campos: CampoPostulacion[]) {
       subgroups: Array<{
         key: string
         subgrupo: string | null
-        campos: CampoPostulacion[]
+        subsubgroups: Array<{
+          key: string
+          subsubgrupo: string | null
+          campos: CampoPostulacion[]
+        }>
       }>
     }
   >()
@@ -529,6 +538,7 @@ function groupCamposByHierarchy(campos: CampoPostulacion[]) {
   for (const campo of campos) {
     const grupo = campo.seccion_nombre?.trim() || null
     const subgrupo = campo.subgrupo?.trim() || null
+    const subsubgrupo = campo.subsubgrupo?.trim() || null
     const groupKey = grupo ?? '__sin_grupo__'
 
     if (!groupMap.has(groupKey)) {
@@ -547,12 +557,24 @@ function groupCamposByHierarchy(campos: CampoPostulacion[]) {
       subgroup = {
         key: subgroupKey,
         subgrupo,
-        campos: [],
+        subsubgroups: [],
       }
       group.subgroups.push(subgroup)
     }
 
-    subgroup.campos.push(campo)
+    const subsubgroupKey = subsubgrupo ?? '__sin_subsubgrupo__'
+    let subsubgroup = subgroup.subsubgroups.find((item) => item.key === subsubgroupKey)
+
+    if (!subsubgroup) {
+      subsubgroup = {
+        key: subsubgroupKey,
+        subsubgrupo,
+        campos: [],
+      }
+      subgroup.subsubgroups.push(subsubgroup)
+    }
+
+    subsubgroup.campos.push(campo)
   }
 
   return Array.from(groupMap.values())
@@ -847,6 +869,14 @@ const subgroupTitleStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
   color: '#4b5563',
+}
+
+const subsubgroupTitleStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#64748b',
+  paddingLeft: 8,
+  borderLeft: '2px solid #cbd5e1',
 }
 
 function StructuredTableField({

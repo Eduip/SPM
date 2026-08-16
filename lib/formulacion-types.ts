@@ -18,6 +18,7 @@ export type CampoPostulacion = {
   seccion_orden?: number | null
   grupo?: string | null
   subgrupo?: string | null
+  subsubgrupo?: string | null
   orden_codigo?: string | null
   config_json?: TableFieldConfig | null
   tipo: 'texto' | 'texto_largo' | 'numero' | 'fecha' | 'booleano' | 'plazo' | 'presupuesto' | string
@@ -131,6 +132,16 @@ export type SubseccionFormularioFuente = {
   id: string
   fuente_id: string
   seccion_id: string
+  nombre: string
+  orden: number
+  activa?: boolean | null
+}
+
+export type SubsubseccionFormularioFuente = {
+  id: string
+  fuente_id: string
+  seccion_id: string
+  subseccion_id: string
   nombre: string
   orden: number
   activa?: boolean | null

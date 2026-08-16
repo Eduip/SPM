@@ -225,6 +225,7 @@ export async function crearCampoFuente({
     seccion_id,
     grupo,
     subgrupo,
+    subsubgrupo,
     orden_codigo,
     config_json,
     tipo,
@@ -236,6 +237,7 @@ export async function crearCampoFuente({
     seccion_id?: string
     grupo?: string
     subgrupo?: string
+    subsubgrupo?: string
     orden_codigo?: string
     config_json?: TableFieldConfig | null
     tipo: string
@@ -271,6 +273,7 @@ export async function crearCampoFuente({
         seccion_id: seccion_id?.trim() || null,
         grupo: grupo?.trim() || null,
         subgrupo: subgrupo?.trim() || null,
+        subsubgrupo: subsubgrupo?.trim() || null,
         orden_codigo: orden_codigo?.trim() || String(Number(ultimoCampo?.orden ?? 0) + 1),
         config_json:
           normalizedTipo === 'tabla_estructurada'
@@ -294,6 +297,7 @@ export async function actualizarCampoFuente({
   seccion_id,
   grupo,
   subgrupo,
+  subsubgrupo,
   orden_codigo,
   config_json,
   tipo,
@@ -306,6 +310,7 @@ export async function actualizarCampoFuente({
   seccion_id?: string
   grupo?: string
   subgrupo?: string
+  subsubgrupo?: string
   orden_codigo?: string
   config_json?: TableFieldConfig | null
   tipo: string
@@ -333,6 +338,7 @@ export async function actualizarCampoFuente({
       seccion_id: seccion_id?.trim() || null,
       grupo: grupo?.trim() || null,
       subgrupo: subgrupo?.trim() || null,
+      subsubgrupo: subsubgrupo?.trim() || null,
       orden_codigo: orden_codigo?.trim() || null,
       config_json:
         normalizedTipo === 'tabla_estructurada'
@@ -590,7 +596,7 @@ export async function eliminarSubseccionFuente(id: string) {
 
   const { error: camposError } = await adminSupabase
     .from('campos_formulario_fuente')
-    .update({ subgrupo: null })
+    .update({ subgrupo: null, subsubgrupo: null })
     .eq('seccion_id', existing.seccion_id)
     .eq('subgrupo', existing.nombre)
 
@@ -598,6 +604,180 @@ export async function eliminarSubseccionFuente(id: string) {
 
   const { error } = await adminSupabase
     .from('subsecciones_formulario_fuente')
+    .update({ activa: false })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  await adminSupabase
+    .from('subsubsecciones_formulario_fuente')
+    .update({ activa: false })
+    .eq('subseccion_id', id)
+
+  return { success: true }
+}
+
+export async function crearSubsubseccionFuente({
+  fuente_id,
+  seccion_id,
+  subseccion_id,
+  nombre,
+  orden,
+}: {
+  fuente_id: string
+  seccion_id: string
+  subseccion_id: string
+  nombre: string
+  orden?: number
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+  const adminSupabase = createAdminClient()
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!fuente_id || !seccion_id || !subseccion_id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para crear la subsubsección.' }
+  }
+
+  const { data: ultimaSubsubseccion } = await adminSupabase
+    .from('subsubsecciones_formulario_fuente')
+    .select('orden')
+    .eq('subseccion_id', subseccion_id)
+    .order('orden', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const ordenFinal =
+    Number.isFinite(orden) && Number(orden) > 0
+      ? Number(orden)
+      : Number(ultimaSubsubseccion?.orden ?? 0) + 1
+
+  const { error } = await adminSupabase.from('subsubsecciones_formulario_fuente').insert({
+    fuente_id,
+    seccion_id,
+    subseccion_id,
+    nombre: nombre.trim(),
+    orden: ordenFinal,
+    activa: true,
+  })
+
+  if (error) return { success: false, error: error.message }
+
+  return { success: true }
+}
+
+export async function actualizarSubsubseccionFuente({
+  id,
+  nombre,
+  orden,
+}: {
+  id: string
+  nombre: string
+  orden: number
+}) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+  const adminSupabase = createAdminClient()
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!id || !nombre.trim()) {
+    return { success: false, error: 'Faltan datos para actualizar la subsubsección.' }
+  }
+
+  const { data: existing, error: existingError } = await adminSupabase
+    .from('subsubsecciones_formulario_fuente')
+    .select('id, seccion_id, subseccion_id, nombre')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (existingError) return { success: false, error: existingError.message }
+  if (!existing) return { success: false, error: 'No se encontró la subsubsección.' }
+
+  const { data: parentSubsection, error: parentError } = await adminSupabase
+    .from('subsecciones_formulario_fuente')
+    .select('nombre')
+    .eq('id', existing.subseccion_id)
+    .maybeSingle()
+
+  if (parentError) return { success: false, error: parentError.message }
+
+  const nextName = nombre.trim()
+
+  const { error } = await adminSupabase
+    .from('subsubsecciones_formulario_fuente')
+    .update({
+      nombre: nextName,
+      orden: Number.isFinite(orden) && orden > 0 ? orden : 1,
+    })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  if (
+    existing.nombre?.trim() &&
+    existing.nombre.trim() !== nextName &&
+    parentSubsection?.nombre?.trim()
+  ) {
+    const { error: camposError } = await adminSupabase
+      .from('campos_formulario_fuente')
+      .update({ subsubgrupo: nextName })
+      .eq('seccion_id', existing.seccion_id)
+      .eq('subgrupo', parentSubsection.nombre.trim())
+      .eq('subsubgrupo', existing.nombre.trim())
+
+    if (camposError) return { success: false, error: camposError.message }
+  }
+
+  return { success: true }
+}
+
+export async function eliminarSubsubseccionFuente(id: string) {
+  const supabase = await createClient()
+  const adminGuard = await requireAdmin(supabase)
+  const adminSupabase = createAdminClient()
+
+  if (!adminGuard.success) {
+    return adminGuard
+  }
+
+  if (!id) {
+    return { success: false, error: 'No se recibió la subsubsección a eliminar.' }
+  }
+
+  const { data: existing, error: existingError } = await adminSupabase
+    .from('subsubsecciones_formulario_fuente')
+    .select('id, seccion_id, subseccion_id, nombre')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (existingError) return { success: false, error: existingError.message }
+  if (!existing) return { success: false, error: 'No se encontró la subsubsección.' }
+
+  const { data: parentSubsection, error: parentError } = await adminSupabase
+    .from('subsecciones_formulario_fuente')
+    .select('nombre')
+    .eq('id', existing.subseccion_id)
+    .maybeSingle()
+
+  if (parentError) return { success: false, error: parentError.message }
+
+  const { error: camposError } = await adminSupabase
+    .from('campos_formulario_fuente')
+    .update({ subsubgrupo: null })
+    .eq('seccion_id', existing.seccion_id)
+    .eq('subgrupo', parentSubsection?.nombre ?? '')
+    .eq('subsubgrupo', existing.nombre)
+
+  if (camposError) return { success: false, error: camposError.message }
+
+  const { error } = await adminSupabase
+    .from('subsubsecciones_formulario_fuente')
     .update({ activa: false })
     .eq('id', id)
 

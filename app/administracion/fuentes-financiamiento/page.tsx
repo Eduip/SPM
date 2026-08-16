@@ -8,6 +8,7 @@ import { listFieldAIConfigs } from '../../../lib/ai/field-ai-config'
 import { listEstadoPagoDocumentConfigs } from '../../../lib/estado-pago-document-config'
 import type {
   SeccionFormularioFuente,
+  SubsubseccionFormularioFuente,
   SubseccionFormularioFuente,
 } from '../../../lib/formulacion-types'
 
@@ -35,7 +36,7 @@ export default async function Page() {
     .select('*')
     .order('orden', { ascending: true })
 
-    const [camposRes, fieldAIConfigs, documentosEstadoPago, seccionesRes, subseccionesRes] = await Promise.all([
+    const [camposRes, fieldAIConfigs, documentosEstadoPago, seccionesRes, subseccionesRes, subsubseccionesRes] = await Promise.all([
       supabase
         .from('campos_formulario_fuente')
         .select('*')
@@ -53,10 +54,16 @@ export default async function Page() {
         .select('*')
         .eq('activa', true)
         .order('orden', { ascending: true }),
+      adminSupabase
+        .from('subsubsecciones_formulario_fuente')
+        .select('*')
+        .eq('activa', true)
+        .order('orden', { ascending: true }),
     ])
 
     const secciones = (seccionesRes.data ?? []) as SeccionFormularioFuente[]
     const subsecciones = (subseccionesRes.data ?? []) as SubseccionFormularioFuente[]
+    const subsubsecciones = (subsubseccionesRes.data ?? []) as SubsubseccionFormularioFuente[]
     const seccionMap = new Map(secciones.map((seccion) => [seccion.id, seccion]))
     const aiModeMap = new Map(fieldAIConfigs.map((item) => [item.fieldId, item.mode]))
     const campos = (camposRes.data ?? []).map((campo) => ({
@@ -78,6 +85,7 @@ export default async function Page() {
   documentosEstadoPago={documentosEstadoPago}
   secciones={secciones}
   subsecciones={subsecciones}
+  subsubsecciones={subsubsecciones}
   campos={campos}
   reglas={reglas ?? []}
   error={error?.message ?? null}
