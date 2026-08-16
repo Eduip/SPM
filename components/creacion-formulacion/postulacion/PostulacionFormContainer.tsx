@@ -123,7 +123,7 @@ export default function PostulacionFormContainer({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.9fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
             gap: 20,
             alignItems: 'start',
           }}
