@@ -60,12 +60,13 @@ export function normalizeTableFieldConfig(value: unknown): TableFieldConfig {
         id: row?.id || safeId(`row-${rowIndex + 1}`),
         cells: normalizedColumns.map((column, columnIndex) => {
           const sourceCell = Array.isArray(row?.cells) ? row?.cells[columnIndex] : null
+          const normalizedItems = Array.isArray(sourceCell?.items)
+            ? sourceCell.items.map((item, itemIndex) => normalizeTableItem(item, itemIndex))
+            : [createDefaultCellItem(columnIndex)]
           return {
             id: sourceCell?.id || safeId(`cell-${rowIndex + 1}-${column.id}`),
             colspan: normalizeColspan(sourceCell?.colspan),
-            items: Array.isArray(sourceCell?.items) && sourceCell.items.length > 0
-              ? sourceCell.items.map((item, itemIndex) => normalizeTableItem(item, itemIndex))
-              : [createDefaultCellItem(columnIndex)],
+            items: normalizedItems,
           }
         }),
       }))
