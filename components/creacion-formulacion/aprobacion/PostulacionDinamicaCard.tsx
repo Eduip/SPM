@@ -139,7 +139,7 @@ function formatRespuesta(respuesta: RespuestaPostulacion | undefined) {
 }
 
 function getFieldSection(tipo: string) {
-  if (tipo === 'plazo') return 'plazo'
+  if (tipo === 'plazo' || tipo === 'tabla_gantt') return 'plazo'
   if (tipo === 'presupuesto' || tipo === 'tabla_presupuesto') return 'presupuesto'
   return 'descripcion'
 }

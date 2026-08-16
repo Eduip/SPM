@@ -9,7 +9,11 @@ import {
   createEstadoPagoDocumentConfig,
   deleteEstadoPagoDocumentConfig,
 } from '../../../lib/estado-pago-document-config'
-import { createDefaultTableFieldConfig, normalizeTableFieldConfig } from '../../../lib/table-field-config'
+import {
+  createDefaultGanttTableFieldConfig,
+  createDefaultTableFieldConfig,
+  normalizeTableFieldConfig,
+} from '../../../lib/table-field-config'
 
 export async function crearFuenteFinanciamiento(formData: FormData) {
   const supabase = await createClient()
@@ -276,8 +280,15 @@ export async function crearCampoFuente({
         subsubgrupo: subsubgrupo?.trim() || null,
         orden_codigo: orden_codigo?.trim() || String(Number(ultimoCampo?.orden ?? 0) + 1),
         config_json:
-          normalizedTipo === 'tabla_estructurada' || normalizedTipo === 'tabla_presupuesto'
-            ? normalizeTableFieldConfig(config_json ?? createDefaultTableFieldConfig())
+          normalizedTipo === 'tabla_estructurada' ||
+          normalizedTipo === 'tabla_presupuesto' ||
+          normalizedTipo === 'tabla_gantt'
+            ? normalizeTableFieldConfig(
+                config_json ??
+                  (normalizedTipo === 'tabla_gantt'
+                    ? createDefaultGanttTableFieldConfig()
+                    : createDefaultTableFieldConfig())
+              )
             : null,
         tipo: normalizedTipo,
         obligatorio,
@@ -341,8 +352,15 @@ export async function actualizarCampoFuente({
       subsubgrupo: subsubgrupo?.trim() || null,
       orden_codigo: orden_codigo?.trim() || null,
       config_json:
-        normalizedTipo === 'tabla_estructurada' || normalizedTipo === 'tabla_presupuesto'
-          ? normalizeTableFieldConfig(config_json ?? createDefaultTableFieldConfig())
+        normalizedTipo === 'tabla_estructurada' ||
+        normalizedTipo === 'tabla_presupuesto' ||
+        normalizedTipo === 'tabla_gantt'
+          ? normalizeTableFieldConfig(
+              config_json ??
+                (normalizedTipo === 'tabla_gantt'
+                  ? createDefaultGanttTableFieldConfig()
+                  : createDefaultTableFieldConfig())
+            )
           : null,
       tipo: normalizedTipo,
       obligatorio,
@@ -795,6 +813,7 @@ function normalizeCampoTipo(tipo: string) {
     'booleano',
     'tabla_estructurada',
     'tabla_presupuesto',
+    'tabla_gantt',
     'plazo',
     'presupuesto',
   ])

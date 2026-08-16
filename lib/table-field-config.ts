@@ -53,6 +53,123 @@ export function createDefaultTableFieldConfig(): TableFieldConfig {
   return { columns, rows }
 }
 
+export function createDefaultGanttTableFieldConfig(months = 12): TableFieldConfig {
+  const columns: TableFieldColumnConfig[] = [
+    { id: safeId('col'), header: 'Componente / tramo' },
+    { id: safeId('col'), header: 'Acción / actividad' },
+    ...Array.from({ length: months }, (_, index) => ({
+      id: safeId('col'),
+      header: `Mes ${index + 1}`,
+    })),
+  ]
+
+  const createMonthCells = () =>
+    Array.from({ length: months }, (_, index) => ({
+      id: safeId(`cell-month-${index + 1}`),
+      colspan: 1,
+      background: 'default' as const,
+      align: 'center' as const,
+      vertical_align: 'middle' as const,
+      items: [
+        {
+          id: safeId(`item-month-${index + 1}`),
+          kind: 'gantt_mark' as const,
+          label: '',
+          text: '',
+          placeholder: '',
+          highlighted: false,
+        },
+      ],
+    }))
+
+  const rows: TableFieldRowConfig[] = [
+    {
+      id: safeId('row'),
+      variant: 'body',
+      cells: [
+        {
+          id: safeId('cell-component'),
+          colspan: 1,
+          background: 'soft_blue',
+          align: 'center',
+          vertical_align: 'middle',
+          items: [
+            {
+              id: safeId('item-component'),
+              kind: 'static_text',
+              text: 'COMPONENTE 1',
+              label: '',
+              placeholder: '',
+              highlighted: false,
+            },
+          ],
+        },
+        {
+          id: safeId('cell-activity'),
+          colspan: 1,
+          background: 'default',
+          align: 'left',
+          vertical_align: 'top',
+          items: [
+            {
+              id: safeId('item-activity'),
+              kind: 'static_text',
+              text: 'Actividad 1',
+              label: '',
+              placeholder: '',
+              highlighted: false,
+            },
+          ],
+        },
+        ...createMonthCells(),
+      ],
+    },
+    {
+      id: safeId('row'),
+      variant: 'body',
+      cells: [
+        {
+          id: safeId('cell-component'),
+          colspan: 1,
+          background: 'soft_blue',
+          align: 'center',
+          vertical_align: 'middle',
+          items: [
+            {
+              id: safeId('item-component'),
+              kind: 'static_text',
+              text: 'COMPONENTE 1',
+              label: '',
+              placeholder: '',
+              highlighted: false,
+            },
+          ],
+        },
+        {
+          id: safeId('cell-activity'),
+          colspan: 1,
+          background: 'default',
+          align: 'left',
+          vertical_align: 'top',
+          items: [
+            {
+              id: safeId('item-activity'),
+              kind: 'static_text',
+              text: 'Actividad 2',
+              label: '',
+              placeholder: '',
+              highlighted: false,
+            },
+          ],
+        },
+        ...createMonthCells(),
+      ],
+    },
+  ]
+
+  return { columns, rows }
+}
+
 export function normalizeTableFieldConfig(value: unknown): TableFieldConfig {
   const fallback = createDefaultTableFieldConfig()
 

@@ -34,6 +34,7 @@ export type TableFieldItemKind =
   | 'input_number'
   | 'input_textarea'
   | 'sum_numbers'
+  | 'gantt_mark'
 
 export type TableFieldItemConfig = {
   id: string

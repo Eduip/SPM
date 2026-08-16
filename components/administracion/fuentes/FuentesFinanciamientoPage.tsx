@@ -44,6 +44,7 @@ import type {
 import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
 import type { EstadoPagoDocumentoConfig } from '../../../lib/estado-pago-document-config'
 import {
+  createDefaultGanttTableFieldConfig,
   createDefaultTableFieldConfig,
   getTableCellPresentation,
   getRenderableTableCells,
@@ -93,6 +94,7 @@ const FIELD_TYPE_OPTIONS = [
   { value: 'booleano', label: 'Sí / No', section: 'descripcion' },
   { value: 'tabla_estructurada', label: 'Tabla estructurada', section: 'descripcion' },
   { value: 'plazo', label: 'Plazo', section: 'plazo' },
+  { value: 'tabla_gantt', label: 'Carta Gantt', section: 'plazo' },
   { value: 'presupuesto', label: 'Presupuesto', section: 'presupuesto' },
   { value: 'tabla_presupuesto', label: 'Tabla de presupuesto', section: 'presupuesto' },
 ]
@@ -103,6 +105,7 @@ const TABLE_ITEM_KIND_OPTIONS: Array<{ value: TableFieldItemKind; label: string 
   { value: 'input_textarea', label: 'Texto largo' },
   { value: 'input_number', label: 'Número' },
   { value: 'sum_numbers', label: 'Suma automática' },
+  { value: 'gantt_mark', label: 'Marca Gantt' },
 ]
 
 const TABLE_CELL_BACKGROUND_OPTIONS: Array<{ value: TableFieldCellBackground; label: string }> = [
@@ -137,7 +140,7 @@ function getNewFieldPlaceholder(mode: FieldFormMode) {
 }
 
 function getFieldSection(tipo: string): FieldFormMode {
-  if (tipo === 'plazo') return 'plazo'
+  if (tipo === 'plazo' || tipo === 'tabla_gantt') return 'plazo'
   if (tipo === 'presupuesto' || tipo === 'tabla_presupuesto') return 'presupuesto'
   return 'descripcion'
 }
@@ -1364,7 +1367,11 @@ function NewFieldForm({
         const descripcionCampo = String(formData.get('descripcion_campo') || '').trim()
         const ordenCodigo = String(formData.get('orden_codigo') || '').trim()
         const tipo =
-          fieldFormMode === 'descripcion' ? String(formData.get('tipo') || 'texto') : fieldFormMode
+          fieldFormMode === 'descripcion'
+            ? String(formData.get('tipo') || 'texto')
+            : fieldFormMode === 'plazo'
+              ? String(formData.get('tipo') || 'plazo')
+              : String(formData.get('tipo') || 'presupuesto')
         const obligatorio = formData.get('obligatorio') === 'on'
 
         const res = await crearCampoFuente({
@@ -1499,8 +1506,16 @@ function NewFieldForm({
             </option>
           ))}
         </select>
+      ) : fieldFormMode === 'plazo' ? (
+        <select name="tipo" defaultValue="plazo" style={inputStyle}>
+          {FIELD_TYPE_OPTIONS.filter((option) => option.section === 'plazo').map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       ) : (
-        <div style={lockedTypeStyle}>Número para plazo</div>
+        <div style={lockedTypeStyle}>Tipo no disponible</div>
       )}
       <label style={inlineCheckboxStyle}>
         <input type="checkbox" name="obligatorio" />
@@ -1679,7 +1694,11 @@ function FieldConfigRow({
           subsubgrupo,
           orden_codigo: ordenCodigo,
           config_json:
-            tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' ? tableConfig : null,
+            tipo === 'tabla_estructurada' ||
+            tipo === 'tabla_presupuesto' ||
+            tipo === 'tabla_gantt'
+              ? tableConfig
+              : null,
           tipo,
           obligatorio,
           ai_mode: aiMode,
@@ -1836,8 +1855,18 @@ function FieldConfigRow({
             onChange={(event) => {
               const nextType = event.target.value
               setTipo(nextType)
-              if (nextType === 'tabla_estructurada' || nextType === 'tabla_presupuesto') {
-                setTableConfig((current) => normalizeTableFieldConfig(current))
+              if (nextType === 'tabla_gantt') {
+                setTableConfig((current) =>
+                  campo.tipo === 'tabla_gantt'
+                    ? normalizeTableFieldConfig(current)
+                    : createDefaultGanttTableFieldConfig()
+                )
+              } else if (nextType === 'tabla_estructurada' || nextType === 'tabla_presupuesto') {
+                setTableConfig((current) =>
+                  campo.tipo === nextType
+                    ? normalizeTableFieldConfig(current)
+                    : createDefaultTableFieldConfig()
+                )
               }
             }}
             style={compactSelectStyle}
@@ -1861,7 +1890,11 @@ function FieldConfigRow({
             value={aiMode}
             onChange={(event) => setAiMode(event.target.value as FieldAIMode)}
             style={compactSelectStyle}
-            disabled={tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto'}
+            disabled={
+              tipo === 'tabla_estructurada' ||
+              tipo === 'tabla_presupuesto' ||
+              tipo === 'tabla_gantt'
+            }
           >
             <option value="blocked">Bloquear IA</option>
             <option value="suggest">Permitir IA</option>
@@ -1880,9 +1913,9 @@ function FieldConfigRow({
           </button>
         </div>
       </div>
-      {tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' ? (
+      {tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' || tipo === 'tabla_gantt' ? (
         <div style={{ width: '100%' }}>
-          <TableFieldConfigEditor config={tableConfig} onChange={setTableConfig} />
+          <TableFieldConfigEditor config={tableConfig} fieldType={tipo} onChange={setTableConfig} />
         </div>
       ) : null}
     </form>
@@ -1891,9 +1924,11 @@ function FieldConfigRow({
 
 function TableFieldConfigEditor({
   config,
+  fieldType,
   onChange,
 }: {
   config: TableFieldConfig
+  fieldType?: string
   onChange: (config: TableFieldConfig) => void
 }) {
   const normalized = normalizeTableFieldConfig(config)
@@ -1907,7 +1942,13 @@ function TableFieldConfigEditor({
   const addColumn = () => {
     const next = normalizeTableFieldConfig(normalized)
     const columnId = createUiConfigId('col')
-    next.columns.push({ id: columnId, header: `Columna ${next.columns.length + 1}` })
+    next.columns.push({
+      id: columnId,
+      header:
+        fieldType === 'tabla_gantt' && next.columns.length >= 2
+          ? `Mes ${next.columns.length - 1}`
+          : `Columna ${next.columns.length + 1}`,
+    })
     next.rows = next.rows.map((row) => ({
       ...row,
       cells: [
@@ -1918,10 +1959,10 @@ function TableFieldConfigEditor({
           items: [
             {
               id: createUiConfigId('item'),
-              kind: 'input_text',
-              label: 'Dato',
+              kind: fieldType === 'tabla_gantt' ? 'gantt_mark' : 'input_text',
+              label: fieldType === 'tabla_gantt' ? '' : 'Dato',
               text: '',
-              placeholder: 'Ingrese contenido',
+              placeholder: fieldType === 'tabla_gantt' ? '' : 'Ingrese contenido',
               highlighted: false,
             },
           ],
@@ -1945,10 +1986,31 @@ function TableFieldConfigEditor({
         items: [
           {
             id: createUiConfigId(`item-${column.id}`),
-            kind: index === 0 ? 'static_text' : 'input_text',
-            label: index === 0 ? '' : 'Dato',
-            text: index === 0 ? 'Texto de referencia' : '',
-            placeholder: index === 0 ? '' : 'Ingrese contenido',
+            kind:
+              fieldType === 'tabla_gantt'
+                ? index <= 1
+                  ? 'static_text'
+                  : 'gantt_mark'
+                : index === 0
+                  ? 'static_text'
+                  : 'input_text',
+            label: fieldType === 'tabla_gantt' || index === 0 ? '' : 'Dato',
+            text:
+              fieldType === 'tabla_gantt'
+                ? index === 0
+                  ? 'COMPONENTE'
+                  : index === 1
+                    ? 'Actividad'
+                    : ''
+                : index === 0
+                  ? 'Texto de referencia'
+                  : '',
+            placeholder:
+              fieldType === 'tabla_gantt'
+                ? ''
+                : index === 0
+                  ? ''
+                  : 'Ingrese contenido',
             highlighted: false,
           },
         ],
@@ -1998,7 +2060,9 @@ function TableFieldConfigEditor({
 
   return (
     <div style={tableEditorWrapperStyle}>
-      <div style={tableEditorTitleStyle}>Configuración de la tabla</div>
+      <div style={tableEditorTitleStyle}>
+        {fieldType === 'tabla_gantt' ? 'Configuración de la carta Gantt' : 'Configuración de la tabla'}
+      </div>
       <div style={tableEditorActionRowStyle}>
         <button type="button" onClick={addColumn} style={miniSecondaryButtonStyle}>
           + Columna
@@ -2253,7 +2317,7 @@ function TableCellEditor({
             </select>
           </div>
           {item.kind === 'static_text' ? (
-              <textarea
+            <textarea
               value={item.text ?? ''}
               onChange={(event) => updateItem(itemIndex, { text: event.target.value })}
               placeholder="Texto fijo o instrucción"
@@ -2270,6 +2334,10 @@ function TableCellEditor({
                 resize: 'vertical',
               }}
             />
+          ) : item.kind === 'gantt_mark' ? (
+            <div style={tableInfoTextStyle}>
+              Esta celda mostrará una marca activable para indicar en qué meses ocurre la actividad.
+            </div>
           ) : (
             <>
               <input
@@ -2623,7 +2691,11 @@ function normalizeText(value: string) {
 }
 
 function PreviewField({ campo }: { campo: CampoPostulacion }) {
-  if (campo.tipo === 'tabla_estructurada' || campo.tipo === 'tabla_presupuesto') {
+  if (
+    campo.tipo === 'tabla_estructurada' ||
+    campo.tipo === 'tabla_presupuesto' ||
+    campo.tipo === 'tabla_gantt'
+  ) {
     const config = normalizeTableFieldConfig(campo.config_json)
     return (
       <div style={{ ...previewFieldStyle, overflowX: 'auto' }}>
@@ -2682,6 +2754,8 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
                             ? item.text || 'Texto fijo'
                             : item.kind === 'sum_numbers'
                               ? 'Suma automática'
+                              : item.kind === 'gantt_mark'
+                                ? 'Marca Gantt'
                               : `${item.label || 'Campo'}: ${
                                   item.kind === 'input_number'
                                     ? '0'

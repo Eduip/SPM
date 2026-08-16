@@ -444,7 +444,8 @@ function FieldRow({
         gridColumn:
           campo.tipo === 'texto_largo' ||
           campo.tipo === 'tabla_estructurada' ||
-          campo.tipo === 'tabla_presupuesto'
+          campo.tipo === 'tabla_presupuesto' ||
+          campo.tipo === 'tabla_gantt'
             ? '1 / -1'
             : 'auto',
       }}
@@ -662,7 +663,11 @@ function renderField({
     )
   }
 
-  if (campo.tipo === 'tabla_estructurada' || campo.tipo === 'tabla_presupuesto') {
+  if (
+    campo.tipo === 'tabla_estructurada' ||
+    campo.tipo === 'tabla_presupuesto' ||
+    campo.tipo === 'tabla_gantt'
+  ) {
     return (
       <StructuredTableField
         campo={campo}
@@ -686,7 +691,8 @@ function renderField({
 }
 
 function defaultValueForType(tipo: string) {
-  if (tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto') return {}
+  if (tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' || tipo === 'tabla_gantt')
+    return {}
   if (tipo === 'booleano') return false
   return ''
 }
@@ -761,7 +767,7 @@ function isSensitiveField(campo: CampoPostulacion) {
 }
 
 function getFieldSection(tipo: string) {
-  if (tipo === 'plazo') return 'plazo'
+  if (tipo === 'plazo' || tipo === 'tabla_gantt') return 'plazo'
   if (tipo === 'presupuesto' || tipo === 'tabla_presupuesto') return 'presupuesto'
   return 'descripcion'
 }
@@ -787,7 +793,11 @@ function dynamicValueToNumber(value: DynamicFieldValue, tipo?: string): number {
     return 0
   }
 
-  if ((tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto') && typeof value === 'object' && !Array.isArray(value)) {
+  if (
+    (tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' || tipo === 'tabla_gantt') &&
+    typeof value === 'object' &&
+    !Array.isArray(value)
+  ) {
     return Object.values(value as Record<string, DynamicFieldValue>).reduce<number>(
       (acc, current) => acc + dynamicValueToNumber(current),
       0
@@ -908,7 +918,7 @@ function StructuredTableField({
       ? (value as Record<string, string | number | boolean | null>)
       : {}
 
-  const updateTableValue = (itemId: string, nextValue: string) => {
+  const updateTableValue = (itemId: string, nextValue: string | boolean) => {
     onChange({
       ...tableValue,
       [itemId]: nextValue,
@@ -970,7 +980,7 @@ function StructuredTableCell({
 }: {
   cell: TableFieldCellConfig
   valueMap: Record<string, string | number | boolean | null>
-  onChange: (itemId: string, nextValue: string) => void
+  onChange: (itemId: string, nextValue: string | boolean) => void
   onBlur: () => void
   presentation: ReturnType<typeof getTableCellPresentation>
 }) {
@@ -1003,6 +1013,34 @@ function StructuredTableCell({
             <div key={item.id} style={item.highlighted ? structuredHighlightStyle : structuredSummaryStyle}>
               {(item.label || 'Total')}: {new Intl.NumberFormat('es-CL').format(sumValue)}
             </div>
+          )
+        }
+
+        if (item.kind === 'gantt_mark') {
+          const checked = Boolean(valueMap[item.id])
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                onChange(item.id, !checked)
+                setTimeout(onBlur, 0)
+              }}
+              style={{
+                ...ganttMarkButtonStyle,
+                background: checked ? 'var(--primary)' : '#e5e7eb',
+                borderColor: checked ? 'var(--primary)' : '#cbd5e1',
+              }}
+              aria-pressed={checked}
+              title={checked ? 'Mes activo' : 'Mes inactivo'}
+            >
+              <span
+                style={{
+                  ...ganttMarkFillStyle,
+                  opacity: checked ? 1 : 0,
+                }}
+              />
+            </button>
           )
         }
 
@@ -1097,6 +1135,27 @@ const structuredItemLabelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   color: 'var(--text)',
+}
+
+const ganttMarkButtonStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 34,
+  borderRadius: 8,
+  border: '1px solid #cbd5e1',
+  padding: 4,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+}
+
+const ganttMarkFillStyle: React.CSSProperties = {
+  width: '100%',
+  height: 18,
+  borderRadius: 6,
+  background: 'rgba(255,255,255,0.92)',
+  transition: 'opacity 0.2s ease',
 }
 
 
