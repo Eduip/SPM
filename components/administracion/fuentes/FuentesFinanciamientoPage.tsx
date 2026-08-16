@@ -94,6 +94,7 @@ const FIELD_TYPE_OPTIONS = [
   { value: 'tabla_estructurada', label: 'Tabla estructurada', section: 'descripcion' },
   { value: 'plazo', label: 'Plazo', section: 'plazo' },
   { value: 'presupuesto', label: 'Presupuesto', section: 'presupuesto' },
+  { value: 'tabla_presupuesto', label: 'Tabla de presupuesto', section: 'presupuesto' },
 ]
 
 const TABLE_ITEM_KIND_OPTIONS: Array<{ value: TableFieldItemKind; label: string }> = [
@@ -137,7 +138,7 @@ function getNewFieldPlaceholder(mode: FieldFormMode) {
 
 function getFieldSection(tipo: string): FieldFormMode {
   if (tipo === 'plazo') return 'plazo'
-  if (tipo === 'presupuesto') return 'presupuesto'
+  if (tipo === 'presupuesto' || tipo === 'tabla_presupuesto') return 'presupuesto'
   return 'descripcion'
 }
 
@@ -1490,10 +1491,16 @@ function NewFieldForm({
             </option>
           ))}
         </select>
+      ) : fieldFormMode === 'presupuesto' ? (
+        <select name="tipo" defaultValue="presupuesto" style={inputStyle}>
+          {FIELD_TYPE_OPTIONS.filter((option) => option.section === 'presupuesto').map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       ) : (
-        <div style={lockedTypeStyle}>
-          {fieldFormMode === 'plazo' ? 'Número para plazo' : 'Número para presupuesto'}
-        </div>
+        <div style={lockedTypeStyle}>Número para plazo</div>
       )}
       <label style={inlineCheckboxStyle}>
         <input type="checkbox" name="obligatorio" />
@@ -1671,7 +1678,8 @@ function FieldConfigRow({
           subgrupo,
           subsubgrupo,
           orden_codigo: ordenCodigo,
-          config_json: tipo === 'tabla_estructurada' ? tableConfig : null,
+          config_json:
+            tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' ? tableConfig : null,
           tipo,
           obligatorio,
           ai_mode: aiMode,
@@ -1828,7 +1836,7 @@ function FieldConfigRow({
             onChange={(event) => {
               const nextType = event.target.value
               setTipo(nextType)
-              if (nextType === 'tabla_estructurada') {
+              if (nextType === 'tabla_estructurada' || nextType === 'tabla_presupuesto') {
                 setTableConfig((current) => normalizeTableFieldConfig(current))
               }
             }}
@@ -1853,7 +1861,7 @@ function FieldConfigRow({
             value={aiMode}
             onChange={(event) => setAiMode(event.target.value as FieldAIMode)}
             style={compactSelectStyle}
-            disabled={tipo === 'tabla_estructurada'}
+            disabled={tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto'}
           >
             <option value="blocked">Bloquear IA</option>
             <option value="suggest">Permitir IA</option>
@@ -1872,7 +1880,7 @@ function FieldConfigRow({
           </button>
         </div>
       </div>
-      {tipo === 'tabla_estructurada' ? (
+      {tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto' ? (
         <div style={{ width: '100%' }}>
           <TableFieldConfigEditor config={tableConfig} onChange={setTableConfig} />
         </div>
@@ -2615,7 +2623,7 @@ function normalizeText(value: string) {
 }
 
 function PreviewField({ campo }: { campo: CampoPostulacion }) {
-  if (campo.tipo === 'tabla_estructurada') {
+  if (campo.tipo === 'tabla_estructurada' || campo.tipo === 'tabla_presupuesto') {
     const config = normalizeTableFieldConfig(campo.config_json)
     return (
       <div style={{ ...previewFieldStyle, overflowX: 'auto' }}>
@@ -2699,11 +2707,11 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
       ? 'Seleccione una fecha'
       : campo.tipo === 'booleano'
         ? 'Sí / No'
-        : campo.tipo === 'plazo'
-          ? '0 días'
-          : campo.tipo === 'presupuesto'
-            ? '$0'
-        : `Ingrese ${campo.nombre.toLowerCase()}...`
+          : campo.tipo === 'plazo'
+            ? '0 días'
+            : campo.tipo === 'presupuesto'
+              ? '$0'
+              : `Ingrese ${campo.nombre.toLowerCase()}...`
 
   return (
     <div style={previewFieldStyle}>

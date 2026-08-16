@@ -215,7 +215,9 @@ function calculateBudgetTotal(
   respuestas: RespuestaPostulacion[]
 ) {
   const presupuestoCampoIds = new Set(
-    campos.filter((campo) => campo.tipo === 'presupuesto').map((campo) => campo.id)
+    campos
+      .filter((campo) => campo.tipo === 'presupuesto' || campo.tipo === 'tabla_presupuesto')
+      .map((campo) => campo.id)
   )
 
   if (presupuestoCampoIds.size === 0) {

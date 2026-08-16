@@ -276,7 +276,7 @@ export async function crearCampoFuente({
         subsubgrupo: subsubgrupo?.trim() || null,
         orden_codigo: orden_codigo?.trim() || String(Number(ultimoCampo?.orden ?? 0) + 1),
         config_json:
-          normalizedTipo === 'tabla_estructurada'
+          normalizedTipo === 'tabla_estructurada' || normalizedTipo === 'tabla_presupuesto'
             ? normalizeTableFieldConfig(config_json ?? createDefaultTableFieldConfig())
             : null,
         tipo: normalizedTipo,
@@ -341,7 +341,7 @@ export async function actualizarCampoFuente({
       subsubgrupo: subsubgrupo?.trim() || null,
       orden_codigo: orden_codigo?.trim() || null,
       config_json:
-        normalizedTipo === 'tabla_estructurada'
+        normalizedTipo === 'tabla_estructurada' || normalizedTipo === 'tabla_presupuesto'
           ? normalizeTableFieldConfig(config_json ?? createDefaultTableFieldConfig())
           : null,
       tipo: normalizedTipo,
@@ -794,6 +794,7 @@ function normalizeCampoTipo(tipo: string) {
     'fecha',
     'booleano',
     'tabla_estructurada',
+    'tabla_presupuesto',
     'plazo',
     'presupuesto',
   ])

@@ -442,7 +442,9 @@ function FieldRow({
     <div
       style={{
         gridColumn:
-          campo.tipo === 'texto_largo' || campo.tipo === 'tabla_estructurada'
+          campo.tipo === 'texto_largo' ||
+          campo.tipo === 'tabla_estructurada' ||
+          campo.tipo === 'tabla_presupuesto'
             ? '1 / -1'
             : 'auto',
       }}
@@ -660,7 +662,7 @@ function renderField({
     )
   }
 
-  if (campo.tipo === 'tabla_estructurada') {
+  if (campo.tipo === 'tabla_estructurada' || campo.tipo === 'tabla_presupuesto') {
     return (
       <StructuredTableField
         campo={campo}
@@ -684,7 +686,7 @@ function renderField({
 }
 
 function defaultValueForType(tipo: string) {
-  if (tipo === 'tabla_estructurada') return {}
+  if (tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto') return {}
   if (tipo === 'booleano') return false
   return ''
 }
@@ -760,7 +762,7 @@ function isSensitiveField(campo: CampoPostulacion) {
 
 function getFieldSection(tipo: string) {
   if (tipo === 'plazo') return 'plazo'
-  if (tipo === 'presupuesto') return 'presupuesto'
+  if (tipo === 'presupuesto' || tipo === 'tabla_presupuesto') return 'presupuesto'
   return 'descripcion'
 }
 
@@ -774,12 +776,22 @@ function sumFieldValues(
   campos: CampoPostulacion[],
   values: Record<string, DynamicFieldValue>
 ) {
-  return campos.reduce((total, campo) => total + dynamicValueToNumber(values[campo.id]), 0)
+  return campos.reduce(
+    (total, campo) => total + dynamicValueToNumber(values[campo.id], campo.tipo),
+    0
+  )
 }
 
-function dynamicValueToNumber(value: DynamicFieldValue) {
+function dynamicValueToNumber(value: DynamicFieldValue, tipo?: string): number {
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') {
     return 0
+  }
+
+  if ((tipo === 'tabla_estructurada' || tipo === 'tabla_presupuesto') && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.values(value as Record<string, DynamicFieldValue>).reduce<number>(
+      (acc, current) => acc + dynamicValueToNumber(current),
+      0
+    )
   }
 
   const parsed = Number(String(value).replace(/\./g, '').replace(',', '.'))

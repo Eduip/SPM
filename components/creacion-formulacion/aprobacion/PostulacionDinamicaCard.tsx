@@ -13,7 +13,9 @@ export default function PostulacionDinamicaCard({
   campos: CampoPostulacion[]
   respuestas: RespuestaPostulacion[]
 }) {
-  const respuestaMap = new Map(respuestas.map((respuesta) => [respuesta.campo_id, respuesta]))
+  const respuestaMap = new Map<string, RespuestaPostulacion>(
+    respuestas.map((respuesta) => [respuesta.campo_id, respuesta] as const)
+  )
   const descripcion = campos.filter((campo) => getFieldSection(campo.tipo) === 'descripcion')
   const plazos = campos.filter((campo) => getFieldSection(campo.tipo) === 'plazo')
   const presupuestos = campos.filter((campo) => getFieldSection(campo.tipo) === 'presupuesto')
@@ -138,7 +140,7 @@ function formatRespuesta(respuesta: RespuestaPostulacion | undefined) {
 
 function getFieldSection(tipo: string) {
   if (tipo === 'plazo') return 'plazo'
-  if (tipo === 'presupuesto') return 'presupuesto'
+  if (tipo === 'presupuesto' || tipo === 'tabla_presupuesto') return 'presupuesto'
   return 'descripcion'
 }
 
@@ -146,10 +148,40 @@ function sumRespuestas(
   campos: CampoPostulacion[],
   respuestaMap: Map<string, RespuestaPostulacion>
 ) {
-  return campos.reduce((total, campo) => {
-    const value = respuestaMap.get(campo.id)?.valor_numero
-    return total + (Number(value) || 0)
+  return campos.reduce<number>((total, campo) => {
+    const respuesta = respuestaMap.get(campo.id) as RespuestaPostulacion | undefined
+    return total + responseValueToNumber(respuesta)
   }, 0)
+}
+
+function responseValueToNumber(respuesta: RespuestaPostulacion | undefined): number {
+  if (!respuesta) return 0
+
+  if (respuesta.valor_numero !== null && respuesta.valor_numero !== undefined) {
+    return Number(respuesta.valor_numero) || 0
+  }
+
+  if (typeof respuesta.valor_json === 'number') {
+    return respuesta.valor_json
+  }
+
+  if (typeof respuesta.valor_json === 'string') {
+    const parsed = Number(String(respuesta.valor_json).replace(/\./g, '').replace(',', '.'))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  if (respuesta.valor_json && typeof respuesta.valor_json === 'object' && !Array.isArray(respuesta.valor_json)) {
+    return Object.values(respuesta.valor_json as Record<string, unknown>).reduce<number>((acc, value) => {
+      if (typeof value === 'number') return acc + value
+      if (typeof value === 'string') {
+        const parsed = Number(String(value).replace(/\./g, '').replace(',', '.'))
+        return acc + (Number.isFinite(parsed) ? parsed : 0)
+      }
+      return acc
+    }, 0)
+  }
+
+  return 0
 }
 
 const sectionStyle: React.CSSProperties = {

@@ -113,7 +113,7 @@ export default async function CarteraProyectosPage({
           supabase
             .from('campos_formulario_fuente')
             .select('id, fuente_id, tipo')
-            .eq('tipo', 'presupuesto')
+            .in('tipo', ['presupuesto', 'tabla_presupuesto'])
             .eq('visible', true),
           supabase
             .from('proyecto_postulacion_respuestas')

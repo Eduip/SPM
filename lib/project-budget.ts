@@ -30,13 +30,13 @@ export function buildProjectBudgetMap({
   budgetFields: BudgetField[]
   responses: BudgetResponse[]
 }) {
-  const selectedFundingByProject = new Map(
-    fundingSelections.map((item) => [item.proyecto_id, item.fuente_id])
+  const selectedFundingByProject = new Map<string, string | null>(
+    fundingSelections.map((item) => [item.proyecto_id, item.fuente_id] as const)
   )
 
   const budgetFieldIdsByFunding = new Map<string, Set<string>>()
   for (const field of budgetFields) {
-    if (field.tipo !== 'presupuesto') continue
+    if (field.tipo !== 'presupuesto' && field.tipo !== 'tabla_presupuesto') continue
 
     const fieldIds = budgetFieldIdsByFunding.get(field.fuente_id) ?? new Set<string>()
     fieldIds.add(field.id)
@@ -62,7 +62,7 @@ export function buildProjectBudgetMap({
 
     const total = (responsesByProject.get(projectId) ?? [])
       .filter((response) => budgetFieldIds.has(response.campo_id))
-      .reduce((acc, response) => acc + responseValueToNumber(response), 0)
+      .reduce<number>((acc, response) => acc + responseValueToNumber(response), 0)
 
     budgetsByProject.set(projectId, total)
   }
@@ -70,7 +70,7 @@ export function buildProjectBudgetMap({
   return budgetsByProject
 }
 
-export function responseValueToNumber(response: BudgetResponse) {
+export function responseValueToNumber(response: BudgetResponse): number {
   if (response.valor_numero !== null && response.valor_numero !== undefined) {
     return Number(response.valor_numero) || 0
   }
@@ -85,6 +85,14 @@ export function responseValueToNumber(response: BudgetResponse) {
 
   if (typeof response.valor_json === 'string') {
     return parseMoneyValue(response.valor_json)
+  }
+
+  if (response.valor_json && typeof response.valor_json === 'object' && !Array.isArray(response.valor_json)) {
+    return Object.values(response.valor_json as Record<string, unknown>).reduce<number>((acc, value) => {
+      if (typeof value === 'number') return acc + value
+      if (typeof value === 'string') return acc + parseMoneyValue(value)
+      return acc
+    }, 0)
   }
 
   return 0
