@@ -223,3 +223,98 @@ export function getRenderableTableCells(
 
   return renderable
 }
+
+export function removeTableRow(config: TableFieldConfig, rowIndex: number): TableFieldConfig {
+  const normalized = normalizeTableFieldConfig(config)
+
+  if (normalized.rows.length <= 1) {
+    return normalized
+  }
+
+  return {
+    ...normalized,
+    rows: normalized.rows.filter((_, index) => index !== rowIndex),
+  }
+}
+
+export function removeTableColumn(
+  config: TableFieldConfig,
+  columnIndex: number
+): TableFieldConfig {
+  const normalized = normalizeTableFieldConfig(config)
+
+  if (normalized.columns.length <= 1) {
+    return normalized
+  }
+
+  const nextColumns = normalized.columns.filter((_, index) => index !== columnIndex)
+  const nextRows = normalized.rows.map((row) => ({
+    ...row,
+    cells: removeColumnFromRow(row, normalized.columns.length, columnIndex),
+  }))
+
+  return normalizeTableFieldConfig({
+    columns: nextColumns,
+    rows: nextRows,
+  })
+}
+
+function removeColumnFromRow(
+  row: TableFieldRowConfig,
+  totalColumns: number,
+  columnIndexToRemove: number
+): TableFieldCellConfig[] {
+  const slots: TableFieldCellConfig[] = []
+  const renderable = getRenderableTableCells(row, totalColumns)
+
+  for (const { cell, colspan } of renderable) {
+    for (let slotIndex = 0; slotIndex < colspan; slotIndex += 1) {
+      slots.push(cell)
+    }
+  }
+
+  while (slots.length < totalColumns) {
+    slots.push(createFallbackCellForRemoval(slots.length))
+  }
+
+  slots.splice(columnIndexToRemove, 1)
+
+  const compressed: TableFieldCellConfig[] = []
+  let current: TableFieldCellConfig | null = null
+  let span = 0
+
+  const flush = () => {
+    if (!current) return
+    compressed.push({
+      ...current,
+      colspan: span,
+    })
+    current = null
+    span = 0
+  }
+
+  for (const slot of slots) {
+    if (!current || current.id !== slot.id) {
+      flush()
+      current = slot
+      span = 1
+    } else {
+      span += 1
+    }
+  }
+
+  flush()
+
+  return compressed
+}
+
+function createFallbackCellForRemoval(columnIndex: number): TableFieldCellConfig {
+  return {
+    id: safeId(`cell-fallback-${columnIndex + 1}`),
+    colspan: 1,
+    background: 'default',
+    align: 'left',
+    vertical_align: 'top',
+    items: [createDefaultCellItem(columnIndex)],
+  }
+}

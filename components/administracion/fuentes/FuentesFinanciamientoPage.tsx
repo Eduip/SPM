@@ -48,6 +48,8 @@ import {
   getTableCellPresentation,
   getRenderableTableCells,
   normalizeTableFieldConfig,
+  removeTableColumn,
+  removeTableRow,
 } from '../../../lib/table-field-config'
 
 type FieldFormMode = 'descripcion' | 'plazo' | 'presupuesto'
@@ -1947,6 +1949,14 @@ function TableFieldConfigEditor({
     onChange(next)
   }
 
+  const removeColumn = (columnIndex: number) => {
+    onChange(removeTableColumn(normalized, columnIndex))
+  }
+
+  const removeRow = (rowIndex: number) => {
+    onChange(removeTableRow(normalized, rowIndex))
+  }
+
   const updateCellItems = (rowIndex: number, cellIndex: number, items: TableFieldItemConfig[]) => {
     const next = normalizeTableFieldConfig(normalized)
     next.rows[rowIndex].cells[cellIndex].items = items
@@ -1996,12 +2006,26 @@ function TableFieldConfigEditor({
             <tr>
               {normalized.columns.map((column, columnIndex) => (
                 <th key={column.id} style={tableEditorHeaderStyle}>
-                  <input
-                    value={column.header}
-                    onChange={(event) => updateColumnHeader(columnIndex, event.target.value)}
-                    placeholder={`Encabezado ${columnIndex + 1}`}
-                    style={tableHeaderInputStyle}
-                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input
+                      value={column.header}
+                      onChange={(event) => updateColumnHeader(columnIndex, event.target.value)}
+                      placeholder={`Encabezado ${columnIndex + 1}`}
+                      style={tableHeaderInputStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeColumn(columnIndex)}
+                      disabled={normalized.columns.length <= 1}
+                      style={
+                        normalized.columns.length <= 1
+                          ? disabledMiniButtonStyle
+                          : miniDangerButtonStyle
+                      }
+                    >
+                      Quitar columna
+                    </button>
+                  </div>
                 </th>
               ))}
             </tr>
@@ -2013,16 +2037,30 @@ function TableFieldConfigEditor({
                   <td colSpan={normalized.columns.length} style={tableRowMetaCellStyle}>
                     <div style={tableRowMetaContentStyle}>
                       <span style={tableRowMetaLabelStyle}>Fila {rowIndex + 1}</span>
-                      <select
-                        value={row.variant ?? 'body'}
-                        onChange={(event) =>
-                          updateRowVariant(rowIndex, event.target.value as 'body' | 'header')
-                        }
-                        style={compactSelectStyle}
-                      >
-                        <option value="body">Fila normal</option>
-                        <option value="header">Fila encabezado</option>
-                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <select
+                          value={row.variant ?? 'body'}
+                          onChange={(event) =>
+                            updateRowVariant(rowIndex, event.target.value as 'body' | 'header')
+                          }
+                          style={compactSelectStyle}
+                        >
+                          <option value="body">Fila normal</option>
+                          <option value="header">Fila encabezado</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeRow(rowIndex)}
+                          disabled={normalized.rows.length <= 1}
+                          style={
+                            normalized.rows.length <= 1
+                              ? disabledMiniButtonStyle
+                              : miniDangerButtonStyle
+                          }
+                        >
+                          Quitar fila
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
