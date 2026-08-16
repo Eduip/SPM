@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   actualizarCampoFuente,
@@ -25,8 +25,11 @@ import type {
   DocumentoFuente,
   ReglaFuente,
   SeccionFormularioFuente,
+  TableFieldCellAlign,
+  TableFieldCellBackground,
   TableFieldCellConfig,
   TableFieldConfig,
+  TableFieldCellVerticalAlign,
   TableFieldItemConfig,
   TableFieldItemKind,
 } from '../../../lib/formulacion-types'
@@ -34,6 +37,7 @@ import type { FieldAIMode } from '../../../lib/ai/field-ai-config'
 import type { EstadoPagoDocumentoConfig } from '../../../lib/estado-pago-document-config'
 import {
   createDefaultTableFieldConfig,
+  getTableCellPresentation,
   getRenderableTableCells,
   normalizeTableFieldConfig,
 } from '../../../lib/table-field-config'
@@ -88,6 +92,27 @@ const TABLE_ITEM_KIND_OPTIONS: Array<{ value: TableFieldItemKind; label: string 
   { value: 'input_textarea', label: 'Texto largo' },
   { value: 'input_number', label: 'Número' },
   { value: 'sum_numbers', label: 'Suma automática' },
+]
+
+const TABLE_CELL_BACKGROUND_OPTIONS: Array<{ value: TableFieldCellBackground; label: string }> = [
+  { value: 'default', label: 'Blanco' },
+  { value: 'soft_blue', label: 'Celeste suave' },
+  { value: 'header', label: 'Encabezado azul' },
+]
+
+const TABLE_CELL_ALIGN_OPTIONS: Array<{ value: TableFieldCellAlign; label: string }> = [
+  { value: 'left', label: 'Izquierda' },
+  { value: 'center', label: 'Centro' },
+  { value: 'right', label: 'Derecha' },
+]
+
+const TABLE_CELL_VERTICAL_ALIGN_OPTIONS: Array<{
+  value: TableFieldCellVerticalAlign
+  label: string
+}> = [
+  { value: 'top', label: 'Arriba' },
+  { value: 'middle', label: 'Centro' },
+  { value: 'bottom', label: 'Abajo' },
 ]
 
 function createUiConfigId(prefix: string) {
@@ -1464,9 +1489,13 @@ function TableFieldConfigEditor({
     const next = normalizeTableFieldConfig(normalized)
     next.rows.push({
       id: createUiConfigId('row'),
+      variant: 'body',
       cells: next.columns.map((column, index) => ({
         id: createUiConfigId(`cell-${column.id}`),
         colspan: 1,
+        background: index === 0 ? 'soft_blue' : 'default',
+        align: index === 0 ? 'center' : 'left',
+        vertical_align: index === 0 ? 'middle' : 'top',
         items: [
           {
             id: createUiConfigId(`item-${column.id}`),
@@ -1491,6 +1520,25 @@ function TableFieldConfigEditor({
   const updateCellColspan = (rowIndex: number, cellIndex: number, colspan: number) => {
     const next = normalizeTableFieldConfig(normalized)
     next.rows[rowIndex].cells[cellIndex].colspan = Math.max(1, Math.floor(colspan || 1))
+    onChange(next)
+  }
+
+  const updateRowVariant = (rowIndex: number, variant: 'body' | 'header') => {
+    const next = normalizeTableFieldConfig(normalized)
+    next.rows[rowIndex].variant = variant
+    onChange(next)
+  }
+
+  const updateCellPresentation = (
+    rowIndex: number,
+    cellIndex: number,
+    patch: Partial<TableFieldCellConfig>
+  ) => {
+    const next = normalizeTableFieldConfig(normalized)
+    next.rows[rowIndex].cells[cellIndex] = {
+      ...next.rows[rowIndex].cells[cellIndex],
+      ...patch,
+    }
     onChange(next)
   }
 
@@ -1524,22 +1572,51 @@ function TableFieldConfigEditor({
           </thead>
           <tbody>
             {normalized.rows.map((row, rowIndex) => (
-              <tr key={row.id}>
-                {getRenderableTableCells(row, normalized.columns.length).map(
-                  ({ cell, cellIndex, colspan }) => (
-                    <td key={cell.id} colSpan={colspan} style={tableEditorCellStyle}>
-                      <TableCellEditor
-                        cell={cell}
-                        maxColumns={normalized.columns.length}
-                        onChange={(items) => updateCellItems(rowIndex, cellIndex, items)}
-                        onChangeColspan={(nextColspan) =>
-                          updateCellColspan(rowIndex, cellIndex, nextColspan)
+              <Fragment key={row.id}>
+                <tr key={`${row.id}-meta`}>
+                  <td colSpan={normalized.columns.length} style={tableRowMetaCellStyle}>
+                    <div style={tableRowMetaContentStyle}>
+                      <span style={tableRowMetaLabelStyle}>Fila {rowIndex + 1}</span>
+                      <select
+                        value={row.variant ?? 'body'}
+                        onChange={(event) =>
+                          updateRowVariant(rowIndex, event.target.value as 'body' | 'header')
                         }
-                      />
-                    </td>
-                  )
-                )}
-              </tr>
+                        style={compactSelectStyle}
+                      >
+                        <option value="body">Fila normal</option>
+                        <option value="header">Fila encabezado</option>
+                      </select>
+                    </div>
+                  </td>
+                </tr>
+                <tr key={row.id}>
+                  {getRenderableTableCells(row, normalized.columns.length).map(
+                    ({ cell, cellIndex, colspan }) => (
+                      <td
+                        key={cell.id}
+                        colSpan={colspan}
+                        style={{
+                          ...tableEditorCellStyle,
+                          background: getTableCellPresentation(row, cell).background,
+                        }}
+                      >
+                        <TableCellEditor
+                          cell={cell}
+                          maxColumns={normalized.columns.length}
+                          onChange={(items) => updateCellItems(rowIndex, cellIndex, items)}
+                          onChangeColspan={(nextColspan) =>
+                            updateCellColspan(rowIndex, cellIndex, nextColspan)
+                          }
+                          onChangePresentation={(patch) =>
+                            updateCellPresentation(rowIndex, cellIndex, patch)
+                          }
+                        />
+                      </td>
+                    )
+                  )}
+                </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -1553,11 +1630,13 @@ function TableCellEditor({
   maxColumns,
   onChange,
   onChangeColspan,
+  onChangePresentation,
 }: {
   cell: TableFieldCellConfig
   maxColumns: number
   onChange: (items: TableFieldItemConfig[]) => void
   onChangeColspan: (colspan: number) => void
+  onChangePresentation: (patch: Partial<TableFieldCellConfig>) => void
 }) {
   const items = Array.isArray(cell.items)
     ? cell.items
@@ -1643,6 +1722,53 @@ function TableCellEditor({
             <button type="button" onClick={() => removeItem(itemIndex)} style={miniDangerButtonStyle}>
               Quitar
             </button>
+          </div>
+          <div style={tableItemRowStyle}>
+            <select
+              value={cell.background ?? 'default'}
+              onChange={(event) =>
+                onChangePresentation({
+                  background: event.target.value as TableFieldCellBackground,
+                })
+              }
+              style={compactSelectStyle}
+            >
+              {TABLE_CELL_BACKGROUND_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  Fondo: {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={cell.align ?? 'left'}
+              onChange={(event) =>
+                onChangePresentation({
+                  align: event.target.value as TableFieldCellAlign,
+                })
+              }
+              style={compactSelectStyle}
+            >
+              {TABLE_CELL_ALIGN_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  Alinear: {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={cell.vertical_align ?? 'top'}
+              onChange={(event) =>
+                onChangePresentation({
+                  vertical_align: event.target.value as TableFieldCellVerticalAlign,
+                })
+              }
+              style={compactSelectStyle}
+            >
+              {TABLE_CELL_VERTICAL_ALIGN_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  Vertical: {option.label}
+                </option>
+              ))}
+            </select>
           </div>
           {item.kind === 'static_text' ? (
               <textarea
@@ -1828,12 +1954,34 @@ function PreviewField({ campo }: { campo: CampoPostulacion }) {
             {config.rows.map((row) => (
               <tr key={row.id}>
                 {getRenderableTableCells(row, config.columns.length).map(({ cell, colspan }) => (
-                  <td key={cell.id} colSpan={colspan} style={tablePreviewCellStyle}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <td
+                    key={cell.id}
+                    colSpan={colspan}
+                    style={{
+                      ...tablePreviewCellStyle,
+                      background: getTableCellPresentation(row, cell).background,
+                      textAlign: getTableCellPresentation(row, cell).textAlign,
+                      verticalAlign: getTableCellPresentation(row, cell).verticalAlign,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                        justifyContent: getTableCellPresentation(row, cell).justifyContent,
+                        minHeight: 110,
+                      }}
+                    >
                       {cell.items.map((item) => (
                         <div
                           key={item.id}
-                          style={item.highlighted ? tablePreviewHighlightedStyle : undefined}
+                          style={{
+                            ...(item.highlighted ? tablePreviewHighlightedStyle : undefined),
+                            fontWeight: item.highlighted
+                              ? tablePreviewHighlightedStyle.fontWeight
+                              : getTableCellPresentation(row, cell).fontWeight,
+                          }}
                         >
                           {item.kind === 'static_text'
                             ? item.text || 'Texto fijo'
@@ -2229,6 +2377,25 @@ const tableEditorCellStyle: React.CSSProperties = {
   verticalAlign: 'top',
 }
 
+const tableRowMetaCellStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  background: '#f8fafc',
+  padding: '8px 12px',
+}
+
+const tableRowMetaContentStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+}
+
+const tableRowMetaLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 800,
+  color: '#475569',
+}
+
 const tableCellEditorStyle: React.CSSProperties = {
   border: '1px solid #d1d5db',
   borderRadius: 12,
@@ -2306,7 +2473,7 @@ const tablePreviewHeaderStyle: React.CSSProperties = {
   border: '1px solid #cbd5e1',
   background: '#e2e8f0',
   color: 'var(--text-strong)',
-  textAlign: 'left',
+  textAlign: 'center',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 800,

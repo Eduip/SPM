@@ -1,13 +1,24 @@
 import type {
+  TableFieldCellAlign,
+  TableFieldCellBackground,
   TableFieldCellConfig,
   TableFieldColumnConfig,
   TableFieldConfig,
+  TableFieldCellVerticalAlign,
   TableFieldItemConfig,
   TableFieldRowConfig,
 } from './formulacion-types'
 
 function safeId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+type TableCellPresentation = {
+  background: string
+  textAlign: TableFieldCellAlign
+  verticalAlign: TableFieldCellVerticalAlign
+  justifyContent: 'flex-start' | 'center' | 'flex-end'
+  fontWeight: number
 }
 
 export function createDefaultTableFieldConfig(): TableFieldConfig {
@@ -22,6 +33,9 @@ export function createDefaultTableFieldConfig(): TableFieldConfig {
       cells: columns.map((column, index) => ({
         id: safeId(`cell-${column.id}`),
         colspan: 1,
+        background: index === 0 ? 'soft_blue' : 'default',
+        align: index === 0 ? 'center' : 'left',
+        vertical_align: index === 0 ? 'middle' : 'top',
         items: [
           {
             id: safeId('item'),
@@ -55,9 +69,10 @@ export function normalizeTableFieldConfig(value: unknown): TableFieldConfig {
     header: String(column?.header || `Columna ${index + 1}`),
   }))
 
-  const normalizedRows = rows.length
+  const normalizedRows: TableFieldRowConfig[] = rows.length
     ? rows.map((row, rowIndex) => ({
         id: row?.id || safeId(`row-${rowIndex + 1}`),
+        variant: normalizeRowVariant(row?.variant),
         cells: normalizedColumns.map((column, columnIndex) => {
           const sourceCell = Array.isArray(row?.cells) ? row?.cells[columnIndex] : null
           const normalizedItems = Array.isArray(sourceCell?.items)
@@ -66,6 +81,9 @@ export function normalizeTableFieldConfig(value: unknown): TableFieldConfig {
           return {
             id: sourceCell?.id || safeId(`cell-${rowIndex + 1}-${column.id}`),
             colspan: normalizeColspan(sourceCell?.colspan),
+            background: normalizeCellBackground(sourceCell?.background),
+            align: normalizeCellAlign(sourceCell?.align),
+            vertical_align: normalizeCellVerticalAlign(sourceCell?.vertical_align),
             items: normalizedItems,
           }
         }),
@@ -82,6 +100,22 @@ function normalizeColspan(value: unknown) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed < 1) return 1
   return Math.max(1, Math.floor(parsed))
+}
+
+function normalizeRowVariant(value: unknown): 'body' | 'header' {
+  return value === 'header' ? 'header' : 'body'
+}
+
+function normalizeCellBackground(value: unknown): TableFieldCellBackground {
+  return value === 'header' || value === 'soft_blue' ? value : 'default'
+}
+
+function normalizeCellAlign(value: unknown): TableFieldCellAlign {
+  return value === 'center' || value === 'right' ? value : 'left'
+}
+
+function normalizeCellVerticalAlign(value: unknown): TableFieldCellVerticalAlign {
+  return value === 'middle' || value === 'bottom' ? value : 'top'
 }
 
 function normalizeTableItem(item: Partial<TableFieldItemConfig> | null | undefined, index: number) {
@@ -104,6 +138,39 @@ function createDefaultCellItem(columnIndex: number): TableFieldItemConfig {
     text: columnIndex === 0 ? 'Texto de referencia' : '',
     placeholder: columnIndex === 0 ? '' : 'Ingrese contenido',
     highlighted: false,
+  }
+}
+
+export function getTableCellPresentation(
+  row: TableFieldRowConfig,
+  cell: TableFieldCellConfig
+): TableCellPresentation {
+  const rowIsHeader = row.variant === 'header'
+  const background =
+    rowIsHeader || cell.background === 'header'
+      ? '#d8e6f5'
+      : cell.background === 'soft_blue'
+        ? '#eef5ff'
+        : '#ffffff'
+  const textAlign =
+    (rowIsHeader || cell.background === 'header') && (cell.align ?? 'left') === 'left'
+      ? 'center'
+      : (cell.align ?? 'left')
+  const verticalAlign =
+    rowIsHeader || cell.background === 'header'
+      ? cell.vertical_align === 'top' || cell.vertical_align === 'bottom'
+        ? cell.vertical_align
+        : 'middle'
+      : (cell.vertical_align ?? 'top')
+  const justifyContent =
+    verticalAlign === 'middle' ? 'center' : verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'
+
+  return {
+    background,
+    textAlign,
+    verticalAlign,
+    justifyContent,
+    fontWeight: rowIsHeader || cell.background === 'header' ? 800 : 500,
   }
 }
 

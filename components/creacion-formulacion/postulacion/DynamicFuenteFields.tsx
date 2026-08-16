@@ -8,6 +8,7 @@ import {
 } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
 import { compareCampoOrder } from '../../../lib/field-order'
 import {
+  getTableCellPresentation,
   getRenderableTableCells,
   getTableSumForCell,
   normalizeTableFieldConfig,
@@ -887,17 +888,29 @@ function StructuredTableField({
         <tbody>
           {config.rows.map((row) => (
             <tr key={row.id}>
-              {getRenderableTableCells(row, config.columns.length).map(
-                ({ cell, colspan }) => (
-                <td key={cell.id} colSpan={colspan} style={structuredCellStyle}>
-                  <StructuredTableCell
-                    cell={cell}
-                    valueMap={tableValue}
-                    onChange={updateTableValue}
-                    onBlur={onBlur}
-                  />
-                </td>
-              ))}
+              {getRenderableTableCells(row, config.columns.length).map(({ cell, colspan }) => {
+                const presentation = getTableCellPresentation(row, cell)
+                return (
+                  <td
+                    key={cell.id}
+                    colSpan={colspan}
+                    style={{
+                      ...structuredCellStyle,
+                      background: presentation.background,
+                      textAlign: presentation.textAlign,
+                      verticalAlign: presentation.verticalAlign,
+                    }}
+                  >
+                    <StructuredTableCell
+                      cell={cell}
+                      valueMap={tableValue}
+                      onChange={updateTableValue}
+                      onBlur={onBlur}
+                      presentation={presentation}
+                    />
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>
@@ -911,20 +924,33 @@ function StructuredTableCell({
   valueMap,
   onChange,
   onBlur,
+  presentation,
 }: {
   cell: TableFieldCellConfig
   valueMap: Record<string, string | number | boolean | null>
   onChange: (itemId: string, nextValue: string) => void
   onBlur: () => void
+  presentation: ReturnType<typeof getTableCellPresentation>
 }) {
   const sumValue = getTableSumForCell(cell, valueMap)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        justifyContent: presentation.justifyContent,
+        minHeight: 110,
+      }}
+    >
       {cell.items.map((item) => {
         if (item.kind === 'static_text') {
           return (
-            <div key={item.id} style={item.highlighted ? structuredHighlightStyle : structuredStaticTextStyle}>
+            <div
+              key={item.id}
+              style={item.highlighted ? structuredHighlightStyle : structuredStaticTextStyle}
+            >
               {item.text}
             </div>
           )
@@ -991,7 +1017,7 @@ const structuredHeaderStyle: React.CSSProperties = {
   border: '1px solid var(--border)',
   background: '#e2e8f0',
   padding: '10px 12px',
-  textAlign: 'left',
+  textAlign: 'center',
   fontSize: 13,
   fontWeight: 800,
   color: 'var(--text-strong)',

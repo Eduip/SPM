@@ -43,9 +43,18 @@ export type TableFieldItemConfig = {
   highlighted?: boolean | null
 }
 
+export type TableFieldCellBackground = 'default' | 'header' | 'soft_blue'
+
+export type TableFieldCellAlign = 'left' | 'center' | 'right'
+
+export type TableFieldCellVerticalAlign = 'top' | 'middle' | 'bottom'
+
 export type TableFieldCellConfig = {
   id: string
   colspan?: number | null
+  background?: TableFieldCellBackground | null
+  align?: TableFieldCellAlign | null
+  vertical_align?: TableFieldCellVerticalAlign | null
   items: TableFieldItemConfig[]
 }
 
@@ -56,6 +65,7 @@ export type TableFieldColumnConfig = {
 
 export type TableFieldRowConfig = {
   id: string
+  variant?: 'body' | 'header' | null
   cells: TableFieldCellConfig[]
 }
 
