@@ -987,15 +987,23 @@ function StructuredTableCell({
   const sumValue = getTableSumForCell(cell, valueMap)
   const ganttItemCount = cell.items.filter((item) => item.kind === 'gantt_mark').length
   const isPureGanttCell = ganttItemCount > 0 && ganttItemCount === cell.items.length
+  const textareaItemCount = cell.items.filter((item) => item.kind === 'input_textarea').length
+  const isActivityTimelineCell =
+    textareaItemCount > 0 && textareaItemCount === cell.items.length
+  const useTimelineRows = isPureGanttCell || isActivityTimelineCell
 
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: isPureGanttCell ? 12 : 8,
-        justifyContent: isPureGanttCell ? 'flex-start' : presentation.justifyContent,
+        display: useTimelineRows ? 'grid' : 'flex',
+        flexDirection: useTimelineRows ? undefined : 'column',
+        gridTemplateRows: useTimelineRows
+          ? `repeat(${cell.items.length}, minmax(${TIMELINE_ROW_HEIGHT}px, auto))`
+          : undefined,
+        gap: useTimelineRows ? 12 : 8,
+        justifyContent: useTimelineRows ? undefined : presentation.justifyContent,
         minHeight: 110,
+        alignItems: 'stretch',
       }}
     >
       {cell.items.map((item) => {
@@ -1025,7 +1033,7 @@ function StructuredTableCell({
               key={item.id}
               style={{
                 ...ganttMarkRowStyle,
-                minHeight: isPureGanttCell ? 120 : ganttMarkRowStyle.minHeight,
+                minHeight: useTimelineRows ? TIMELINE_ROW_HEIGHT : ganttMarkRowStyle.minHeight,
               }}
             >
               <button
@@ -1055,7 +1063,15 @@ function StructuredTableCell({
 
         if (item.kind === 'input_textarea') {
           return (
-            <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div
+              key={item.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                minHeight: useTimelineRows ? TIMELINE_ROW_HEIGHT : undefined,
+              }}
+            >
               {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : null}
             <textarea
               value={String(valueMap[item.id] ?? '')}
@@ -1065,6 +1081,7 @@ function StructuredTableCell({
               style={{
                 ...textareaStyle,
                 minHeight: 86,
+                height: '100%',
               }}
             />
             </div>
@@ -1145,6 +1162,8 @@ const structuredItemLabelStyle: React.CSSProperties = {
   fontWeight: 700,
   color: 'var(--text)',
 }
+
+const TIMELINE_ROW_HEIGHT = 110
 
 const ganttMarkButtonStyle: React.CSSProperties = {
   width: '100%',
