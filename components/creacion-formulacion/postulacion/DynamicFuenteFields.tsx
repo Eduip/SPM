@@ -6,6 +6,7 @@ import {
   guardarRespuestaDinamica,
   sugerirCampoPostulacionConIA,
   sugerirFilaGanttConIA,
+  sugerirFilaTablaConIA,
 } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
 import { compareCampoOrder } from '../../../lib/field-order'
 import {
@@ -287,6 +288,52 @@ export default function DynamicFuenteFields({
     }
   }
 
+  const handleStructuredRowSuggestion = async ({
+    campo,
+    tipoTabla,
+    rowTitle,
+    currentRowFields,
+    previousRows,
+  }: {
+    campo: CampoPostulacion
+    tipoTabla: string
+    rowTitle: string
+    currentRowFields: Array<{
+      id: string
+      kind: string
+      label: string
+      columnHeader: string
+      currentValue: string | number | boolean | null
+    }>
+    previousRows: Array<{
+      summary: string
+      values: Array<{ label: string; value: string | number | boolean | null }>
+    }>
+  }) => {
+    const result = await sugerirFilaTablaConIA({
+      proyectoId,
+      fuenteId,
+      campoId: campo.id,
+      tituloCampo: campo.nombre,
+      tipoTabla,
+      rowTitle,
+      currentRowFields,
+      previousRows,
+    })
+
+    if (!result.success || !('values' in result)) {
+      throw new Error(result.error || 'No se pudo generar la sugerencia para la fila.')
+    }
+
+    return {
+      values:
+        result.values && typeof result.values === 'object'
+          ? (result.values as Record<string, string | number>)
+          : {},
+      notice: 'notice' in result ? result.notice || '' : '',
+    }
+  }
+
   return (
     <div
       style={{
@@ -335,6 +382,7 @@ export default function DynamicFuenteFields({
           onBlur={handleBlurSave}
           onAISuggest={handleAISuggestion}
           onGanttAISuggest={handleGanttRowSuggestion}
+          onTableRowAISuggest={handleStructuredRowSuggestion}
         />
         <FieldSection
           title="Plazos"
@@ -353,6 +401,7 @@ export default function DynamicFuenteFields({
           onBlur={handleBlurSave}
           onAISuggest={handleAISuggestion}
           onGanttAISuggest={handleGanttRowSuggestion}
+          onTableRowAISuggest={handleStructuredRowSuggestion}
         />
         <FieldSection
           title="Presupuesto"
@@ -371,6 +420,7 @@ export default function DynamicFuenteFields({
           onBlur={handleBlurSave}
           onAISuggest={handleAISuggestion}
           onGanttAISuggest={handleGanttRowSuggestion}
+          onTableRowAISuggest={handleStructuredRowSuggestion}
         />
       </div>
     </div>
@@ -392,6 +442,7 @@ function FieldSection({
   onBlur,
   onAISuggest,
   onGanttAISuggest,
+  onTableRowAISuggest,
 }: {
   title: string
   campos: CampoPostulacion[]
@@ -413,6 +464,22 @@ function FieldSection({
     previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
     monthCount: number
   }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
+  onTableRowAISuggest: (payload: {
+    campo: CampoPostulacion
+    tipoTabla: string
+    rowTitle: string
+    currentRowFields: Array<{
+      id: string
+      kind: string
+      label: string
+      columnHeader: string
+      currentValue: string | number | boolean | null
+    }>
+    previousRows: Array<{
+      summary: string
+      values: Array<{ label: string; value: string | number | boolean | null }>
+    }>
+  }) => Promise<{ values: Record<string, string | number>; notice?: string }>
 }) {
   const grouped = groupCamposByHierarchy(campos)
 
@@ -452,6 +519,12 @@ function FieldSection({
                                 ...payload,
                               })
                             }
+                            onTableRowAISuggest={(payload) =>
+                              onTableRowAISuggest({
+                                campo,
+                                ...payload,
+                              })
+                            }
                           />
                         ))}
                       </div>
@@ -486,6 +559,7 @@ function FieldRow({
   onPersistValue,
   onAISuggest,
   onGanttAISuggest,
+  onTableRowAISuggest,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
@@ -503,6 +577,21 @@ function FieldRow({
     previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
     monthCount: number
   }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
+  onTableRowAISuggest: (payload: {
+    tipoTabla: string
+    rowTitle: string
+    currentRowFields: Array<{
+      id: string
+      kind: string
+      label: string
+      columnHeader: string
+      currentValue: string | number | boolean | null
+    }>
+    previousRows: Array<{
+      summary: string
+      values: Array<{ label: string; value: string | number | boolean | null }>
+    }>
+  }) => Promise<{ values: Record<string, string | number>; notice?: string }>
 }) {
   const aiAvailability = getFieldAIAvailability(campo, value)
   const usesExpandedTextField =
@@ -561,6 +650,7 @@ function FieldRow({
         onBlur,
         onPersistValue,
         onGanttAISuggest,
+        onTableRowAISuggest,
       })}
 
       {savingFieldId === campo.id && (
@@ -664,6 +754,7 @@ function renderField({
   onBlur,
   onPersistValue,
   onGanttAISuggest,
+  onTableRowAISuggest,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
@@ -677,6 +768,21 @@ function renderField({
     previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
     monthCount: number
   }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
+  onTableRowAISuggest: (payload: {
+    tipoTabla: string
+    rowTitle: string
+    currentRowFields: Array<{
+      id: string
+      kind: string
+      label: string
+      columnHeader: string
+      currentValue: string | number | boolean | null
+    }>
+    previousRows: Array<{
+      summary: string
+      values: Array<{ label: string; value: string | number | boolean | null }>
+    }>
+  }) => Promise<{ values: Record<string, string | number>; notice?: string }>
 }) {
   if (campo.tipo === 'texto_largo' || (campo.tipo === 'texto' && expandedText)) {
     return (
@@ -758,6 +864,7 @@ function renderField({
         onBlur={onBlur}
         onPersistValue={onPersistValue}
         onGanttAISuggest={onGanttAISuggest}
+        onTableRowAISuggest={onTableRowAISuggest}
       />
     )
   }
@@ -956,6 +1063,78 @@ function buildGanttRows(
   return rows
 }
 
+function buildStructuredRows(
+  config: TableFieldConfig,
+  tableValue: Record<string, string | number | boolean | null>
+) {
+  return config.rows
+    .map((row, rowIndex) => {
+      const fields: Array<{
+        id: string
+        kind: string
+        label: string
+        columnHeader: string
+        currentValue: string | number | boolean | null
+      }> = []
+      const staticTexts: string[] = []
+
+      row.cells.forEach((cell, cellIndex) => {
+        const columnHeader = config.columns[cellIndex]?.header ?? `Columna ${cellIndex + 1}`
+
+        cell.items.forEach((item) => {
+          if (item.kind === 'static_text' && String(item.text ?? '').trim()) {
+            staticTexts.push(String(item.text ?? '').trim())
+          }
+
+          if (
+            item.kind === 'input_text' ||
+            item.kind === 'input_textarea' ||
+            item.kind === 'input_number'
+          ) {
+            fields.push({
+              id: item.id,
+              kind: item.kind,
+              label: String(item.label ?? '').trim(),
+              columnHeader,
+              currentValue:
+                (tableValue[item.id] as string | number | boolean | null | undefined) ?? null,
+            })
+          }
+        })
+      })
+
+      if (fields.length === 0) return null
+
+      const anchorField =
+        fields.find((field) => field.kind === 'input_textarea') ??
+        fields.find((field) => field.kind === 'input_text') ??
+        fields[0]
+
+      return {
+        key: row.id || `row-${rowIndex + 1}`,
+        anchorItemId: anchorField?.id ?? null,
+        rowTitle:
+          staticTexts[0] ||
+          fields[0]?.label ||
+          fields[0]?.columnHeader ||
+          `Fila ${rowIndex + 1}`,
+        fields,
+      }
+    })
+    .filter(Boolean) as Array<{
+    key: string
+    anchorItemId: string | null
+    rowTitle: string
+    fields: Array<{
+      id: string
+      kind: string
+      label: string
+      columnHeader: string
+      currentValue: string | number | boolean | null
+    }>
+  }>
+}
+
 function normalizeText(value: string) {
   return value
     .normalize('NFD')
@@ -1050,6 +1229,7 @@ function StructuredTableField({
   onBlur,
   onPersistValue,
   onGanttAISuggest,
+  onTableRowAISuggest,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
@@ -1062,6 +1242,21 @@ function StructuredTableField({
     previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
     monthCount: number
   }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
+  onTableRowAISuggest: (payload: {
+    tipoTabla: string
+    rowTitle: string
+    currentRowFields: Array<{
+      id: string
+      kind: string
+      label: string
+      columnHeader: string
+      currentValue: string | number | boolean | null
+    }>
+    previousRows: Array<{
+      summary: string
+      values: Array<{ label: string; value: string | number | boolean | null }>
+    }>
+  }) => Promise<{ values: Record<string, string | number>; notice?: string }>
 }) {
   const config = normalizeTableFieldConfig(campo.config_json)
   const tableValue =
@@ -1070,6 +1265,8 @@ function StructuredTableField({
       : {}
   const [ganttLoadingKey, setGanttLoadingKey] = useState<string | null>(null)
   const [ganttNotice, setGanttNotice] = useState<Record<string, string>>({})
+  const [structuredLoadingKey, setStructuredLoadingKey] = useState<string | null>(null)
+  const [structuredNotice, setStructuredNotice] = useState<Record<string, string>>({})
 
   const updateTableValue = (itemId: string, nextValue: string | boolean) => {
     onChange({
@@ -1080,6 +1277,14 @@ function StructuredTableField({
 
   const ganttRows = useMemo(
     () => (campo.tipo === 'tabla_gantt' ? buildGanttRows(config, tableValue) : []),
+    [campo.tipo, config, tableValue]
+  )
+
+  const structuredRows = useMemo(
+    () =>
+      campo.tipo === 'tabla_estructurada' || campo.tipo === 'tabla_presupuesto'
+        ? buildStructuredRows(config, tableValue)
+        : [],
     [campo.tipo, config, tableValue]
   )
 
@@ -1116,6 +1321,50 @@ function StructuredTableField({
 
     return meta
   }, [ganttRows])
+
+  const structuredMetaByAnchorItemId = useMemo(() => {
+    const meta = new Map<
+      string,
+      {
+        key: string
+        rowTitle: string
+        fields: Array<{
+          id: string
+          kind: string
+          label: string
+          columnHeader: string
+          currentValue: string | number | boolean | null
+        }>
+        previousRows: Array<{
+          summary: string
+          values: Array<{ label: string; value: string | number | boolean | null }>
+        }>
+      }
+    >()
+
+    structuredRows.forEach((row, index) => {
+      if (!row.anchorItemId) return
+      meta.set(row.anchorItemId, {
+        key: row.key,
+        rowTitle: row.rowTitle,
+        fields: row.fields,
+        previousRows: structuredRows
+          .slice(0, index)
+          .filter((previous) =>
+            previous.fields.some((field) => fieldValueToString(field.currentValue).trim().length > 0)
+          )
+          .map((previous) => ({
+            summary: previous.rowTitle,
+            values: previous.fields.map((field) => ({
+              label: field.label || field.columnHeader,
+              value: field.currentValue,
+            })),
+          })),
+      })
+    })
+
+    return meta
+  }, [structuredRows])
 
   const handleGanttSuggestion = async (activityItemId: string) => {
     const meta = ganttMetaByActivityItemId.get(activityItemId)
@@ -1159,6 +1408,51 @@ function StructuredTableField({
     }
   }
 
+  const handleStructuredSuggestion = async (anchorItemId: string) => {
+    const meta = structuredMetaByAnchorItemId.get(anchorItemId)
+    if (!meta) return
+
+    setStructuredLoadingKey(meta.key)
+
+    try {
+      const result = await onTableRowAISuggest({
+        tipoTabla: campo.tipo,
+        rowTitle: meta.rowTitle,
+        currentRowFields: meta.fields,
+        previousRows: meta.previousRows,
+      })
+
+      const nextValue: Record<string, string | number | boolean | null> = { ...tableValue }
+
+      meta.fields.forEach((field) => {
+        const suggestedValue = result.values[field.id]
+        if (field.kind === 'input_number') {
+          const numeric = Number(suggestedValue)
+          nextValue[field.id] = Number.isFinite(numeric) ? numeric : 0
+        } else {
+          nextValue[field.id] = String(suggestedValue ?? '').trim()
+        }
+      })
+
+      onChange(nextValue)
+      await onPersistValue(nextValue)
+      setStructuredNotice((prev) => ({
+        ...prev,
+        [meta.key]: result.notice || 'Fila sugerida y guardada.',
+      }))
+    } catch (error) {
+      setStructuredNotice((prev) => ({
+        ...prev,
+        [meta.key]:
+          error instanceof Error
+            ? error.message
+            : 'No se pudo generar la sugerencia para la fila.',
+      }))
+    } finally {
+      setStructuredLoadingKey(null)
+    }
+  }
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={structuredTableStyle}>
@@ -1198,6 +1492,10 @@ function StructuredTableField({
                       ganttLoadingKey={ganttLoadingKey}
                       ganttNotice={ganttNotice}
                       onGanttSuggest={handleGanttSuggestion}
+                      structuredMeta={structuredMetaByAnchorItemId}
+                      structuredLoadingKey={structuredLoadingKey}
+                      structuredNotice={structuredNotice}
+                      onStructuredSuggest={handleStructuredSuggestion}
                     />
                   </td>
                 )
@@ -1221,6 +1519,10 @@ function StructuredTableCell({
   ganttLoadingKey,
   ganttNotice,
   onGanttSuggest,
+  structuredMeta,
+  structuredLoadingKey,
+  structuredNotice,
+  onStructuredSuggest,
 }: {
   campoTipo: string
   cell: TableFieldCellConfig
@@ -1242,6 +1544,27 @@ function StructuredTableCell({
   ganttLoadingKey: string | null
   ganttNotice: Record<string, string>
   onGanttSuggest: (activityItemId: string) => Promise<void>
+  structuredMeta: Map<
+    string,
+    {
+      key: string
+      rowTitle: string
+      fields: Array<{
+        id: string
+        kind: string
+        label: string
+        columnHeader: string
+        currentValue: string | number | boolean | null
+      }>
+      previousRows: Array<{
+        summary: string
+        values: Array<{ label: string; value: string | number | boolean | null }>
+      }>
+    }
+  >
+  structuredLoadingKey: string | null
+  structuredNotice: Record<string, string>
+  onStructuredSuggest: (anchorItemId: string) => Promise<void>
 }) {
   const sumValue = getTableSumForCell(cell, valueMap)
   const ganttItemCount = cell.items.filter((item) => item.kind === 'gantt_mark').length
@@ -1323,6 +1646,11 @@ function StructuredTableCell({
         if (item.kind === 'input_textarea') {
           const currentGanttMeta = campoTipo === 'tabla_gantt' ? ganttMeta.get(item.id) : null
           const isGanttLoading = currentGanttMeta ? ganttLoadingKey === currentGanttMeta.key : false
+          const currentStructuredMeta =
+            campoTipo !== 'tabla_gantt' ? structuredMeta.get(item.id) : null
+          const isStructuredLoading = currentStructuredMeta
+            ? structuredLoadingKey === currentStructuredMeta.key
+            : false
           return (
             <div
               key={item.id}
@@ -1347,29 +1675,64 @@ function StructuredTableCell({
                       ? 'Mejorar fila con IA'
                       : 'Completar fila con IA'}
                   </button>
+                ) : currentStructuredMeta ? (
+                  <button
+                    type="button"
+                    onClick={() => onStructuredSuggest(item.id)}
+                    disabled={isStructuredLoading}
+                    style={ganttAiButtonStyle(isStructuredLoading)}
+                  >
+                    <Sparkles size={12} />
+                    {String(valueMap[item.id] ?? '').trim().length > 0
+                      ? 'Mejorar fila con IA'
+                      : 'Completar fila con IA'}
+                  </button>
                 ) : null}
               </div>
-            <textarea
-              value={String(valueMap[item.id] ?? '')}
-              onChange={(event) => onChange(item.id, event.target.value)}
-              onBlur={onBlur}
-              placeholder={item.placeholder || ''}
-              style={{
-                ...textareaStyle,
-                minHeight: 86,
-                height: '100%',
-              }}
-            />
+              <textarea
+                value={String(valueMap[item.id] ?? '')}
+                onChange={(event) => onChange(item.id, event.target.value)}
+                onBlur={onBlur}
+                placeholder={item.placeholder || ''}
+                style={{
+                  ...textareaStyle,
+                  minHeight: 86,
+                  height: '100%',
+                }}
+              />
               {currentGanttMeta && ganttNotice[currentGanttMeta.key] ? (
                 <div style={ganttNoticeStyle}>{ganttNotice[currentGanttMeta.key]}</div>
+              ) : currentStructuredMeta && structuredNotice[currentStructuredMeta.key] ? (
+                <div style={ganttNoticeStyle}>{structuredNotice[currentStructuredMeta.key]}</div>
               ) : null}
             </div>
           )
         }
 
+        const currentStructuredMeta =
+          campoTipo !== 'tabla_gantt' ? structuredMeta.get(item.id) : null
+        const isStructuredLoading = currentStructuredMeta
+          ? structuredLoadingKey === currentStructuredMeta.key
+          : false
+
         return (
           <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : null}
+            <div style={ganttTextareaHeaderStyle}>
+              {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : <div />}
+              {currentStructuredMeta ? (
+                <button
+                  type="button"
+                  onClick={() => onStructuredSuggest(item.id)}
+                  disabled={isStructuredLoading}
+                  style={ganttAiButtonStyle(isStructuredLoading)}
+                >
+                  <Sparkles size={12} />
+                  {fieldValueToString(valueMap[item.id] ?? '').trim().length > 0
+                    ? 'Mejorar fila con IA'
+                    : 'Completar fila con IA'}
+                </button>
+              ) : null}
+            </div>
             <input
               type={item.kind === 'input_number' ? 'number' : 'text'}
               value={String(valueMap[item.id] ?? '')}
@@ -1383,6 +1746,9 @@ function StructuredTableCell({
               min={item.kind === 'input_number' ? '0' : undefined}
               step={item.kind === 'input_number' ? '1' : undefined}
             />
+            {currentStructuredMeta && structuredNotice[currentStructuredMeta.key] ? (
+              <div style={ganttNoticeStyle}>{structuredNotice[currentStructuredMeta.key]}</div>
+            ) : null}
           </div>
         )
       })}
