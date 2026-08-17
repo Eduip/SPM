@@ -69,7 +69,7 @@ export function createDefaultGanttTableFieldConfig(months = 12): TableFieldConfi
       colspan: 1,
       background: 'default' as const,
       align: 'center' as const,
-      vertical_align: 'middle' as const,
+      vertical_align: 'top' as const,
       items: [
         {
           id: safeId(`item-month-${index + 1}`),

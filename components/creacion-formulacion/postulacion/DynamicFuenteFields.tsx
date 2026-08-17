@@ -985,14 +985,16 @@ function StructuredTableCell({
   presentation: ReturnType<typeof getTableCellPresentation>
 }) {
   const sumValue = getTableSumForCell(cell, valueMap)
+  const ganttItemCount = cell.items.filter((item) => item.kind === 'gantt_mark').length
+  const isPureGanttCell = ganttItemCount > 0 && ganttItemCount === cell.items.length
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
-        justifyContent: presentation.justifyContent,
+        gap: isPureGanttCell ? 12 : 8,
+        justifyContent: isPureGanttCell ? 'flex-start' : presentation.justifyContent,
         minHeight: 110,
       }}
     >
@@ -1019,28 +1021,35 @@ function StructuredTableCell({
         if (item.kind === 'gantt_mark') {
           const checked = Boolean(valueMap[item.id])
           return (
-            <button
+            <div
               key={item.id}
-              type="button"
-              onClick={() => {
-                onChange(item.id, !checked)
-                setTimeout(onBlur, 0)
-              }}
               style={{
-                ...ganttMarkButtonStyle,
-                background: checked ? 'var(--primary)' : '#e5e7eb',
-                borderColor: checked ? 'var(--primary)' : '#cbd5e1',
+                ...ganttMarkRowStyle,
+                minHeight: isPureGanttCell ? 120 : ganttMarkRowStyle.minHeight,
               }}
-              aria-pressed={checked}
-              title={checked ? 'Mes activo' : 'Mes inactivo'}
             >
-              <span
-                style={{
-                  ...ganttMarkFillStyle,
-                  opacity: checked ? 1 : 0,
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(item.id, !checked)
+                  setTimeout(onBlur, 0)
                 }}
-              />
-            </button>
+                style={{
+                  ...ganttMarkButtonStyle,
+                  background: checked ? 'var(--primary)' : '#e5e7eb',
+                  borderColor: checked ? 'var(--primary)' : '#cbd5e1',
+                }}
+                aria-pressed={checked}
+                title={checked ? 'Mes activo' : 'Mes inactivo'}
+              >
+                <span
+                  style={{
+                    ...ganttMarkFillStyle,
+                    opacity: checked ? 1 : 0,
+                  }}
+                />
+              </button>
+            </div>
           )
         }
 
@@ -1148,6 +1157,13 @@ const ganttMarkButtonStyle: React.CSSProperties = {
   justifyContent: 'center',
   cursor: 'pointer',
   transition: 'all 0.2s ease',
+}
+
+const ganttMarkRowStyle: React.CSSProperties = {
+  minHeight: 104,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 }
 
 const ganttMarkFillStyle: React.CSSProperties = {
