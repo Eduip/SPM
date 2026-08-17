@@ -5,6 +5,7 @@ import { Sparkles } from 'lucide-react'
 import {
   guardarRespuestaDinamica,
   sugerirCampoPostulacionConIA,
+  sugerirFilaGanttConIA,
 } from '../../../app/creacion-formulacion/postulacion/dynamic-actions'
 import { compareCampoOrder } from '../../../lib/field-order'
 import {
@@ -18,6 +19,8 @@ import type {
   DynamicFieldValue,
   RespuestaPostulacion,
   TableFieldCellConfig,
+  TableFieldConfig,
+  TableFieldRowConfig,
 } from '../../../lib/formulacion-types'
 
 export default function DynamicFuenteFields({
@@ -243,6 +246,47 @@ export default function DynamicFuenteFields({
     }
   }
 
+  const handleGanttRowSuggestion = async ({
+    campo,
+    componentLabel,
+    currentActivity,
+    previousRows,
+    monthCount,
+  }: {
+    campo: CampoPostulacion
+    componentLabel: string
+    currentActivity: string
+    previousRows: Array<{
+      component: string
+      activity: string
+      activeMonths: number[]
+    }>
+    monthCount: number
+  }) => {
+    const result = await sugerirFilaGanttConIA({
+      proyectoId,
+      fuenteId,
+      campoId: campo.id,
+      tituloCampo: campo.nombre,
+      componentLabel,
+      currentActivity,
+      previousRows,
+      monthCount,
+    })
+
+    if (!result.success || !('activityText' in result)) {
+      throw new Error(result.error || 'No se pudo generar la sugerencia para la fila.')
+    }
+
+    return {
+      activityText: String(result.activityText ?? '').trim(),
+      activeMonths: Array.isArray(result.activeMonths)
+        ? result.activeMonths.map((month) => Number(month)).filter((month) => Number.isInteger(month) && month > 0)
+        : [],
+      notice: 'notice' in result ? result.notice || '' : '',
+    }
+  }
+
   return (
     <div
       style={{
@@ -290,6 +334,7 @@ export default function DynamicFuenteFields({
           }
           onBlur={handleBlurSave}
           onAISuggest={handleAISuggestion}
+          onGanttAISuggest={handleGanttRowSuggestion}
         />
         <FieldSection
           title="Plazos"
@@ -307,6 +352,7 @@ export default function DynamicFuenteFields({
           }
           onBlur={handleBlurSave}
           onAISuggest={handleAISuggestion}
+          onGanttAISuggest={handleGanttRowSuggestion}
         />
         <FieldSection
           title="Presupuesto"
@@ -324,6 +370,7 @@ export default function DynamicFuenteFields({
           }
           onBlur={handleBlurSave}
           onAISuggest={handleAISuggestion}
+          onGanttAISuggest={handleGanttRowSuggestion}
         />
       </div>
     </div>
@@ -344,6 +391,7 @@ function FieldSection({
   onChange,
   onBlur,
   onAISuggest,
+  onGanttAISuggest,
 }: {
   title: string
   campos: CampoPostulacion[]
@@ -358,6 +406,13 @@ function FieldSection({
   onChange: (campoId: string, value: DynamicFieldValue) => void
   onBlur: (campo: CampoPostulacion, value: DynamicFieldValue) => void
   onAISuggest: (campo: CampoPostulacion) => void
+  onGanttAISuggest: (payload: {
+    campo: CampoPostulacion
+    componentLabel: string
+    currentActivity: string
+    previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
+    monthCount: number
+  }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
 }) {
   const grouped = groupCamposByHierarchy(campos)
 
@@ -389,7 +444,14 @@ function FieldSection({
                             savingFieldId={savingFieldId}
                             onChange={(newValue) => onChange(campo.id, newValue)}
                             onBlur={() => onBlur(campo, values[campo.id])}
+                            onPersistValue={(nextValue) => Promise.resolve(onBlur(campo, nextValue))}
                             onAISuggest={() => onAISuggest(campo)}
+                            onGanttAISuggest={(payload) =>
+                              onGanttAISuggest({
+                                campo,
+                                ...payload,
+                              })
+                            }
                           />
                         ))}
                       </div>
@@ -421,7 +483,9 @@ function FieldRow({
   feedback,
   onChange,
   onBlur,
+  onPersistValue,
   onAISuggest,
+  onGanttAISuggest,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
@@ -431,7 +495,14 @@ function FieldRow({
   feedback: { tone: 'success' | 'warning' | 'error'; message: string } | null
   onChange: (value: DynamicFieldValue) => void
   onBlur: () => void
+  onPersistValue: (value: DynamicFieldValue) => Promise<void>
   onAISuggest: () => void
+  onGanttAISuggest: (payload: {
+    componentLabel: string
+    currentActivity: string
+    previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
+    monthCount: number
+  }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
 }) {
   const aiAvailability = getFieldAIAvailability(campo, value)
   const usesExpandedTextField =
@@ -488,6 +559,8 @@ function FieldRow({
         expandedText: usesExpandedTextField,
         onChange,
         onBlur,
+        onPersistValue,
+        onGanttAISuggest,
       })}
 
       {savingFieldId === campo.id && (
@@ -589,12 +662,21 @@ function renderField({
   expandedText = false,
   onChange,
   onBlur,
+  onPersistValue,
+  onGanttAISuggest,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
   expandedText?: boolean
   onChange: (value: DynamicFieldValue) => void
   onBlur: () => void
+  onPersistValue: (value: DynamicFieldValue) => Promise<void>
+  onGanttAISuggest: (payload: {
+    componentLabel: string
+    currentActivity: string
+    previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
+    monthCount: number
+  }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
 }) {
   if (campo.tipo === 'texto_largo' || (campo.tipo === 'texto' && expandedText)) {
     return (
@@ -674,6 +756,8 @@ function renderField({
         value={value}
         onChange={onChange}
         onBlur={onBlur}
+        onPersistValue={onPersistValue}
+        onGanttAISuggest={onGanttAISuggest}
       />
     )
   }
@@ -814,6 +898,64 @@ function fieldValueToString(value: DynamicFieldValue) {
   return String(value)
 }
 
+function buildGanttRows(
+  config: TableFieldConfig,
+  tableValue: Record<string, string | number | boolean | null>
+) {
+  const rows: Array<{
+    key: string
+    componentLabel: string
+    currentActivity: string
+    activityItemId: string
+    monthItemIds: string[]
+    activeMonths: number[]
+  }> = []
+
+  config.rows.forEach((row, rowIndex) => {
+    const componentCell = row.cells[0]
+    const componentLabel = componentCell
+      ? componentCell.items
+          .filter((item) => item.kind === 'static_text')
+          .map((item) => String(item.text ?? '').trim())
+          .filter(Boolean)
+          .join(' ')
+      : ''
+
+    const activityCell = row.cells.find((cell) =>
+      cell.items.some((item) => item.kind === 'input_textarea')
+    )
+    const monthCells = row.cells.filter((cell) =>
+      cell.items.some((item) => item.kind === 'gantt_mark')
+    )
+
+    if (!activityCell || monthCells.length === 0) return
+
+    const activityItems = activityCell.items.filter((item) => item.kind === 'input_textarea')
+
+    activityItems.forEach((item, activityIndex) => {
+      const monthItemIds = monthCells
+        .map((cell) => cell.items[activityIndex])
+        .filter((monthItem): monthItem is NonNullable<typeof monthItem> => Boolean(monthItem))
+        .map((monthItem) => monthItem.id)
+
+      rows.push({
+        key: `${rowIndex}-${activityIndex}`,
+        componentLabel,
+        currentActivity: String(tableValue[item.id] ?? ''),
+        activityItemId: item.id,
+        monthItemIds,
+        activeMonths: monthItemIds
+          .map((monthItemId, monthIndex) =>
+            Boolean(tableValue[monthItemId]) ? monthIndex + 1 : null
+          )
+          .filter((month): month is number => month !== null),
+      })
+    })
+  })
+
+  return rows
+}
+
 function normalizeText(value: string) {
   return value
     .normalize('NFD')
@@ -906,23 +1048,115 @@ function StructuredTableField({
   value,
   onChange,
   onBlur,
+  onPersistValue,
+  onGanttAISuggest,
 }: {
   campo: CampoPostulacion
   value: DynamicFieldValue
   onChange: (value: DynamicFieldValue) => void
   onBlur: () => void
+  onPersistValue: (value: DynamicFieldValue) => Promise<void>
+  onGanttAISuggest: (payload: {
+    componentLabel: string
+    currentActivity: string
+    previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
+    monthCount: number
+  }) => Promise<{ activityText: string; activeMonths: number[]; notice?: string }>
 }) {
   const config = normalizeTableFieldConfig(campo.config_json)
   const tableValue =
     value && typeof value === 'object' && !Array.isArray(value)
       ? (value as Record<string, string | number | boolean | null>)
       : {}
+  const [ganttLoadingKey, setGanttLoadingKey] = useState<string | null>(null)
+  const [ganttNotice, setGanttNotice] = useState<Record<string, string>>({})
 
   const updateTableValue = (itemId: string, nextValue: string | boolean) => {
     onChange({
       ...tableValue,
       [itemId]: nextValue,
     })
+  }
+
+  const ganttRows = useMemo(
+    () => (campo.tipo === 'tabla_gantt' ? buildGanttRows(config, tableValue) : []),
+    [campo.tipo, config, tableValue]
+  )
+
+  const ganttMetaByActivityItemId = useMemo(() => {
+    const meta = new Map<
+      string,
+      {
+        key: string
+        componentLabel: string
+        currentActivity: string
+        previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
+        monthCount: number
+        monthItemIds: string[]
+      }
+    >()
+
+    ganttRows.forEach((row, index) => {
+      meta.set(row.activityItemId, {
+        key: row.key,
+        componentLabel: row.componentLabel,
+        currentActivity: row.currentActivity,
+        previousRows: ganttRows
+          .slice(0, index)
+          .map((previous) => ({
+            component: previous.componentLabel,
+            activity: previous.currentActivity,
+            activeMonths: previous.activeMonths,
+          }))
+          .filter((previous) => previous.activity.trim().length > 0),
+        monthCount: row.monthItemIds.length,
+        monthItemIds: row.monthItemIds,
+      })
+    })
+
+    return meta
+  }, [ganttRows])
+
+  const handleGanttSuggestion = async (activityItemId: string) => {
+    const meta = ganttMetaByActivityItemId.get(activityItemId)
+    if (!meta) return
+
+    setGanttLoadingKey(meta.key)
+
+    try {
+      const result = await onGanttAISuggest({
+        componentLabel: meta.componentLabel,
+        currentActivity: meta.currentActivity,
+        previousRows: meta.previousRows,
+        monthCount: meta.monthCount,
+      })
+
+      const nextValue: Record<string, string | number | boolean | null> = {
+        ...tableValue,
+        [activityItemId]: result.activityText,
+      }
+
+      meta.monthItemIds.forEach((monthItemId, monthIndex) => {
+        nextValue[monthItemId] = result.activeMonths.includes(monthIndex + 1)
+      })
+
+      onChange(nextValue)
+      await onPersistValue(nextValue)
+      setGanttNotice((prev) => ({
+        ...prev,
+        [meta.key]: result.notice || 'Fila Gantt sugerida y guardada.',
+      }))
+    } catch (error) {
+      setGanttNotice((prev) => ({
+        ...prev,
+        [meta.key]:
+          error instanceof Error
+            ? error.message
+            : 'No se pudo generar la sugerencia para la fila.',
+      }))
+    } finally {
+      setGanttLoadingKey(null)
+    }
   }
 
   return (
@@ -954,11 +1188,16 @@ function StructuredTableField({
                     }}
                   >
                     <StructuredTableCell
+                      campoTipo={campo.tipo}
                       cell={cell}
                       valueMap={tableValue}
                       onChange={updateTableValue}
                       onBlur={onBlur}
                       presentation={presentation}
+                      ganttMeta={ganttMetaByActivityItemId}
+                      ganttLoadingKey={ganttLoadingKey}
+                      ganttNotice={ganttNotice}
+                      onGanttSuggest={handleGanttSuggestion}
                     />
                   </td>
                 )
@@ -972,17 +1211,37 @@ function StructuredTableField({
 }
 
 function StructuredTableCell({
+  campoTipo,
   cell,
   valueMap,
   onChange,
   onBlur,
   presentation,
+  ganttMeta,
+  ganttLoadingKey,
+  ganttNotice,
+  onGanttSuggest,
 }: {
+  campoTipo: string
   cell: TableFieldCellConfig
   valueMap: Record<string, string | number | boolean | null>
   onChange: (itemId: string, nextValue: string | boolean) => void
   onBlur: () => void
   presentation: ReturnType<typeof getTableCellPresentation>
+  ganttMeta: Map<
+    string,
+    {
+      key: string
+      componentLabel: string
+      currentActivity: string
+      previousRows: Array<{ component: string; activity: string; activeMonths: number[] }>
+      monthCount: number
+      monthItemIds: string[]
+    }
+  >
+  ganttLoadingKey: string | null
+  ganttNotice: Record<string, string>
+  onGanttSuggest: (activityItemId: string) => Promise<void>
 }) {
   const sumValue = getTableSumForCell(cell, valueMap)
   const ganttItemCount = cell.items.filter((item) => item.kind === 'gantt_mark').length
@@ -1062,6 +1321,8 @@ function StructuredTableCell({
         }
 
         if (item.kind === 'input_textarea') {
+          const currentGanttMeta = campoTipo === 'tabla_gantt' ? ganttMeta.get(item.id) : null
+          const isGanttLoading = currentGanttMeta ? ganttLoadingKey === currentGanttMeta.key : false
           return (
             <div
               key={item.id}
@@ -1072,7 +1333,22 @@ function StructuredTableCell({
                 minHeight: useTimelineRows ? TIMELINE_ROW_HEIGHT : undefined,
               }}
             >
-              {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : null}
+              <div style={ganttTextareaHeaderStyle}>
+                {item.label ? <div style={structuredItemLabelStyle}>{item.label}</div> : <div />}
+                {currentGanttMeta ? (
+                  <button
+                    type="button"
+                    onClick={() => onGanttSuggest(item.id)}
+                    disabled={isGanttLoading}
+                    style={ganttAiButtonStyle(isGanttLoading)}
+                  >
+                    <Sparkles size={12} />
+                    {String(valueMap[item.id] ?? '').trim().length > 0
+                      ? 'Mejorar fila con IA'
+                      : 'Completar fila con IA'}
+                  </button>
+                ) : null}
+              </div>
             <textarea
               value={String(valueMap[item.id] ?? '')}
               onChange={(event) => onChange(item.id, event.target.value)}
@@ -1084,6 +1360,9 @@ function StructuredTableCell({
                 height: '100%',
               }}
             />
+              {currentGanttMeta && ganttNotice[currentGanttMeta.key] ? (
+                <div style={ganttNoticeStyle}>{ganttNotice[currentGanttMeta.key]}</div>
+              ) : null}
             </div>
           )
         }
@@ -1191,6 +1470,36 @@ const ganttMarkFillStyle: React.CSSProperties = {
   borderRadius: 6,
   background: 'rgba(255,255,255,0.92)',
   transition: 'opacity 0.2s ease',
+}
+
+const ganttTextareaHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+}
+
+function ganttAiButtonStyle(disabled: boolean): React.CSSProperties {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    border: '1px solid var(--border-strong)',
+    background: disabled ? '#e2e8f0' : 'var(--surface)',
+    color: disabled ? '#64748b' : 'var(--text-strong)',
+    padding: '6px 10px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    whiteSpace: 'nowrap',
+  }
+}
+
+const ganttNoticeStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: 'var(--text-muted)',
+  lineHeight: 1.45,
 }
 
 

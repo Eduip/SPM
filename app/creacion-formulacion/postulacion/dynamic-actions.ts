@@ -33,6 +33,23 @@ type SugerenciaCampoPayload = {
   valorActual?: string
 }
 
+type GanttRowContext = {
+  component: string
+  activity: string
+  activeMonths: number[]
+}
+
+type SugerenciaFilaGanttPayload = {
+  proyectoId: string
+  fuenteId: string
+  campoId: string
+  tituloCampo: string
+  componentLabel: string
+  currentActivity: string
+  previousRows: GanttRowContext[]
+  monthCount: number
+}
+
 export async function guardarRespuestaDinamica({
   proyectoId,
   fuenteId,
@@ -324,6 +341,204 @@ export async function sugerirCampoPostulacionConIA({
   }
 }
 
+export async function sugerirFilaGanttConIA({
+  proyectoId,
+  fuenteId,
+  campoId,
+  tituloCampo,
+  componentLabel,
+  currentActivity,
+  previousRows,
+  monthCount,
+}: SugerenciaFilaGanttPayload) {
+  const supabase = await createClient()
+  const authGuard = await requirePermission(supabase, PERMISSIONS.proyectosEdit)
+
+  if (!authGuard.success) {
+    return authGuard
+  }
+
+  if (!proyectoId || !fuenteId || !campoId || !tituloCampo.trim()) {
+    return { success: false, error: 'Faltan datos para generar la sugerencia IA de la carta Gantt.' }
+  }
+
+  const [
+    proyectoRes,
+    datosGeneralesRes,
+    diagnosticoRes,
+    fuenteRes,
+    reglasRes,
+    camposFuenteRes,
+    respuestasFuenteRes,
+    aiSettings,
+    strategicDocuments,
+  ] = await Promise.all([
+    supabase
+      .from('proyectos')
+      .select(`
+        id,
+        nombre,
+        localizacion,
+        anio_inicio,
+        monto_estimado,
+        tipo:tipos_proyecto(nombre),
+        categoria:categorias_proyecto(nombre),
+        unidad:unidades(nombre)
+      `)
+      .eq('id', proyectoId)
+      .maybeSingle(),
+    supabase
+      .from('proyecto_datos_generales')
+      .select('descripcion, poblacion_beneficiaria')
+      .eq('proyecto_id', proyectoId)
+      .maybeSingle(),
+    supabase
+      .from('proyecto_diagnostico')
+      .select('problema_central, justificacion')
+      .eq('proyecto_id', proyectoId)
+      .order('updated_at', { ascending: false })
+      .limit(1),
+    supabase
+      .from('fuentes_financiamiento')
+      .select('id, nombre, descripcion')
+      .eq('id', fuenteId)
+      .maybeSingle(),
+    supabase
+      .from('reglas_validacion_fuente')
+      .select('descripcion')
+      .eq('fuente_id', fuenteId),
+    supabase
+      .from('campos_formulario_fuente')
+      .select('id, nombre, tipo, visible')
+      .eq('fuente_id', fuenteId)
+      .eq('visible', true),
+    supabase
+      .from('proyecto_postulacion_respuestas')
+      .select('campo_id, valor_texto')
+      .eq('proyecto_id', proyectoId)
+      .eq('fuente_id', fuenteId),
+    loadMunicipalAISettings(),
+    listStrategicDocuments(),
+  ])
+
+  if (proyectoRes.error || !proyectoRes.data) {
+    return {
+      success: false,
+      error:
+        proyectoRes.error?.message ||
+        'No se pudo cargar el proyecto para la sugerencia IA de la carta Gantt.',
+    }
+  }
+
+  const proyecto = proyectoRes.data
+  const datosGenerales = datosGeneralesRes.data
+  const diagnostico = Array.isArray(diagnosticoRes.data)
+    ? diagnosticoRes.data[0] ?? null
+    : diagnosticoRes.data ?? null
+  const fuente = fuenteRes.data
+  const institutionalContext = buildActiveInstitutionalContext(aiSettings)
+  const narrativeFields = new Map(
+    (camposFuenteRes.data ?? [])
+      .filter((campo) => ['texto', 'texto_largo'].includes(String(campo.tipo)))
+      .map((campo) => [campo.id, campo.nombre as string])
+  )
+  const narrativaPostulacion = (respuestasFuenteRes.data ?? [])
+    .map((respuesta) => {
+      const title = narrativeFields.get(respuesta.campo_id)
+      const value = String(respuesta.valor_texto ?? '').trim()
+      if (!title || !value) return ''
+      return `${title}: ${value}`
+    })
+    .filter(Boolean)
+    .slice(0, 10)
+
+  const strategicContext = getRelevantStrategicChunks({
+    documents: strategicDocuments,
+    query: [
+      proyecto.nombre ?? '',
+      tituloCampo,
+      fuente?.nombre ?? '',
+      componentLabel ?? '',
+      currentActivity ?? '',
+      datosGenerales?.descripcion ?? '',
+      diagnostico?.problema_central ?? '',
+      diagnostico?.justificacion ?? '',
+      ...previousRows.map((row) => `${row.component} ${row.activity}`),
+    ].join(' '),
+    limit: 4,
+  })
+
+  const promptContext = {
+    proyecto: {
+      nombre: proyecto.nombre ?? '',
+      localizacion: proyecto.localizacion ?? '',
+      anioInicio: proyecto.anio_inicio ?? '',
+      montoEstimado: proyecto.monto_estimado ?? '',
+      tipo: extractName(proyecto.tipo),
+      categoria: extractName(proyecto.categoria),
+      unidad: extractName(proyecto.unidad),
+      descripcion: datosGenerales?.descripcion ?? '',
+      poblacionBeneficiaria: formatBeneficiarios(
+        datosGenerales?.poblacion_beneficiaria ?? null
+      ),
+    },
+    diagnostico: {
+      problemaCentral: diagnostico?.problema_central ?? '',
+      justificacion: diagnostico?.justificacion ?? '',
+    },
+    fuente: {
+      nombre: fuente?.nombre ?? '',
+      descripcion: fuente?.descripcion ?? '',
+      reglas: (reglasRes.data ?? []).map((rule) => rule.descripcion).filter(Boolean),
+    },
+    cartaGantt: {
+      titulo: tituloCampo,
+      componenteActual: componentLabel,
+      actividadActual: currentActivity.trim(),
+      filasAnteriores: previousRows,
+      cantidadMeses: monthCount,
+    },
+    postulacionNarrativaActual: narrativaPostulacion,
+    parametrosInstitucionales: institutionalContext,
+    documentosEstrategicosRelevantes: strategicContext,
+  }
+
+  const fallbackSuggestion = buildLocalGanttSuggestion(promptContext)
+  const apiKey = process.env.OPENAI_API_KEY
+
+  if (!apiKey) {
+    return {
+      success: true,
+      ...fallbackSuggestion,
+      mode: 'local',
+      notice: 'Se generó una sugerencia local porque falta configurar OPENAI_API_KEY.',
+    }
+  }
+
+  try {
+    const suggestion = await callOpenAIForGanttSuggestion({
+      apiKey,
+      context: promptContext,
+    })
+
+    return {
+      success: true,
+      ...suggestion,
+      mode: 'ai',
+    }
+  } catch (error) {
+    return {
+      success: true,
+      ...fallbackSuggestion,
+      mode: 'local',
+      notice:
+        error instanceof Error
+          ? `No se pudo consultar el modelo IA. Se generó una sugerencia local: ${sanitizeOpenAIError(error.message)}`
+          : 'No se pudo consultar el modelo IA. Se generó una sugerencia local.',
+    }
+  }
+}
+
 function valueIsNullish(value: unknown) {
   return value === null || value === undefined
 }
@@ -434,6 +649,72 @@ async function callOpenAIForFieldSuggestion({
   return suggestion.replace(/^```[\s\S]*?\n/, '').replace(/```$/, '').trim()
 }
 
+async function callOpenAIForGanttSuggestion({
+  apiKey,
+  context,
+}: {
+  apiKey: string
+  context: unknown
+}) {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.4,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Eres un asistente experto en formulación de proyectos municipales en Chile. Tu tarea es proponer una sola fila para una carta Gantt. Debes considerar el contexto del proyecto, la narrativa ya redactada, el componente actual y las filas anteriores para no repetir actividades. Responde solo en JSON válido con esta forma exacta: {"activityText":"...","activeMonths":[1,2,3]}. activityText debe ser una redacción técnica y concreta de la actividad. activeMonths debe listar los meses en que corresponde ejecutar la actividad, con números enteros entre 1 y la cantidad máxima de meses.',
+        },
+        {
+          role: 'user',
+          content: JSON.stringify(context, null, 2),
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(await response.text())
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string
+      }
+    }>
+  }
+
+  const content = data.choices?.[0]?.message?.content?.trim()
+  if (!content) {
+    throw new Error('El modelo no devolvió una sugerencia para la carta Gantt.')
+  }
+
+  const parsed = parseJsonObject(content)
+  const activityText = String(parsed.activityText ?? '').trim()
+  const activeMonths = Array.isArray(parsed.activeMonths)
+    ? parsed.activeMonths
+        .map((month) => Number(month))
+        .filter((month) => Number.isInteger(month) && month > 0)
+    : []
+
+  if (!activityText) {
+    throw new Error('La respuesta IA no incluyó un texto de actividad válido.')
+  }
+
+  return {
+    activityText,
+    activeMonths,
+  }
+}
+
 function buildLocalPostulacionSuggestion(context: {
   proyecto: {
     nombre: string
@@ -491,6 +772,53 @@ function buildLocalPostulacionSuggestion(context: {
   return `La información propuesta para el campo "${context.campo.titulo}" debe enfocarse en explicar con claridad la pertinencia del proyecto, su relación con la necesidad detectada y su contribución al desarrollo local. En ese marco, ${projectLabel} constituye una iniciativa técnicamente justificable, coherente con los objetivos de ${sourceLabel} y capaz de generar una mejora concreta para la comunidad beneficiaria.${priorities}${docsSupport}`
 }
 
+function buildLocalGanttSuggestion(context: {
+  proyecto: {
+    nombre: string
+    descripcion: string
+  }
+  diagnostico: {
+    problemaCentral: string
+    justificacion: string
+  }
+  fuente: {
+    nombre: string
+  }
+  cartaGantt: {
+    componenteActual: string
+    actividadActual: string
+    filasAnteriores: GanttRowContext[]
+    cantidadMeses: number
+  }
+  postulacionNarrativaActual: string[]
+}) {
+  const sequenceTemplates = [
+    'Planificación y coordinación inicial de la intervención',
+    'Preparación técnica y logística para la ejecución de la actividad',
+    'Ejecución en terreno de la actividad comprometida',
+    'Sistematización de resultados y consolidación de antecedentes',
+    'Cierre técnico, validación y seguimiento de la actividad ejecutada',
+  ]
+
+  const previousRows = context.cartaGantt.filasAnteriores.filter((row) => row.activity.trim().length > 0)
+  const previousMonths = previousRows.flatMap((row) => row.activeMonths)
+  const lastMonth = previousMonths.length ? Math.max(...previousMonths) : 0
+  const startMonth = Math.min(Math.max(lastMonth + 1, 1), Math.max(context.cartaGantt.cantidadMeses, 1))
+  const endMonth = Math.min(startMonth + 1, Math.max(context.cartaGantt.cantidadMeses, 1))
+  const template =
+    context.cartaGantt.actividadActual.trim() ||
+    sequenceTemplates[Math.min(previousRows.length, sequenceTemplates.length - 1)]
+  const diagnosis = context.diagnostico.problemaCentral || context.diagnostico.justificacion
+  const support = context.postulacionNarrativaActual[0]
+    ? `, manteniendo coherencia con lo ya formulado en ${context.postulacionNarrativaActual[0].split(':')[0]}`
+    : ''
+
+  return {
+    activityText: `${template} para ${context.cartaGantt.componenteActual || 'el componente definido'}, abordando ${diagnosis || 'la necesidad detectada del proyecto'}${support}.`,
+    activeMonths: startMonth === endMonth ? [startMonth] : [startMonth, endMonth],
+  }
+}
+
 function extractName(
   value: { nombre?: string | null } | { nombre?: string | null }[] | null | undefined
 ) {
@@ -526,4 +854,19 @@ function sanitizeOpenAIError(message: string) {
   }
 
   return message.slice(0, 240)
+}
+
+function parseJsonObject(content: string) {
+  const cleaned = content
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+
+  const firstBrace = cleaned.indexOf('{')
+  const lastBrace = cleaned.lastIndexOf('}')
+  const candidate =
+    firstBrace >= 0 && lastBrace > firstBrace ? cleaned.slice(firstBrace, lastBrace + 1) : cleaned
+
+  return JSON.parse(candidate) as Record<string, unknown>
 }
